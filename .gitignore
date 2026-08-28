@@ -1,0 +1,12 @@
+# Machine-local editor / assistant config
+.claude/settings.local.json
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
