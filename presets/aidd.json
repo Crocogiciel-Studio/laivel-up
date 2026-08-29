@@ -109,6 +109,20 @@
           }
         },
         {
+          "criterionId": "ci-iteration-load",
+          "weight": 1,
+          "role": "level",
+          "params": {
+            "runsAfterMost": 3,
+            "runsAfterSome": 2,
+            "failAfterMost": 0.25,
+            "failAfterSome": 0.08,
+            "rankAfterMost": 1,
+            "rankAfterSome": 2,
+            "rankKeyStages": 4
+          }
+        },
+        {
           "criterionId": "revert-rate",
           "weight": 1,
           "role": "cap",

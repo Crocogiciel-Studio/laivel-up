@@ -4,6 +4,7 @@ import { behaviorArtifactDensity } from './behavior-artifact-density.js';
 import { prFeatureSize } from './pr-feature-size.js';
 import { prCorrectionLoad } from './pr-correction-load.js';
 import { reviewCommentLoad } from './review-comment-load.js';
+import { ciIterationLoad } from './ci-iteration-load.js';
 import { revertRate } from './revert-rate.js';
 import { concurrentStreams } from './concurrent-streams.js';
 import { loopConvergence } from './loop-convergence.js';
@@ -15,6 +16,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   prFeatureSize,
   prCorrectionLoad,
   reviewCommentLoad,
+  ciIterationLoad,
   revertRate,
   concurrentStreams,
   loopConvergence,
@@ -26,6 +28,7 @@ export {
   prFeatureSize,
   prCorrectionLoad,
   reviewCommentLoad,
+  ciIterationLoad,
   revertRate,
   concurrentStreams,
   loopConvergence,
