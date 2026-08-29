@@ -14,9 +14,14 @@ import { levelById } from '../../src/core/model/grid.js';
  * every axis has real criteria the engine cannot place a full global level, so
  * this asserts the weaker invariant that must already hold: no wired axis may
  * read *below* the profile's known level (a min-aggregated global could never
- * then reach that level). Tighten to an exact global-level check as the Size,
+ * then reach that level). Tighten to an exact global-level check as the
  * Intervention and Parallelism axes come online.
+ *
+ * The Size axis is already calibrated against these four, so it gets the
+ * stronger check: it must read the known level *exactly*.
  */
+
+const EXACT_AXES = ['size'];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(HERE, '../fixtures/profiles');
@@ -58,6 +63,12 @@ describe('known profiles guardrail', () => {
           axis.levelRank,
           `${name} axis ${axis.axisId} read ${String(axis.levelId)} below ${expectedLevelId}`,
         ).toBeGreaterThanOrEqual(expectedRank);
+        if (EXACT_AXES.includes(axis.axisId)) {
+          expect(
+            axis.levelRank,
+            `${name} axis ${axis.axisId} read ${String(axis.levelId)}, expected ${expectedLevelId}`,
+          ).toBe(expectedRank);
+        }
       }
     });
   }
