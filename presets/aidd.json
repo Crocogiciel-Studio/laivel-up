@@ -79,7 +79,19 @@
     {
       "id": "parallelism",
       "label": "Parallelism",
-      "bundle": []
+      "bundle": [
+        {
+          "criterionId": "concurrent-streams",
+          "weight": 1,
+          "role": "level",
+          "params": {
+            "rankNone": 0,
+            "rankSingleStream": 3,
+            "rankMultiStream": 6,
+            "multiStreamThreshold": 3
+          }
+        }
+      ]
     }
   ],
   "axisAggregation": "confidence-weighted-vote",
