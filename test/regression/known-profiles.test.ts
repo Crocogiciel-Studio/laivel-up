@@ -38,10 +38,10 @@ const catalogue = inMemoryCatalogue(builtInEvaluators);
 
 describe('known profiles guardrail', () => {
   for (const [name, expectedLevelId] of Object.entries(KNOWN)) {
-    const dir = resolve(FIXTURES, name);
-    const runner = existsSync(dir) ? it : it.skip;
+    it(`${name}: no wired axis reads below ${expectedLevelId}`, () => {
+      const dir = resolve(FIXTURES, name);
+      expect(existsSync(dir), `missing regression fixture: ${dir}`).toBe(true);
 
-    runner(`${name}: no wired axis reads below ${expectedLevelId}`, () => {
       const profileResult = readProfileFromDirectory(dir);
       expect(profileResult.ok, JSON.stringify(profileResult)).toBe(true);
       if (!profileResult.ok) return;
