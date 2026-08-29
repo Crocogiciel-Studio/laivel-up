@@ -86,8 +86,8 @@ jobs:
             to-review)    REVIEW_INTENT="true" ;;
           esac
           case "$COMMENT_BODY" in
-            *@claude /implement*) IMPLEMENT_INTENT="true" ;;
-            *@claude /review*)    REVIEW_INTENT="true" ;;
+            *"@claude /implement"*) IMPLEMENT_INTENT="true" ;;
+            *"@claude /review"*)    REVIEW_INTENT="true" ;;
           esac
 
           post_skip () {
