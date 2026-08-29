@@ -61,4 +61,39 @@ describe('runBundle', () => {
     expect(verdict.levelId).toBe('l2');
     expect(verdict.confidence).toBeLessThanOrEqual(0.3);
   });
+
+  it('scores a contradiction by the rank gap when the bundle entry declares a contradictionSlope', () => {
+    const a = axis([
+      { criterionId: 'x', weight: 1, role: 'level', params: {} },
+      { criterionId: 'declared', weight: 1, role: 'confidence', params: { contradictionSlope: 0.35 } },
+    ]);
+    // Declared l5 (rank 5) against an elected l1 (rank 1): gap 4, strength max(0, 1 - 0.35*4) = 0.
+    const far = runBundle(grid, a, [
+      makeReading({ criterionId: 'x', levelId: 'l1', levelRank: 1, confidence: 1 }),
+      makeReading({ criterionId: 'declared', role: 'confidence', levelId: 'l5', levelRank: 5, confidence: 1 }),
+    ]);
+    expect(far.levelId).toBe('l1');
+    expect(far.confidence).toBeCloseTo(0, 5);
+
+    // Declared l2 against elected l1: gap 1, strength 1 - 0.35 = 0.65 — a milder dent.
+    const near = runBundle(grid, a, [
+      makeReading({ criterionId: 'x', levelId: 'l1', levelRank: 1, confidence: 1 }),
+      makeReading({ criterionId: 'declared', role: 'confidence', levelId: 'l2', levelRank: 2, confidence: 1 }),
+    ]);
+    expect(near.levelId).toBe('l1');
+    expect(near.confidence).toBeCloseTo(0.65, 5);
+  });
+
+  it('leaves confidence untouched when the slope-scored reading agrees with the winner', () => {
+    const a = axis([
+      { criterionId: 'x', weight: 1, role: 'level', params: {} },
+      { criterionId: 'declared', weight: 1, role: 'confidence', params: { contradictionSlope: 0.35 } },
+    ]);
+    const verdict = runBundle(grid, a, [
+      makeReading({ criterionId: 'x', levelId: 'l3', levelRank: 3, confidence: 1 }),
+      makeReading({ criterionId: 'declared', role: 'confidence', levelId: 'l3', levelRank: 3, confidence: 1 }),
+    ]);
+    expect(verdict.levelId).toBe('l3');
+    expect(verdict.confidence).toBeCloseTo(1, 5);
+  });
 });

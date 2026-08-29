@@ -50,7 +50,7 @@ export function runBundle(
 
   const winnerRank = grid.levels.find((l) => l.id === winnerId)?.rank;
   const capped = applyCaps(readings, grid, winnerId, winnerRank, initial);
-  const folded = applyContradictions(readings, capped.levelId, capped.folded);
+  const folded = applyContradictions(axis, readings, capped.levelId, capped.levelRank, capped.folded);
 
   return {
     axisId: axis.id,
@@ -136,8 +136,10 @@ function capsBelow(
 
 /** A `confidence` reading only bites when it disagrees with the elected level. */
 function applyContradictions(
+  axis: GridAxis,
   readings: readonly CriterionReading[],
   levelId: string,
+  levelRank: number | undefined,
   folded: FoldedConfidence,
 ): FoldedConfidence {
   let confidence = folded;
@@ -145,10 +147,32 @@ function applyContradictions(
     if (!contradicts(reading, levelId)) continue;
     confidence = weakestOf([
       [confidence.limitingFactor, confidence.value],
-      ['agreement', reading.confidence],
+      ['agreement', contradictionStrength(axis, reading, levelRank)],
     ]);
   }
   return confidence;
+}
+
+/**
+ * How hard a contradicting `confidence` reading pulls the axis confidence down.
+ * By default it is the reading's own folded confidence — how sure that criterion
+ * is of the tier it read. A bundle entry may instead opt into a rank-gap model
+ * by declaring a `contradictionSlope` param: the strength then falls off
+ * linearly with the distance between the level the reading points at and the one
+ * the axis elected, `max(0, 1 - slope * |readingRank - electedRank|)`.
+ */
+function contradictionStrength(
+  axis: GridAxis,
+  reading: CriterionReading,
+  electedRank: number | undefined,
+): number {
+  const slope = axis.bundle.find((entry) => entry.criterionId === reading.criterionId)?.params
+    .contradictionSlope;
+  if (slope === undefined || reading.levelRank === undefined || electedRank === undefined) {
+    return reading.confidence;
+  }
+  const gap = Math.abs(reading.levelRank - electedRank);
+  return Math.max(0, 1 - slope * gap);
 }
 
 function contradicts(reading: CriterionReading, levelId: string): boolean {

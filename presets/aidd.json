@@ -34,6 +34,14 @@
             "xlShare": 0.15,
             "minSamples": 10
           }
+        },
+        {
+          "criterionId": "declaratif-contradiction",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "contradictionSlope": 0.35
+          }
         }
       ]
     },
@@ -130,6 +138,14 @@
             "rankMemory": 2,
             "rankBehavior": 4
           }
+        },
+        {
+          "criterionId": "declaratif-contradiction",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "contradictionSlope": 0.35
+          }
         }
       ]
     },
@@ -188,6 +204,14 @@
             "rankCapHigh": 2,
             "rankCapMid": 3
           }
+        },
+        {
+          "criterionId": "declaratif-contradiction",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "contradictionSlope": 0.35
+          }
         }
       ]
     },
@@ -216,6 +240,14 @@
             "rankMultiStream": 6,
             "multiStreamThreshold": 3,
             "burstyRatio": 3
+          }
+        },
+        {
+          "criterionId": "declaratif-contradiction",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "contradictionSlope": 0.35
           }
         }
       ]

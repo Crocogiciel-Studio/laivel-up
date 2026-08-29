@@ -23,6 +23,8 @@ const profileSchema = z.object({
   team_size: z.number().optional(),
   available: z.array(z.string()).default([]),
   note: z.string().optional(),
+  /** Explicit self-assessment: a grid level id, or a phrase the table below maps. */
+  self_assessed_level: z.string().optional(),
 });
 
 const sizeDistSchema = z.object({
@@ -127,6 +129,45 @@ function toNumber(value: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/**
+ * Obvious self-assessment phrasings from `declaratif.md`, each mapped to an AIDD
+ * grid level id. Deliberately small and literal: a self-report is unverified
+ * input that can only ever lower confidence, so a missed match (→ `undefined`,
+ * the criterion abstains) is safer than a wrong one.
+ */
+const SELF_ASSESSMENT_PHRASES: readonly (readonly [RegExp, string])[] = [
+  [/milieu de tableau|milieu du tableau|dans la moyenne|niveau moyen/i, 'blue'],
+  [/haut du panier|plut[oô]t avanc[ée]|assez avanc[ée]|niveau avanc[ée]/i, 'green'],
+  [/fa[cç]on par d[ée]faut de travailler|par d[ée]faut de travailler/i, 'green'],
+  [/d[ée]butant|je d[ée]bute|novice|je commence tout juste/i, 'red'],
+];
+
+function mapSelfAssessmentPhrase(text: string): string | undefined {
+  for (const [pattern, levelId] of SELF_ASSESSMENT_PHRASES) {
+    if (pattern.test(text)) return levelId;
+  }
+  return undefined;
+}
+
+/**
+ * An explicit `self_assessed_level` in `profile.json` wins (used verbatim when
+ * it is not itself one of the mapped phrases); otherwise scan the free-text
+ * self-report for an obvious phrasing.
+ */
+function extractSelfAssessedLevel(
+  explicit: string | undefined,
+  selfReportText: string | undefined,
+): string | undefined {
+  const trimmedExplicit = explicit?.trim();
+  if (trimmedExplicit !== undefined && trimmedExplicit.length > 0) {
+    return mapSelfAssessmentPhrase(trimmedExplicit) ?? trimmedExplicit;
+  }
+  if (selfReportText !== undefined) {
+    return mapSelfAssessmentPhrase(selfReportText);
+  }
+  return undefined;
+}
+
 function buildDeclared(
   parsed: z.infer<typeof profileSchema>,
   selfReportText: string | undefined,
@@ -137,7 +178,7 @@ function buildDeclared(
   return {
     stack: parsed.stack,
     teamSize: parsed.team_size,
-    selfAssessedLevel: undefined,
+    selfAssessedLevel: extractSelfAssessedLevel(parsed.self_assessed_level, selfReportText),
     notes,
   };
 }
