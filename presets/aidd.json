@@ -156,6 +156,18 @@
           }
         },
         {
+          "criterionId": "assistant-integration",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "tokensHigh": 1000000,
+            "sessionsHigh": 20,
+            "rankPrompts": 1,
+            "rankMemory": 2,
+            "rankBehavior": 4
+          }
+        },
+        {
           "criterionId": "declaratif-contradiction",
           "weight": 1,
           "role": "confidence",

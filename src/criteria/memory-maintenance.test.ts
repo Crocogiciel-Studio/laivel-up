@@ -25,6 +25,8 @@ function run(
               autoRetryLoopPresent: undefined,
               declaredAssistantTools: [],
               editorIntegration: undefined,
+              sessionsPerWeek: undefined,
+              tokensPerWeek: undefined,
               ...toolingContext,
             },
     }),

@@ -24,6 +24,8 @@ function run(
         autoRetryLoopPresent: loop,
         declaredAssistantTools: [],
         editorIntegration: undefined,
+        sessionsPerWeek: undefined,
+        tokensPerWeek: undefined,
       },
       vcsActivity: {
         pullRequests: undefined,
