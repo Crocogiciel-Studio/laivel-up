@@ -52,6 +52,18 @@
             "rankBehavior": 4,
             "rankLoop": 6
           }
+        },
+        {
+          "criterionId": "behavior-artifact-density",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "rankNothing": 0,
+            "rankPrompts": 1,
+            "rankMemory": 2,
+            "rankBehavior": 4,
+            "densityStrong": 4
+          }
         }
       ]
     },
