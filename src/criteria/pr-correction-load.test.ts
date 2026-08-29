@@ -112,14 +112,31 @@ describe('prCorrectionLoad', () => {
     }
   });
 
-  it('is more confident at the centre of a band than right on its flip boundary', () => {
-    const onEdge = run({ medianCorrectionCommitsAfterOpen: 2 }); // band 1's lower edge
-    const atCentre = run({ medianCorrectionCommitsAfterOpen: 2.5 }); // band 1's centre
-    expect(onEdge.ok && atCentre.ok).toBe(true);
-    if (onEdge.ok && atCentre.ok) {
-      expect(onEdge.value.rawValue).toBe('after-some');
-      expect(atCentre.value.rawValue).toBe('after-some');
-      expect(atCentre.value.confidence.margin).toBeGreaterThan(onEdge.value.confidence.margin);
+  it('is more confident at the centre of a band than at either of its edges (family A)', () => {
+    const lowerEdge = run({ medianCorrectionCommitsAfterOpen: 2 }); // band 1's lower edge
+    const centre = run({ medianCorrectionCommitsAfterOpen: 2.5 }); // band 1's centre
+    const upperEdge = run({ medianCorrectionCommitsAfterOpen: 2.9 }); // near band 1's upper edge
+    expect(lowerEdge.ok && centre.ok && upperEdge.ok).toBe(true);
+    if (lowerEdge.ok && centre.ok && upperEdge.ok) {
+      expect(lowerEdge.value.rawValue).toBe('after-some');
+      expect(centre.value.rawValue).toBe('after-some');
+      expect(upperEdge.value.rawValue).toBe('after-some');
+      expect(centre.value.confidence.margin).toBeGreaterThan(lowerEdge.value.confidence.margin);
+      expect(centre.value.confidence.margin).toBeGreaterThan(upperEdge.value.confidence.margin);
+    }
+  });
+
+  it('is more confident at the centre of a band than at either of its edges (family B alone)', () => {
+    const lowerEdge = run({ mergedWithoutHumanEditRatio: 0.15 }); // band 1's lower edge
+    const centre = run({ mergedWithoutHumanEditRatio: 0.275 }); // band 1's centre
+    const upperEdge = run({ mergedWithoutHumanEditRatio: 0.39 }); // near band 1's upper edge
+    expect(lowerEdge.ok && centre.ok && upperEdge.ok).toBe(true);
+    if (lowerEdge.ok && centre.ok && upperEdge.ok) {
+      expect(lowerEdge.value.rawValue).toBe('after-some');
+      expect(centre.value.rawValue).toBe('after-some');
+      expect(upperEdge.value.rawValue).toBe('after-some');
+      expect(centre.value.confidence.margin).toBeGreaterThan(lowerEdge.value.confidence.margin);
+      expect(centre.value.confidence.margin).toBeGreaterThan(upperEdge.value.confidence.margin);
     }
   });
 
