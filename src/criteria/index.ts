@@ -3,6 +3,7 @@ import { toolingContextDepth } from './tooling-context-depth.js';
 import { behaviorArtifactDensity } from './behavior-artifact-density.js';
 import { prFeatureSize } from './pr-feature-size.js';
 import { prCorrectionLoad } from './pr-correction-load.js';
+import { reviewCommentLoad } from './review-comment-load.js';
 import { concurrentStreams } from './concurrent-streams.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
@@ -11,6 +12,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   behaviorArtifactDensity,
   prFeatureSize,
   prCorrectionLoad,
+  reviewCommentLoad,
   concurrentStreams,
 ];
 
@@ -19,5 +21,6 @@ export {
   behaviorArtifactDensity,
   prFeatureSize,
   prCorrectionLoad,
+  reviewCommentLoad,
   concurrentStreams,
 };

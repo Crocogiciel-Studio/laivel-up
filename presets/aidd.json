@@ -85,6 +85,18 @@
             "rankKeyStages": 4,
             "minSamples": 10
           }
+        },
+        {
+          "criterionId": "review-comment-load",
+          "weight": 1,
+          "role": "level",
+          "params": {
+            "commentsAfterMost": 6,
+            "commentsAfterSome": 3,
+            "rankAfterMost": 1,
+            "rankAfterSome": 2,
+            "rankKeyStages": 4
+          }
         }
       ]
     },
