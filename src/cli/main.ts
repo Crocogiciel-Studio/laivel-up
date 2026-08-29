@@ -2,40 +2,40 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { evaluate } from '../core/index.js';
 import { inMemoryCatalogue } from '../adapters/catalogue/in-memory-catalogue.js';
-import { readDossierFromDirectory } from '../adapters/inbound/json-dossier.js';
-import { jsonGrilleSource } from '../adapters/inbound/json-grille.js';
-import { jsonStreamSink } from '../adapters/outbound/json-resultat.js';
+import { readProfileFromDirectory } from '../adapters/inbound/json-profile.js';
+import { jsonGridSource } from '../adapters/inbound/json-grid.js';
+import { jsonStreamSink } from '../adapters/outbound/json-evaluation.js';
 import { builtInEvaluators } from '../criteria/index.js';
 
 interface CliArgs {
-  readonly dossierDir: string | undefined;
-  readonly grillePath: string;
+  readonly profileDir: string | undefined;
+  readonly gridPath: string;
   readonly minAxes: number | undefined;
 }
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_GRILLE = resolve(HERE, '../../presets/aidd.json');
+const DEFAULT_GRID = resolve(HERE, '../../presets/aidd.json');
 
 function parseArgs(argv: readonly string[]): CliArgs {
-  let dossierDir: string | undefined;
-  let grillePath = DEFAULT_GRILLE;
+  let profileDir: string | undefined;
+  let gridPath = DEFAULT_GRID;
   let minAxes: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = argv[i + 1];
-    if ((arg === '--dossier' || arg === '-d') && next !== undefined) {
-      dossierDir = next;
+    if ((arg === '--profile' || arg === '-p') && next !== undefined) {
+      profileDir = next;
       i += 1;
-    } else if ((arg === '--grille' || arg === '-g') && next !== undefined) {
-      grillePath = next;
+    } else if ((arg === '--grid' || arg === '-g') && next !== undefined) {
+      gridPath = next;
       i += 1;
     } else if (arg === '--min-axes' && next !== undefined) {
       minAxes = Number(next);
       i += 1;
     }
   }
-  return { dossierDir, grillePath, minAxes };
+  return { profileDir, gridPath, minAxes };
 }
 
 function fail(message: string, issues: readonly string[] = []): never {
@@ -48,25 +48,25 @@ function fail(message: string, issues: readonly string[] = []): never {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  if (args.dossierDir === undefined) {
-    fail('usage: laivel-up --dossier <profile-dir> [--grille <preset.json>] [--min-axes <n>]');
+  if (args.profileDir === undefined) {
+    fail('usage: laivel-up --profile <profile-dir> [--grid <preset.json>] [--min-axes <n>]');
   }
 
-  const dossierResult = readDossierFromDirectory(args.dossierDir);
-  if (!dossierResult.ok) {
-    fail(dossierResult.error.message, dossierResult.error.issues);
+  const profileResult = readProfileFromDirectory(args.profileDir);
+  if (!profileResult.ok) {
+    fail(profileResult.error.message, profileResult.error.issues);
   }
 
-  const grilleResult = jsonGrilleSource(args.grillePath).load();
-  if (!grilleResult.ok) {
-    fail(grilleResult.error.message, grilleResult.error.issues);
+  const gridResult = jsonGridSource(args.gridPath).load();
+  if (!gridResult.ok) {
+    fail(gridResult.error.message, gridResult.error.issues);
   }
 
   const catalogue = inMemoryCatalogue(builtInEvaluators);
   const options = args.minAxes === undefined ? {} : { minRuledAxes: args.minAxes };
-  const resultat = evaluate(dossierResult.value, grilleResult.value, catalogue, options);
+  const evaluation = evaluate(profileResult.value, gridResult.value, catalogue, options);
 
-  const emitted = jsonStreamSink().emit(resultat);
+  const emitted = jsonStreamSink().emit(evaluation);
   if (!emitted.ok) {
     fail(emitted.error.message);
   }

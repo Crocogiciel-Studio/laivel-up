@@ -7,15 +7,15 @@ import type {
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
-import { levelByRank, orderedLevels } from '../core/model/grille.js';
-import type { ToolingContext } from '../core/model/dossier.js';
+import { levelByRank, orderedLevels } from '../core/model/grid.js';
+import type { ToolingContext } from '../core/model/profile.js';
 
 /**
  * Walking-skeleton criterion. Reads one signal family — the scaffolding the
  * subject set up around their assistant — and places it on an ordinal tier:
  *   nothing → prompts only → project memory → + behavior artifacts → + auto-retry loop
  * Each tier maps to the highest grid level whose harness requirement it meets;
- * that mapping is grille calibration (`params`), so the same reading yields
+ * that mapping is grid calibration (`params`), so the same reading yields
  * different levels under different presets. Single-source: the agreement check
  * is disabled and flagged.
  */
@@ -57,15 +57,15 @@ export const toolingContextDepth: CriterionEvaluator = {
   needs: ['toolingContext'],
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
-    const tc = context.dossier.toolingContext;
+    const tc = context.profile.toolingContext;
     if (tc === undefined) {
       return err(missingPiece(['toolingContext'], 'toolingContext section is empty'));
     }
 
     const rank = tierRank(tc, context.params);
-    const level = levelByRank(context.grille, rank) ?? orderedLevels(context.grille)[0];
+    const level = levelByRank(context.grid, rank) ?? orderedLevels(context.grid)[0];
     if (level === undefined) {
-      return err(missingPiece(['toolingContext'], 'grille declares no levels'));
+      return err(missingPiece(['toolingContext'], 'grid declares no levels'));
     }
 
     const behaviorArtifacts = tc.rulesCount + tc.agentsCount + tc.hooksCount;

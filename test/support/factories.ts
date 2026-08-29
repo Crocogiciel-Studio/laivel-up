@@ -1,13 +1,13 @@
-import type { Dossier } from '../../src/core/model/dossier.js';
-import type { Grille } from '../../src/core/model/grille.js';
-import type { CriterionReading } from '../../src/core/model/resultat.js';
+import type { Profile } from '../../src/core/model/profile.js';
+import type { Grid } from '../../src/core/model/grid.js';
+import type { CriterionReading } from '../../src/core/model/evaluation.js';
 import type {
   CriterionEvaluator,
   CriterionOutput,
 } from '../../src/core/ports/criterion-evaluator.js';
 import { ok } from '../../src/core/model/result.js';
 
-export function makeGrille(overrides: Partial<Grille> = {}): Grille {
+export function makeGrid(overrides: Partial<Grid> = {}): Grid {
   return {
     id: 'test',
     label: 'Test grid',
@@ -20,14 +20,14 @@ export function makeGrille(overrides: Partial<Grille> = {}): Grille {
       { id: 'l5', label: 'L5', rank: 5 },
       { id: 'l6', label: 'L6', rank: 6 },
     ],
-    axes: [{ id: 'a', label: 'Axis A', faisceau: [] }],
+    axes: [{ id: 'a', label: 'Axis A', bundle: [] }],
     axisAggregation: 'confidence-weighted-vote',
     globalAggregation: 'min-across-axes',
     ...overrides,
   };
 }
 
-export function makeDossier(overrides: Partial<Dossier> = {}): Dossier {
+export function makeProfile(overrides: Partial<Profile> = {}): Profile {
   return {
     subject: { id: 'subj', role: undefined, experienceYears: undefined },
     available: [],

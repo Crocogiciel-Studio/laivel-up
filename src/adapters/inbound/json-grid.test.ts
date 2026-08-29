@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseGrille } from './json-grille.js';
+import { parseGrid } from './json-grid.js';
 
 const valid = {
   id: 'demo',
@@ -10,24 +10,24 @@ const valid = {
   axes: [
     {
       id: 'only',
-      faisceau: [{ criterionId: 'c', weight: 1, role: 'level' }],
+      bundle: [{ criterionId: 'c', weight: 1, role: 'level' }],
     },
   ],
 };
 
-describe('parseGrille', () => {
+describe('parseGrid', () => {
   it('accepts a well-formed preset and defaults optional fields', () => {
-    const result = parseGrille(valid);
+    const result = parseGrid(valid);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.axisAggregation).toBe('confidence-weighted-vote');
       expect(result.value.globalAggregation).toBe('min-across-axes');
-      expect(result.value.axes[0]?.faisceau[0]?.params).toEqual({});
+      expect(result.value.axes[0]?.bundle[0]?.params).toEqual({});
     }
   });
 
   it('rejects duplicate level ranks with a readable issue', () => {
-    const result = parseGrille({
+    const result = parseGrid({
       ...valid,
       levels: [
         { id: 'a', rank: 0 },
@@ -41,12 +41,12 @@ describe('parseGrille', () => {
   });
 
   it('rejects a preset with no axes', () => {
-    const result = parseGrille({ ...valid, axes: [] });
+    const result = parseGrid({ ...valid, axes: [] });
     expect(result.ok).toBe(false);
   });
 
   it('rejects a non-object', () => {
-    expect(parseGrille(null).ok).toBe(false);
-    expect(parseGrille('nope').ok).toBe(false);
+    expect(parseGrid(null).ok).toBe(false);
+    expect(parseGrid('nope').ok).toBe(false);
   });
 });

@@ -3,16 +3,16 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type {
   DeclaredProfile,
-  Dossier,
-  DossierSection,
+  Profile,
+  ProfileSection,
   StaticAnalysis,
   ToolingContext,
   VcsActivity,
   WorkSession,
-} from '../../core/model/dossier.js';
+} from '../../core/model/profile.js';
 import type { Result } from '../../core/model/result.js';
 import { ok, err } from '../../core/model/result.js';
-import type { DossierSource, SourceError } from '../../core/ports/io.js';
+import type { ProfileSource, SourceError } from '../../core/ports/io.js';
 import { sourceError } from '../../core/ports/io.js';
 
 const profileSchema = z.object({
@@ -128,15 +128,15 @@ function toNumber(value: string): number | undefined {
 }
 
 function buildDeclared(
-  profile: z.infer<typeof profileSchema>,
-  declaratifText: string | undefined,
+  parsed: z.infer<typeof profileSchema>,
+  selfReportText: string | undefined,
 ): DeclaredProfile {
   const notes: string[] = [];
-  if (profile.note !== undefined) notes.push(profile.note);
-  if (declaratifText !== undefined) notes.push(declaratifText.trim());
+  if (parsed.note !== undefined) notes.push(parsed.note);
+  if (selfReportText !== undefined) notes.push(selfReportText.trim());
   return {
-    stack: profile.stack,
-    teamSize: profile.team_size,
+    stack: parsed.stack,
+    teamSize: parsed.team_size,
     selfAssessedLevel: undefined,
     notes,
   };
@@ -242,8 +242,8 @@ function buildWorkSession(text: string): WorkSession {
   };
 }
 
-/** Parse a subject profile directory (the `profiles/<name>/` layout) into a dossier. */
-export function readDossierFromDirectory(dir: string): Result<Dossier, SourceError> {
+/** Parse a subject's profile directory (the `profiles/<name>/` layout) into a `Profile`. */
+export function readProfileFromDirectory(dir: string): Result<Profile, SourceError> {
   const profileRead = readJson(dir, 'profile.json');
   if (!profileRead.ok) return profileRead;
   const profileParsed = profileSchema.safeParse(profileRead.value);
@@ -252,8 +252,8 @@ export function readDossierFromDirectory(dir: string): Result<Dossier, SourceErr
       sourceError('profile.json is invalid', issuesOf(profileParsed.error, 'profile.json')),
     );
   }
-  const profile = profileParsed.data;
-  const available: DossierSection[] = ['declared'];
+  const parsed = profileParsed.data;
+  const available: ProfileSection[] = ['declared'];
 
   let vcsActivity: VcsActivity | undefined;
   let toolingContext: ToolingContext | undefined;
@@ -291,9 +291,9 @@ export function readDossierFromDirectory(dir: string): Result<Dossier, SourceErr
     available.push('staticAnalysis');
   }
 
-  const declaratifPath = join(dir, 'declaratif.md');
-  const declaratifText = existsSync(declaratifPath)
-    ? readFileSync(declaratifPath, 'utf8')
+  const selfReportPath = join(dir, 'declaratif.md');
+  const selfReportText = existsSync(selfReportPath)
+    ? readFileSync(selfReportPath, 'utf8')
     : undefined;
 
   let workSession: WorkSession | undefined;
@@ -303,22 +303,22 @@ export function readDossierFromDirectory(dir: string): Result<Dossier, SourceErr
     available.push('workSession');
   }
 
-  const dossier: Dossier = {
+  const profile: Profile = {
     subject: {
-      id: profile.profile_id,
-      role: profile.role,
-      experienceYears: profile.experience_years,
+      id: parsed.profile_id,
+      role: parsed.role,
+      experienceYears: parsed.experience_years,
     },
     available,
-    declared: buildDeclared(profile, declaratifText),
+    declared: buildDeclared(parsed, selfReportText),
     vcsActivity,
     staticAnalysis,
     toolingContext,
     workSession,
   };
-  return ok(dossier);
+  return ok(profile);
 }
 
-export function jsonDossierSource(dir: string): DossierSource {
-  return { load: () => readDossierFromDirectory(dir) };
+export function jsonProfileSource(dir: string): ProfileSource {
+  return { load: () => readProfileFromDirectory(dir) };
 }

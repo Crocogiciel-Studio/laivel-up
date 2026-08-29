@@ -1,6 +1,6 @@
 {
   "id": "aidd",
-  "label": "Référentiel AIDD",
+  "label": "AIDD reference grid",
   "levels": [
     { "id": "white", "label": "❖ White", "rank": 0 },
     { "id": "red", "label": "🔺 Red", "rank": 1 },
@@ -12,14 +12,14 @@
   ],
   "axes": [
     {
-      "id": "taille",
-      "label": "Taille",
-      "faisceau": []
+      "id": "size",
+      "label": "Size",
+      "bundle": []
     },
     {
       "id": "harness",
       "label": "Harness",
-      "faisceau": [
+      "bundle": [
         {
           "criterionId": "tooling-context-depth",
           "weight": 1,
@@ -37,12 +37,12 @@
     {
       "id": "intervention",
       "label": "Intervention",
-      "faisceau": []
+      "bundle": []
     },
     {
-      "id": "parallele",
-      "label": "En parallèle",
-      "faisceau": []
+      "id": "parallelism",
+      "label": "Parallelism",
+      "bundle": []
     }
   ],
   "axisAggregation": "confidence-weighted-vote",

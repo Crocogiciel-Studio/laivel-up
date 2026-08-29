@@ -1,6 +1,6 @@
-import type { Grille } from '../model/grille.js';
-import { axisById, levelById, nextLevelUp } from '../model/grille.js';
-import type { AxisVerdict, GlobalVerdict, ProgressionPlan } from '../model/resultat.js';
+import type { Grid } from '../model/grid.js';
+import { axisById, levelById, nextLevelUp } from '../model/grid.js';
+import type { AxisVerdict, GlobalVerdict, ProgressionPlan } from '../model/evaluation.js';
 
 /**
  * The plan points at the one move that raises the global level: close the gap on
@@ -9,7 +9,7 @@ import type { AxisVerdict, GlobalVerdict, ProgressionPlan } from '../model/resul
  * the check that is currently limiting confidence.
  */
 export function planProgression(
-  grille: Grille,
+  grid: Grid,
   global: GlobalVerdict,
   axes: readonly AxisVerdict[],
 ): ProgressionPlan {
@@ -18,16 +18,16 @@ export function planProgression(
       targetLevelId: undefined,
       bindingAxisId: undefined,
       actions: [
-        'Provide more of the dossier: too few axes could be ruled on to place a level.',
+        'Provide more of the profile: too few axes could be ruled on to place a level.',
       ],
     };
   }
 
-  const bindingAxis = axisById(grille, global.bindingAxisId);
+  const bindingAxis = axisById(grid, global.bindingAxisId);
   const bindingVerdict = axes.find((axis) => axis.axisId === global.bindingAxisId);
-  const target = nextLevelUp(grille, global.levelRank);
+  const target = nextLevelUp(grid, global.levelRank);
   const currentLabel =
-    levelById(grille, global.levelId ?? '')?.label ?? global.levelId ?? 'current level';
+    levelById(grid, global.levelId ?? '')?.label ?? global.levelId ?? 'current level';
   const axisLabel = bindingAxis?.label ?? global.bindingAxisId;
 
   if (target === undefined) {

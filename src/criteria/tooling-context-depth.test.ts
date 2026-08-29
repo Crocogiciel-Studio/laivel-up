@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { toolingContextDepth } from './tooling-context-depth.js';
-import { makeDossier, makeGrille } from '../../test/support/factories.js';
-import type { ToolingContext } from '../core/model/dossier.js';
+import { makeProfile, makeGrid } from '../../test/support/factories.js';
+import type { ToolingContext } from '../core/model/profile.js';
 
-const grille = makeGrille();
+const grid = makeGrid();
 
 function tc(overrides: Partial<ToolingContext> = {}): ToolingContext {
   return {
@@ -22,11 +22,11 @@ function tc(overrides: Partial<ToolingContext> = {}): ToolingContext {
 
 describe('toolingContextDepth', () => {
   it('reads the behavior tier when memory and rules/agents are in place', () => {
-    const dossier = makeDossier({
+    const profile = makeProfile({
       available: ['toolingContext'],
       toolingContext: tc({ projectMemoryPresent: true, rulesCount: 3, agentsCount: 2 }),
     });
-    const out = toolingContextDepth.evaluate({ dossier, grille, axisId: 'a', params: {} });
+    const out = toolingContextDepth.evaluate({ profile, grid, axisId: 'a', params: {} });
     expect(out.ok).toBe(true);
     if (out.ok) {
       expect(out.value.levelId).toBe('l4');
@@ -36,31 +36,31 @@ describe('toolingContextDepth', () => {
   });
 
   it('reads the prompts tier when a tool is declared but nothing is set up', () => {
-    const dossier = makeDossier({
+    const profile = makeProfile({
       available: ['toolingContext'],
       toolingContext: tc({ declaredAssistantTools: ['chatgpt-web'] }),
     });
-    const out = toolingContextDepth.evaluate({ dossier, grille, axisId: 'a', params: {} });
+    const out = toolingContextDepth.evaluate({ profile, grid, axisId: 'a', params: {} });
     expect(out.ok && out.value.levelId).toBe('l1');
   });
 
   it('reads the bottom tier when nothing at all is set up', () => {
-    const dossier = makeDossier({
+    const profile = makeProfile({
       available: ['toolingContext'],
       toolingContext: tc(),
     });
-    const out = toolingContextDepth.evaluate({ dossier, grille, axisId: 'a', params: {} });
+    const out = toolingContextDepth.evaluate({ profile, grid, axisId: 'a', params: {} });
     expect(out.ok && out.value.levelId).toBe('l0');
   });
 
-  it('honours the grille calibration for the tier ranks', () => {
-    const dossier = makeDossier({
+  it('honours the grid calibration for the tier ranks', () => {
+    const profile = makeProfile({
       available: ['toolingContext'],
       toolingContext: tc({ projectMemoryPresent: true }),
     });
     const out = toolingContextDepth.evaluate({
-      dossier,
-      grille,
+      profile,
+      grid,
       axisId: 'a',
       params: { rankMemory: 1 },
     });
@@ -69,8 +69,8 @@ describe('toolingContextDepth', () => {
 
   it('returns a missing-piece error when the section is absent', () => {
     const out = toolingContextDepth.evaluate({
-      dossier: makeDossier(),
-      grille,
+      profile: makeProfile(),
+      grid,
       axisId: 'a',
       params: {},
     });

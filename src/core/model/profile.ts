@@ -1,11 +1,11 @@
 /**
- * The dossier is the engine's normalized view of everything known about one
+ * The profile is the engine's normalized view of everything known about one
  * subject. It speaks a portable vocabulary of developer-activity facts — nothing
  * here names a grid, an axis, or "AIDD". Inbound adapters parse raw sources and
  * fill it; a field left `undefined` means "not observed", never "absent / false".
  */
 
-export type DossierSection =
+export type ProfileSection =
   | 'declared'
   | 'vcsActivity'
   | 'staticAnalysis'
@@ -106,10 +106,10 @@ export interface WorkSession {
   readonly rawText: string | undefined;
 }
 
-export interface Dossier {
+export interface Profile {
   readonly subject: SubjectRef;
   /** Fact groups the source declared as available and that parsed successfully. */
-  readonly available: readonly DossierSection[];
+  readonly available: readonly ProfileSection[];
   readonly declared: DeclaredProfile | undefined;
   readonly vcsActivity: VcsActivity | undefined;
   readonly staticAnalysis: StaticAnalysis | undefined;
@@ -117,13 +117,13 @@ export interface Dossier {
   readonly workSession: WorkSession | undefined;
 }
 
-export function hasSection(dossier: Dossier, section: DossierSection): boolean {
-  return dossier.available.includes(section);
+export function hasSection(profile: Profile, section: ProfileSection): boolean {
+  return profile.available.includes(section);
 }
 
 export function missingSections(
-  dossier: Dossier,
-  needed: readonly DossierSection[],
-): readonly DossierSection[] {
-  return needed.filter((section) => !hasSection(dossier, section));
+  profile: Profile,
+  needed: readonly ProfileSection[],
+): readonly ProfileSection[] {
+  return needed.filter((section) => !hasSection(profile, section));
 }
