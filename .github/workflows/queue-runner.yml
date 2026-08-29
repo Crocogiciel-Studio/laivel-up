@@ -1,0 +1,77 @@
+name: Queue runner
+
+# Overnight autopilot. Every hour, if nothing is in flight, promote the oldest `queued` issue to
+# `to-implement` — which the aidd-async pipeline picks up and turns into a draft PR. The
+# `claude/working` guard serialises the batch so two runs never edit the shared files at once.
+#
+# Nothing here merges anything. The morning's job is to review the PRs.
+
+on:
+  schedule:
+    - cron: "7 * * * *" # 7 past the hour: the :00 slot is the most contended and most delayed
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: queue-runner
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote the next queued issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issuesWith = (labels) =>
+              github.paginate(github.rest.issues.listForRepo, {
+                owner, repo, state: "open", labels, sort: "created", direction: "asc", per_page: 100,
+              }).then((rows) => rows.filter((i) => !i.pull_request));
+
+            const openPRs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: "open", per_page: 100,
+            });
+            const hasClosingPR = (n) =>
+              openPRs.some((p) => new RegExp(`\\b(Closes|Fixes|Resolves)\\s+#${n}\\b`, "i").test(p.body || ""));
+
+            // 1. A run is active — leave it alone.
+            const working = await issuesWith("claude/working");
+            if (working.length) {
+              core.info(`in flight: #${working[0].number} — nothing to promote`);
+              return;
+            }
+
+            // 2. Work dispatched but not yet a PR, and not blocked — still landing; wait.
+            const dispatched = await issuesWith("to-implement");
+            for (const i of dispatched) {
+              const blocked = i.labels.some((l) => (l.name || l) === "claude/blocked");
+              if (blocked) continue;
+              if (!hasClosingPR(i.number)) {
+                core.info(`#${i.number} is to-implement with no PR yet — waiting`);
+                return;
+              }
+              // Its PR exists: strip the now-stale to-implement so the queue reads cleanly.
+              await github.rest.issues
+                .removeLabel({ owner, repo, issue_number: i.number, name: "to-implement" })
+                .catch(() => {});
+            }
+
+            // 3. Promote the oldest queued issue.
+            const queued = await issuesWith("queued");
+            if (!queued.length) {
+              core.info("queue empty — nothing to do");
+              return;
+            }
+            const next = queued[0];
+            await github.rest.issues
+              .removeLabel({ owner, repo, issue_number: next.number, name: "queued" })
+              .catch(() => {});
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: next.number, labels: ["to-implement"],
+            });
+            core.notice(`promoted #${next.number}: ${next.title}`);
