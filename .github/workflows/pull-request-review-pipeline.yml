@@ -15,13 +15,16 @@ name: Pull Request - Review Pipeline
 # of pull request #N. Comments on a plain issue collapse into one inert group instead.
 concurrency:
   group: >-
-    ${{ github.workflow }}-pr-${{ (github.event.issue.pull_request && github.event.issue.number)
+    ${{ github.workflow }}-pr-${{ github.event.pull_request.number
+    || (github.event.issue.pull_request && github.event.issue.number)
     || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 on:
   issue_comment:
     types: ["created"]
+  pull_request:
+    types: ["review_requested"]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -31,7 +34,7 @@ on:
 permissions: {}
 
 env:
-  PR_NUMBER: ${{ github.event.issue.number || github.event.inputs.pr_number }}
+  PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
 
 jobs:
   context:
@@ -42,9 +45,18 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (
+        github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
-        startsWith(github.event.comment.body, '@claude deep-review') &&
+        startsWith(github.event.comment.body, '@Crok-Bot deep-review') &&
         github.event.comment.user.type != 'Bot'
+      ) ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.action == 'review_requested' &&
+        (
+          github.event.requested_team.slug == 'crocogiciel-crew' ||
+          github.event.requested_reviewer.login == 'Crok-Bot'
+        )
       )
 
     permissions:
@@ -65,6 +77,20 @@ jobs:
       matrix: ${{ steps.context.outputs.matrix }}
 
     steps:
+      # Crok-Bot says it is on it, in its own voice (the PAT), whichever trigger fired.
+      - name: Acknowledge the review request
+        if: github.event_name != 'workflow_dispatch'
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: Number(process.env.PR_NUMBER),
+              body: "👀 On it — deep review starting. One review will land here when the axes come back.",
+            })
+
       - name: Mark the comment as read
         if: github.event_name == 'issue_comment'
         uses: actions/github-script@v8
@@ -419,10 +445,28 @@ jobs:
             core.warning('merged.json is missing; merging here instead')
             await require('./.github/scripts/review-merge.js')({ github, context, core })
 
+      # Authenticated as Crok-Bot (the PAT), so the review and its inline comments are attributed to
+      # it — not to github-actions[bot]. review-publish.js only ever submits event: "COMMENT", which
+      # GitHub allows even when Crok-Bot is the pull request's author.
       - name: Post one review
         uses: actions/github-script@v8
         with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
           script: await require('./.github/scripts/review-publish.js')({ github, context, core })
+
+      # A COMMENT review does not clear a pending review request; withdraw it so the PR does not sit
+      # showing "review requested" forever. Best-effort.
+      - name: Withdraw the review request
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
+          script: |
+            const params = { ...context.repo, pull_number: Number(process.env.PR_NUMBER), reviewers: [] }
+            if (context.payload.requested_team) params.team_reviewers = [context.payload.requested_team.slug]
+            if (context.payload.requested_reviewer) params.reviewers = [context.payload.requested_reviewer.login]
+            await github.rest.pulls.removeRequestedReviewers(params)
 
       - name: Keep the whole run
         uses: actions/upload-artifact@v6

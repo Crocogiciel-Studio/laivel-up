@@ -1,0 +1,70 @@
+name: PR intake
+
+# On every opened / readied pull request: assign it to whoever authored its commits, and request a
+# review from the crocogiciel-crew team. The team request is what starts the deep-review pipeline
+# (pull-request-review-pipeline.yml, on review_requested) — including on Crok-Bot's own PRs, where
+# it cannot be added as an individual reviewer but the team still can.
+#
+# Runs as Crok-Bot (AIDD_BOT_TOKEN) so the team request can reach an org team and so the assignee
+# change is attributed to the bot rather than github-actions[bot].
+
+on:
+  pull_request:
+    types: ["opened", "ready_for_review"]
+
+permissions: {}
+
+concurrency:
+  group: pr-intake-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  intake:
+    name: Assign and request review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # A draft opened by the async-dev pipeline is not ready for a review yet — wait until it is
+    # marked ready. A PR opened straight to "ready" is intake'd on `opened`. Either way, once only.
+    if: github.event.action == 'ready_for_review' || github.event.pull_request.draft == false
+    steps:
+      - name: Assign the commit authors and request the review team
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const TEAM = "crocogiciel-crew";
+
+            // Assignee(s): the GitHub accounts that authored the PR's commits.
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const logins = [...new Set(commits.map((c) => c.author && c.author.login).filter(Boolean))];
+            if (logins.length) {
+              try {
+                await github.rest.issues.addAssignees({
+                  owner, repo, issue_number: pr.number, assignees: logins.slice(0, 10),
+                });
+                core.info(`assigned: ${logins.join(", ")}`);
+              } catch (e) {
+                core.warning(`assign failed (login without repo access?): ${e.message}`);
+              }
+            } else {
+              core.info("no commit author with a linked GitHub account; nothing to assign");
+            }
+
+            // Request the review team, unless it is already on the PR.
+            const already = (pr.requested_teams || []).some((t) => t.slug === TEAM);
+            if (already) {
+              core.info(`${TEAM} already requested; leaving it`);
+            } else {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner, repo, pull_number: pr.number, team_reviewers: [TEAM],
+                });
+                core.info(`requested review from ${TEAM}`);
+              } catch (e) {
+                core.warning(`review request failed: ${e.message}`);
+              }
+            }
