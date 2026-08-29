@@ -27,6 +27,12 @@ node dist/cli/main.js --dossier examples/dev-sample
 That reads the sample profile directory, evaluates it against
 `presets/aidd.json`, and prints the evaluation as JSON.
 
+To run straight from the TypeScript source without a build (local dev):
+
+```bash
+pnpm dev --dossier examples/dev-sample
+```
+
 Flags:
 
 | Flag | Meaning | Default |
@@ -80,6 +86,7 @@ adapter, a criterion, the CLI, or a third-party package.
 ## Develop
 
 ```bash
+pnpm dev         # run the CLI from source (tsx), e.g. pnpm dev --dossier examples/dev-sample
 pnpm typecheck   # tsc --noEmit, strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes
 pnpm lint        # eslint, typescript-eslint strict-type-checked
 pnpm test        # vitest — unit + the four sample profiles as a regression guardrail
