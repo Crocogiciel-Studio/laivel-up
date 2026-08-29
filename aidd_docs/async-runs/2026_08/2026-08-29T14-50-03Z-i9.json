@@ -1,0 +1,24 @@
+{
+  "run_id": "2026-08-29T14-50-03Z-i9",
+  "started_at": "2026-08-29T14:50:03Z",
+  "ended_at": "2026-08-29T15:18:51Z",
+  "issue_number": 9,
+  "outcome": "success",
+  "pr_number": 15,
+  "pr_url": "https://github.com/Crocogiciel-Studio/laivel-up/pull/15",
+  "default_before": "c8ce6886b32b698b785d94b0823ecbc98623eaaa",
+  "default_after": "38e1901729869188cab2a9570e7568ffe5686b73",
+  "default_drift_shas": ["38e1901729869188cab2a9570e7568ffe5686b73"],
+  "current_branch": "feat/pr-correction-load",
+  "branch_commits": [
+    "8d72fe3b3937cb53a756b7e78961dff7e0649188",
+    "f803a31da49ae5d82c1fd0daf72b1aecb3a5c0a8",
+    "8a6be9c02487e4a7af5d8256ced66f866505027b",
+    "c36527320014f74c06b92fb8aa20a7be2ed54676",
+    "c922903337319db5d4a95fd4ba376ff03aedd1db"
+  ],
+  "recovery_applied": false,
+  "pr_decoration_applied": true,
+  "delegated_via_skill": true,
+  "error": null
+}
