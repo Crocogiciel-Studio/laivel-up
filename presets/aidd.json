@@ -149,6 +149,18 @@
             "rankMultiStream": 6,
             "multiStreamThreshold": 3
           }
+        },
+        {
+          "criterionId": "branch-burstiness",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "rankNone": 0,
+            "rankSingleStream": 3,
+            "rankMultiStream": 6,
+            "multiStreamThreshold": 3,
+            "burstyRatio": 3
+          }
         }
       ]
     }
