@@ -14,7 +14,28 @@
     {
       "id": "size",
       "label": "Size",
-      "bundle": []
+      "bundle": [
+        {
+          "criterionId": "pr-feature-size",
+          "weight": 1,
+          "role": "level",
+          "params": {
+            "rankNone": 0,
+            "rankS": 1,
+            "rankM": 2,
+            "rankL": 3,
+            "rankLxl": 4,
+            "linesS": 120,
+            "linesM": 400,
+            "linesL": 900,
+            "filesS": 4,
+            "filesM": 12,
+            "filesL": 22,
+            "xlShare": 0.15,
+            "minSamples": 10
+          }
+        }
+      ]
     },
     {
       "id": "harness",
