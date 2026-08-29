@@ -1,4 +1,4 @@
-import type { Profile } from '../../src/core/model/profile.js';
+import type { Profile, PullRequestFacts } from '../../src/core/model/profile.js';
 import type { Grid } from '../../src/core/model/grid.js';
 import type { CriterionReading } from '../../src/core/model/evaluation.js';
 import type {
@@ -38,6 +38,30 @@ export function makeProfile(overrides: Partial<Profile> = {}): Profile {
     workSession: undefined,
     ...overrides,
   };
+}
+
+/** A profile whose only section is `vcsActivity.pullRequests`, every fact `undefined` bar the given ones. */
+export function makePrProfile(pr: Partial<PullRequestFacts> = {}): Profile {
+  return makeProfile({
+    available: ['vcsActivity'],
+    vcsActivity: {
+      pullRequests: {
+        total: undefined,
+        sizeDistribution: undefined,
+        medianFilesChanged: undefined,
+        medianLinesChanged: undefined,
+        medianCorrectionCommitsAfterOpen: undefined,
+        mergedWithoutHumanEditRatio: undefined,
+        revertedRatio: undefined,
+        medianReviewComments: undefined,
+        ...pr,
+      },
+      commits: undefined,
+      tests: undefined,
+      parallelism: undefined,
+      ci: undefined,
+    },
+  });
 }
 
 export function makeReading(overrides: Partial<CriterionReading> = {}): CriterionReading {

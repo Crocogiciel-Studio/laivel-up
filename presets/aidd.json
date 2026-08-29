@@ -65,12 +65,13 @@
           "role": "level",
           "params": {
             "correctionsAfterMost": 3,
-            "correctionsAfterSome": 2,
+            "correctionsAfterSome": 1.5,
             "ratioAfterSome": 0.15,
             "ratioKeyStages": 0.4,
             "rankAfterMost": 1,
             "rankAfterSome": 2,
-            "rankKeyStages": 4
+            "rankKeyStages": 4,
+            "minSamples": 10
           }
         }
       ]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { prFeatureSize } from './pr-feature-size.js';
-import { makeProfile, makeGrid } from '../../test/support/factories.js';
-import type { PrSizeDistribution, Profile, PullRequestFacts } from '../core/model/profile.js';
+import { makeGrid, makeProfile, makePrProfile } from '../../test/support/factories.js';
+import type { PrSizeDistribution, PullRequestFacts } from '../core/model/profile.js';
 
 const grid = makeGrid();
 
@@ -9,34 +9,11 @@ function dist(overrides: Partial<PrSizeDistribution> = {}): PrSizeDistribution {
   return { xs: 0, s: 0, m: 0, l: 0, xl: 0, ...overrides };
 }
 
-function prProfile(pr: Partial<PullRequestFacts>): Profile {
-  return makeProfile({
-    available: ['vcsActivity'],
-    vcsActivity: {
-      pullRequests: {
-        total: undefined,
-        sizeDistribution: undefined,
-        medianFilesChanged: undefined,
-        medianLinesChanged: undefined,
-        medianCorrectionCommitsAfterOpen: undefined,
-        mergedWithoutHumanEditRatio: undefined,
-        revertedRatio: undefined,
-        medianReviewComments: undefined,
-        ...pr,
-      },
-      commits: undefined,
-      tests: undefined,
-      parallelism: undefined,
-      ci: undefined,
-    },
-  });
-}
-
 function run(
   pr: Partial<PullRequestFacts>,
   params: Record<string, number> = {},
 ): ReturnType<typeof prFeatureSize.evaluate> {
-  return prFeatureSize.evaluate({ profile: prProfile(pr), grid, axisId: 'size', params });
+  return prFeatureSize.evaluate({ profile: makePrProfile(pr), grid, axisId: 'size', params });
 }
 
 describe('prFeatureSize', () => {
