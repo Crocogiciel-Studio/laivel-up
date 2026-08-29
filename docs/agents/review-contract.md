@@ -33,8 +33,16 @@ rely on CI for compilation, formatting and type errors.
 
 <!-- review-kit:repo-specific:start — the commands this repo's CI already runs -->
 
-> Fill this in at install time: name the build, format and typecheck commands CI runs, so no
-> reviewer reaches for them.
+`.github/workflows/ci.yml` runs, on every push to `main` and every PR:
+
+- `pnpm typecheck` — `tsc --noEmit` (strict, plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`)
+- `pnpm lint` — `eslint .` (`typescript-eslint` strict-type-checked + stylistic)
+- `pnpm test` — `vitest run`
+- `pnpm depcruise` — `dependency-cruiser` on `src/`, enforcing the hexagonal import direction
+- `pnpm build` — `tsc -p tsconfig.build.json` → `dist/`
+
+`.github/workflows/review-kit-check.yml` runs `node .github/scripts/review-doctor.js --all` on any
+PR that touches the review pipeline. Do not run any of these — a green check already said it.
 
 <!-- review-kit:repo-specific:end -->
 
@@ -49,8 +57,15 @@ rely on CI for compilation, formatting and type errors.
 
 <!-- review-kit:repo-specific:start — anything else this repo never wants reported -->
 
-> Fill this in at install time. Every entry costs a reviewer nothing and saves a reader a comment
-> they would have had to dismiss.
+- **`$comment` / `$comment.*` keys** in `presets/*.json` and `docs/agents/*.json`. Deliberate
+  inline documentation, not dead data.
+- **The French file names under `test/fixtures/profiles/`** (`declaratif.md`, etc.). They are the
+  subject's input contract and must not be renamed; the surrounding English naming convention does
+  not apply to them.
+- **`.js` under `.github/scripts/`** written as CommonJS with `require`. Vendored review-kit
+  runtime; `.github/scripts/package.json` scopes it to `commonjs` on purpose.
+- **`.mjs` under `.claude/skills/`** and anything under `tools/review-kit/`. Vendored, owned
+  upstream.
 
 <!-- review-kit:repo-specific:end -->
 

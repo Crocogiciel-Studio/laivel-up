@@ -22,37 +22,47 @@ hides a bug. Everything else is a `nit`.
 
 ## Always read
 
-<!-- review-kit:todo — the code-style / structure doc, and the module-layout anchor if there is one -->
+`aidd_docs/memory/architecture.md` and `aidd_docs/memory/coding-assertions.md` — background, not
+anchors. Reference shapes to compare against: `src/criteria/pr-feature-size.ts` (a two-family
+criterion), `src/core/engine/confidence.ts` (small pure helpers).
 
 Style rules apply to **new code**. Legacy code the change merely touches is out of scope — see the
 contract.
 
 ## You own
 
-```
-<!-- review-kit:todo — the structural anchors, from review-ownership.json -->
-```
-
-Plus unanchored structural findings outside the trees another axis owns whole: duplication, dead
-code, an abstraction with one caller.
+No rule anchors — `hexagon` owns placement on import-direction and boundary grounds, and it owns
+`hexagon.md#calibration-in-the-grid`. Your axis is **unanchored structural cost**: duplication that
+will drift, dead code, an abstraction (interface, factory, generic helper) added for a single
+caller, a function that cannot be followed.
 
 ## Not yours
 
 - A bug in the duplicated code → general reviewer.
-- <!-- review-kit:todo — the other configured axes and the structural calls they take.
-     Draw the line where it will actually be tested: "business logic in a controller is the api
-     reviewer's; the same logic duplicated in two services is yours." -->
+- Import direction, a file in the wrong layer, a threshold that belongs in the grid preset →
+  `hexagon` reviewer. You take the same logic copied into two evaluators; it takes one evaluator
+  reaching across the boundary.
+- An evaluator's confidence arithmetic or missing-data handling → `criterion-contract` reviewer.
+- Whether a new abstraction is *correct* → general reviewer; you only judge whether it earns its
+  keep.
 
 ## Procedure
 
 1. **Duplication.** Before claiming it, find the other copy. A duplication finding must quote
    **both** locations — the one in the diff and the one that already existed. Without the second
    quote you are guessing.
-2. **Placement.** <!-- review-kit:todo — this repo's module boundaries, and the one-sentence test
-   that decides where a class belongs. -->
+2. **Placement, on structural grounds only.** The layers are `src/core/{model,ports,engine}`,
+   `src/adapters/{inbound,outbound,catalogue}`, `src/criteria/`, `src/cli/`. One-sentence test: a
+   unit that would still make sense with the JSON adapters deleted belongs in `core/`; a unit that
+   only exists to translate a format is an adapter. Import-direction and boundary breaks are the
+   `hexagon` reviewer's — you flag a helper that is simply in the wrong sibling folder.
 3. **Abstraction with one caller.** An interface, factory or generic added for a single use is
-   speculative. Say what the second caller would have to look like.
-4. **Language conventions.** <!-- review-kit:todo — the handful that matter for new code here. -->
+   speculative. Say what the second caller would have to look like. A new port in `src/core/ports/`
+   with one implementation and no second on the horizon is the clearest case here.
+4. **Language conventions for new code.** `Result<T, E>` unions instead of throwing for expected
+   outcomes; `import type` for type-only imports; `.js` specifiers on relative imports (NodeNext);
+   names that state intent, not mechanism. A violation the surrounding new code itself follows is a
+   `nit` with a `suggestion`.
 
 ## Before you report
 
