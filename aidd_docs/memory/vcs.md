@@ -26,5 +26,5 @@ AI should auto commit: never
 ## Platform rules
 
 - `main` is protected: PR required (0 approvals — solo), linear history, no force-push, conversation resolution required, `enforce_admins=false`.
-- Merge is squash + rebase only; the head branch is auto-deleted on merge.
+- Merge is **rebase only** (individual commits preserved, linear history — no squash, no merge commits); the head branch is auto-deleted on merge.
 - A `vX.Y.Z` tag triggers CD — see `deployment.md`.
