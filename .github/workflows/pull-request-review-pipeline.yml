@@ -65,11 +65,12 @@ jobs:
         )
       )
 
+    # GITHUB_TOKEN is read-only here (repo default, not job-elevable). Every write the pipeline
+    # makes to the PR goes through AIDD_BOT_TOKEN instead; this block only covers the reads.
     permissions:
       contents: read # To clone the repository
       pull-requests: read # To read the pull request, its files and its description
       checks: read # To record whether CI is green at this sha
-      issues: write # To react to the triggering comment, and to say why nothing was reviewed
 
     outputs:
       skip: ${{ steps.context.outputs.skip }}
@@ -406,11 +407,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
-    # The only job that can write to the pull request, and the only one with no model in it.
+    # The only job that writes to the pull request, and the only one with no model in it. The writes
+    # (the review, its comments, the reaction, withdrawing the request) go through AIDD_BOT_TOKEN;
+    # GITHUB_TOKEN here only reads, for the fallback merge step.
     permissions:
       contents: read
-      pull-requests: write # To post the review and its comments
-      issues: write # To react to the triggering comment
+      pull-requests: read
 
     env:
       REVIEW_KEY: ${{ needs.context.outputs.key }}
