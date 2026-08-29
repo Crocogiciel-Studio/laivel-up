@@ -16,6 +16,7 @@ import { bugsFloor } from './bugs-floor.js';
 import { memoryMaintenance } from './memory-maintenance.js';
 import { testEnforcement } from './test-enforcement.js';
 import { declaratifContradiction } from './declaratif-contradiction.js';
+import { sessionIntervention } from './session-intervention.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [
@@ -36,6 +37,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   memoryMaintenance,
   testEnforcement,
   declaratifContradiction,
+  sessionIntervention,
 ];
 
 export {
@@ -56,4 +58,5 @@ export {
   memoryMaintenance,
   testEnforcement,
   declaratifContradiction,
+  sessionIntervention,
 };
