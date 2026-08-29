@@ -1,4 +1,4 @@
-import type { Profile, PullRequestFacts } from '../../src/core/model/profile.js';
+import type { Profile, PullRequestFacts, RawPullRequest } from '../../src/core/model/profile.js';
 import type { Grid } from '../../src/core/model/grid.js';
 import type { CriterionReading } from '../../src/core/model/evaluation.js';
 import type {
@@ -56,6 +56,29 @@ export function makePrProfile(pr: Partial<PullRequestFacts> = {}): Profile {
         medianReviewComments: undefined,
         ...pr,
       },
+      rawPullRequests: undefined,
+      commits: undefined,
+      tests: undefined,
+      parallelism: undefined,
+      ci: undefined,
+    },
+  });
+}
+
+/** A profile whose only section is `vcsActivity.rawPullRequests`. */
+export function makeRawPrProfile(rows: readonly Partial<RawPullRequest>[]): Profile {
+  return makeProfile({
+    available: ['vcsActivity'],
+    vcsActivity: {
+      pullRequests: undefined,
+      rawPullRequests: rows.map((r) => ({
+        changedFiles: undefined,
+        additions: undefined,
+        deletions: undefined,
+        commits: undefined,
+        reviewComments: undefined,
+        ...r,
+      })),
       commits: undefined,
       tests: undefined,
       parallelism: undefined,

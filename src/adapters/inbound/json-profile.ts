@@ -5,6 +5,7 @@ import type {
   DeclaredProfile,
   Profile,
   ProfileSection,
+  RawPullRequest,
   StaticAnalysis,
   ToolingContext,
   VcsActivity,
@@ -96,6 +97,17 @@ const gitActivitySchema = z.object({
     .optional(),
 });
 
+/** One row of `pull-requests.json`: a GitHub-style PR object, extra keys ignored. */
+const rawPullRequestsSchema = z.array(
+  z.object({
+    changed_files: z.number().optional(),
+    additions: z.number().optional(),
+    deletions: z.number().optional(),
+    commits: z.number().optional(),
+    review_comments: z.number().optional(),
+  }),
+);
+
 const sonarSchema = z.object({
   component: z.object({
     measures: z.array(z.object({ metric: z.string(), value: z.string() })).default([]),
@@ -183,8 +195,24 @@ function buildDeclared(
   };
 }
 
-function buildVcsActivity(ga: z.infer<typeof gitActivitySchema>): VcsActivity {
+function buildRawPullRequests(
+  parsed: z.infer<typeof rawPullRequestsSchema>,
+): readonly RawPullRequest[] {
+  return parsed.map((pr) => ({
+    changedFiles: pr.changed_files,
+    additions: pr.additions,
+    deletions: pr.deletions,
+    commits: pr.commits,
+    reviewComments: pr.review_comments,
+  }));
+}
+
+function buildVcsActivity(
+  ga: z.infer<typeof gitActivitySchema>,
+  rawPullRequests: readonly RawPullRequest[] | undefined,
+): VcsActivity {
   return {
+    rawPullRequests,
     pullRequests:
       ga.pull_requests === undefined
         ? undefined
@@ -296,6 +324,22 @@ export function readProfileFromDirectory(dir: string): Result<Profile, SourceErr
   const parsed = profileParsed.data;
   const available: ProfileSection[] = ['declared'];
 
+  let rawPullRequests: readonly RawPullRequest[] | undefined;
+  if (existsSync(join(dir, 'pull-requests.json'))) {
+    const prRead = readJson(dir, 'pull-requests.json');
+    if (!prRead.ok) return prRead;
+    const prParsed = rawPullRequestsSchema.safeParse(prRead.value);
+    if (!prParsed.success) {
+      return err(
+        sourceError(
+          'pull-requests.json is invalid',
+          issuesOf(prParsed.error, 'pull-requests.json'),
+        ),
+      );
+    }
+    rawPullRequests = buildRawPullRequests(prParsed.data);
+  }
+
   let vcsActivity: VcsActivity | undefined;
   let toolingContext: ToolingContext | undefined;
   if (existsSync(join(dir, 'git-activity.json'))) {
@@ -310,9 +354,19 @@ export function readProfileFromDirectory(dir: string): Result<Profile, SourceErr
         ),
       );
     }
-    vcsActivity = buildVcsActivity(gaParsed.data);
+    vcsActivity = buildVcsActivity(gaParsed.data, rawPullRequests);
     toolingContext = buildToolingContext(gaParsed.data);
     available.push('vcsActivity', 'toolingContext');
+  } else if (rawPullRequests !== undefined) {
+    vcsActivity = {
+      pullRequests: undefined,
+      rawPullRequests,
+      commits: undefined,
+      tests: undefined,
+      parallelism: undefined,
+      ci: undefined,
+    };
+    available.push('vcsActivity');
   }
 
   let staticAnalysis: StaticAnalysis | undefined;

@@ -2,6 +2,7 @@ import type { CriterionEvaluator } from '../core/ports/criterion-evaluator.js';
 import { toolingContextDepth } from './tooling-context-depth.js';
 import { behaviorArtifactDensity } from './behavior-artifact-density.js';
 import { prFeatureSize } from './pr-feature-size.js';
+import { prRawDistribution } from './pr-raw-distribution.js';
 import { prCorrectionLoad } from './pr-correction-load.js';
 import { reviewCommentLoad } from './review-comment-load.js';
 import { ciIterationLoad } from './ci-iteration-load.js';
@@ -21,6 +22,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   toolingContextDepth,
   behaviorArtifactDensity,
   prFeatureSize,
+  prRawDistribution,
   prCorrectionLoad,
   reviewCommentLoad,
   ciIterationLoad,
@@ -40,6 +42,7 @@ export {
   toolingContextDepth,
   behaviorArtifactDensity,
   prFeatureSize,
+  prRawDistribution,
   prCorrectionLoad,
   reviewCommentLoad,
   ciIterationLoad,

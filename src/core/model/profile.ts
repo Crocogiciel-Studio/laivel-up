@@ -45,6 +45,19 @@ export interface PullRequestFacts {
   readonly medianReviewComments: number | undefined;
 }
 
+/**
+ * One pull request as reported by the forge, before any aggregation. Lets a
+ * criterion recount a distribution from the raw rows instead of trusting a
+ * pre-computed histogram. Every field `undefined` means "not reported".
+ */
+export interface RawPullRequest {
+  readonly changedFiles: number | undefined;
+  readonly additions: number | undefined;
+  readonly deletions: number | undefined;
+  readonly commits: number | undefined;
+  readonly reviewComments: number | undefined;
+}
+
 export interface CommitFacts {
   readonly aiCoauthoredRatio: number | undefined;
   readonly messageConventionCompliance: number | undefined;
@@ -69,6 +82,7 @@ export interface CiFacts {
 
 export interface VcsActivity {
   readonly pullRequests: PullRequestFacts | undefined;
+  readonly rawPullRequests: readonly RawPullRequest[] | undefined;
   readonly commits: CommitFacts | undefined;
   readonly tests: TestFacts | undefined;
   readonly parallelism: ParallelismFacts | undefined;
