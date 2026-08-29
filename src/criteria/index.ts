@@ -10,6 +10,7 @@ import { concurrentStreams } from './concurrent-streams.js';
 import { branchBurstiness } from './branch-burstiness.js';
 import { loopConvergence } from './loop-convergence.js';
 import { commitDiscipline } from './commit-discipline.js';
+import { codeQualityFloor } from './code-quality-floor.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [
@@ -24,6 +25,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   branchBurstiness,
   loopConvergence,
   commitDiscipline,
+  codeQualityFloor,
 ];
 
 export {
@@ -38,4 +40,5 @@ export {
   branchBurstiness,
   loopConvergence,
   commitDiscipline,
+  codeQualityFloor,
 };
