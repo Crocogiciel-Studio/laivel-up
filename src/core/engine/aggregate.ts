@@ -1,6 +1,6 @@
-import type { Grille } from '../model/grille.js';
-import { levelById } from '../model/grille.js';
-import type { AxisVerdict, GlobalVerdict } from '../model/resultat.js';
+import type { Grid } from '../model/grid.js';
+import { levelById } from '../model/grid.js';
+import type { AxisVerdict, GlobalVerdict } from '../model/evaluation.js';
 
 /**
  * Global level = the lowest axis level — a level is reached only if every axis
@@ -9,7 +9,7 @@ import type { AxisVerdict, GlobalVerdict } from '../model/resultat.js';
  * how many axes could be ruled on at all (coverage).
  */
 export function aggregate(
-  grille: Grille,
+  grid: Grid,
   axes: readonly AxisVerdict[],
   minRuledAxes: number,
 ): GlobalVerdict {
@@ -17,7 +17,7 @@ export function aggregate(
     (axis): axis is AxisVerdict & { levelRank: number } => axis.levelRank !== undefined,
   );
 
-  const coverage = grille.axes.length > 0 ? ruled.length / grille.axes.length : 0;
+  const coverage = grid.axes.length > 0 ? ruled.length / grid.axes.length : 0;
 
   if (ruled.length === 0 || ruled.length < minRuledAxes) {
     return {
@@ -26,7 +26,7 @@ export function aggregate(
       confidence: 0,
       bindingAxisId: undefined,
       note:
-        `evidence bar not met: ${String(ruled.length)}/${String(grille.axes.length)} ` +
+        `evidence bar not met: ${String(ruled.length)}/${String(grid.axes.length)} ` +
         `axes could be ruled on, ${String(minRuledAxes)} required`,
     };
   }
@@ -42,7 +42,7 @@ export function aggregate(
     };
   }
 
-  const level = levelById(grille, binding.levelId ?? '');
+  const level = levelById(grid, binding.levelId ?? '');
   const confidence = Math.min(binding.confidence, coverage);
 
   return {
@@ -52,7 +52,7 @@ export function aggregate(
     bindingAxisId: binding.axisId,
     note:
       coverage < 1
-        ? `ruled on ${String(ruled.length)}/${String(grille.axes.length)} axes; ` +
+        ? `ruled on ${String(ruled.length)}/${String(grid.axes.length)} axes; ` +
           `${binding.axisId} is binding`
         : `${binding.axisId} is binding`,
   };

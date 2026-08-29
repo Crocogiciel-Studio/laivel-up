@@ -1,7 +1,7 @@
 import type { CriterionEvaluator } from '../core/ports/criterion-evaluator.js';
 import { toolingContextDepth } from './tooling-context-depth.js';
 
-/** Every coded criterion the engine ships with. A grille picks from these by id. */
+/** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [toolingContextDepth];
 
 export { toolingContextDepth };

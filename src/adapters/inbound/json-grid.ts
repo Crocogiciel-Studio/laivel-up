@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
-import type { Grille } from '../../core/model/grille.js';
+import type { Grid } from '../../core/model/grid.js';
 import type { Result } from '../../core/model/result.js';
 import { ok, err } from '../../core/model/result.js';
-import type { GrilleSource, SourceError } from '../../core/ports/io.js';
+import type { GridSource, SourceError } from '../../core/ports/io.js';
 import { sourceError } from '../../core/ports/io.js';
 
 const levelSchema = z.object({
@@ -12,7 +12,7 @@ const levelSchema = z.object({
   rank: z.number().int(),
 });
 
-const faisceauEntrySchema = z.object({
+const bundleEntrySchema = z.object({
   criterionId: z.string().min(1),
   weight: z.number().positive(),
   role: z.enum(['level', 'confidence', 'cap']),
@@ -22,10 +22,10 @@ const faisceauEntrySchema = z.object({
 const axisSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1).optional(),
-  faisceau: z.array(faisceauEntrySchema).default([]),
+  bundle: z.array(bundleEntrySchema).default([]),
 });
 
-const grilleSchema = z
+const gridSchema = z
   .object({
     id: z.string().min(1),
     label: z.string().min(1).optional(),
@@ -56,13 +56,13 @@ function issuesOf(error: z.ZodError): readonly string[] {
   });
 }
 
-export function parseGrille(input: unknown): Result<Grille, SourceError> {
-  const parsed = grilleSchema.safeParse(input);
+export function parseGrid(input: unknown): Result<Grid, SourceError> {
+  const parsed = gridSchema.safeParse(input);
   if (!parsed.success) {
-    return err(sourceError('grille preset is invalid', issuesOf(parsed.error)));
+    return err(sourceError('grid preset is invalid', issuesOf(parsed.error)));
   }
   const value = parsed.data;
-  const grille: Grille = {
+  const grid: Grid = {
     id: value.id,
     label: value.label,
     levels: value.levels.map((level) => ({
@@ -73,7 +73,7 @@ export function parseGrille(input: unknown): Result<Grille, SourceError> {
     axes: value.axes.map((axis) => ({
       id: axis.id,
       label: axis.label,
-      faisceau: axis.faisceau.map((entry) => ({
+      bundle: axis.bundle.map((entry) => ({
         criterionId: entry.criterionId,
         weight: entry.weight,
         role: entry.role,
@@ -83,25 +83,25 @@ export function parseGrille(input: unknown): Result<Grille, SourceError> {
     axisAggregation: value.axisAggregation,
     globalAggregation: value.globalAggregation,
   };
-  return ok(grille);
+  return ok(grid);
 }
 
-export function jsonGrilleSource(filePath: string): GrilleSource {
+export function jsonGridSource(filePath: string): GridSource {
   return {
-    load(): Result<Grille, SourceError> {
+    load(): Result<Grid, SourceError> {
       let raw: string;
       try {
         raw = readFileSync(filePath, 'utf8');
       } catch (cause) {
-        return err(sourceError(`cannot read grille file: ${filePath}`, [String(cause)]));
+        return err(sourceError(`cannot read grid file: ${filePath}`, [String(cause)]));
       }
       let json: unknown;
       try {
         json = JSON.parse(raw);
       } catch (cause) {
-        return err(sourceError(`grille file is not valid JSON: ${filePath}`, [String(cause)]));
+        return err(sourceError(`grid file is not valid JSON: ${filePath}`, [String(cause)]));
       }
-      return parseGrille(json);
+      return parseGrid(json);
     },
   };
 }

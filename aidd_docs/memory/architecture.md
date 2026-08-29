@@ -10,9 +10,9 @@
 
 ```mermaid
 flowchart LR
-  json_in["JSON dossier + grid preset"] --> adapt_in["inbound adapters"]
+  json_in["JSON profile + grid preset"] --> adapt_in["inbound adapters"]
   adapt_in --> model["domain model"]
-  model --> engine["engine: faisceaux, confidence, min across axes"]
+  model --> engine["engine: bundles, confidence, min across axes"]
   engine --> result["evaluation model"]
   result --> adapt_out["outbound adapter"]
   adapt_out --> json_out["JSON evaluation"]
@@ -20,17 +20,17 @@ flowchart LR
 
 ## Key decisions
 
-- **Hexagonal, ports & adapters.** The core holds three domain models — dossier, grid, evaluation — plus the engine (faisceaux, confidence, aggregation, `min()` across axes). It depends on no stack, no format, no grid. Only the model crosses the boundary.
-- Ports the core owns: dossier source, grid source, evaluation sink, criterion-evaluator, evaluator catalogue.
+- **Hexagonal, ports & adapters.** The core holds three domain models — profile, grid, evaluation — plus the engine (bundles, confidence, aggregation, `min()` across axes). It depends on no stack, no format, no grid. Only the model crosses the boundary.
+- Ports the core owns: profile source, grid source, evaluation sink, criterion-evaluator, evaluator catalogue.
 - Adapters, all swappable: `JSON → model` and `model → JSON` first; DB, HTTP, stdio, event queue (RabbitMQ, MQTT), graphical render are later adapters that change no core line.
-- **Each criterion is a pluggable evaluator** registered in the catalogue. It declares the dossier pieces it needs, returns "unknown" when they are missing, and emits readings tagged by axis (one evaluator may feed several axes). Evaluators wrapping an external tool (Sonar, vulnerability scan) are adapters that shell out and must degrade without network.
-- **Calibration lives in the grid preset, never in the evaluator.** Same evaluator + different grid → different verdict. A grid tunes three surfaces: thresholds; the analysis statistic when several are defensible (mean / median / std-dev / quartile); the faisceau composition and weights.
-- **Axis verdict = confidence-weighted vote** across its faisceau — not a product of confidences, which would collapse as criteria are added.
+- **Each criterion is a pluggable evaluator** registered in the catalogue. It declares the profile pieces it needs, returns "unknown" when they are missing, and emits readings tagged by axis (one evaluator may feed several axes). Evaluators wrapping an external tool (Sonar, vulnerability scan) are adapters that shell out and must degrade without network.
+- **Calibration lives in the grid preset, never in the evaluator.** Same evaluator + different grid → different verdict. A grid tunes three surfaces: thresholds; the analysis statistic when several are defensible (mean / median / std-dev / quartile); the bundle composition and weights.
+- **Axis verdict = confidence-weighted vote** across its bundle — not a product of confidences, which would collapse as criteria are added.
 - For the hackathon a grid composes from a **fixed catalogue of coded criteria**. A criterion-definition mini-language and grid-declared new axes are deferred.
-- Quality / security / duplication criteria are ordinary plugins. The grid decides whether such a criterion counts toward the level, toward confidence only, or toward a cap; the AIDD referential puts code quality out of scope, so an AIDD preset uses them as confidence / cap signals.
+- Quality / security / duplication criteria are ordinary plugins. The grid decides whether such a criterion counts toward the level, toward confidence only, or toward a cap; the AIDD reference grid puts code quality out of scope, so an AIDD preset uses them as confidence / cap signals.
 
 ## Gotchas
 
 - The AIDD grid is one preset among others — nothing in the core may hardcode its axes or the word "AIDD".
-- A missing dossier piece is "unknown" (evidence sufficiency ≈ 0), never a negative reading.
+- A missing profile piece is "unknown" (evidence sufficiency ≈ 0), never a negative reading.
 - `declaratif` can lower confidence and cap an axis; it can never raise a level.

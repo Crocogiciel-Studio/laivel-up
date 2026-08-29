@@ -1,13 +1,13 @@
-import type { Dossier } from '../model/dossier.js';
-import { missingSections } from '../model/dossier.js';
-import type { Grille, GrilleAxis, FaisceauEntry } from '../model/grille.js';
-import { levelById } from '../model/grille.js';
-import type { AxisVerdict, CriterionReading, Resultat } from '../model/resultat.js';
+import type { Profile } from '../model/profile.js';
+import { missingSections } from '../model/profile.js';
+import type { Grid, GridAxis, BundleEntry } from '../model/grid.js';
+import { levelById } from '../model/grid.js';
+import type { AxisVerdict, CriterionReading, Evaluation } from '../model/evaluation.js';
 import type { CriterionEvaluator } from '../ports/criterion-evaluator.js';
 import type { EvaluatorCatalogue } from '../ports/evaluator-catalogue.js';
 import { aggregate } from './aggregate.js';
 import { foldConfidence } from './confidence.js';
-import { runFaisceau } from './faisceau.js';
+import { runBundle } from './bundle.js';
 import { planProgression } from './progression.js';
 
 export interface EvaluateOptions {
@@ -18,24 +18,24 @@ export interface EvaluateOptions {
 }
 
 export function evaluate(
-  dossier: Dossier,
-  grille: Grille,
+  profile: Profile,
+  grid: Grid,
   catalogue: EvaluatorCatalogue,
   options: EvaluateOptions = {},
-): Resultat {
+): Evaluation {
   const minRuledAxes = options.minRuledAxes ?? 1;
   const now = options.now ?? ((): Date => new Date());
 
-  const axisVerdicts: AxisVerdict[] = grille.axes.map((axis) =>
-    evaluateAxis(dossier, grille, axis, catalogue),
+  const axisVerdicts: AxisVerdict[] = grid.axes.map((axis) =>
+    evaluateAxis(profile, grid, axis, catalogue),
   );
 
-  const global = aggregate(grille, axisVerdicts, minRuledAxes);
-  const progression = planProgression(grille, global, axisVerdicts);
+  const global = aggregate(grid, axisVerdicts, minRuledAxes);
+  const progression = planProgression(grid, global, axisVerdicts);
 
   return {
-    subjectId: dossier.subject.id,
-    grilleId: grille.id,
+    subjectId: profile.subject.id,
+    gridId: grid.id,
     global,
     axes: axisVerdicts,
     progression,
@@ -44,22 +44,22 @@ export function evaluate(
 }
 
 function evaluateAxis(
-  dossier: Dossier,
-  grille: Grille,
-  axis: GrilleAxis,
+  profile: Profile,
+  grid: Grid,
+  axis: GridAxis,
   catalogue: EvaluatorCatalogue,
 ): AxisVerdict {
-  const readings = axis.faisceau.map((entry) =>
-    readCriterion(dossier, grille, axis, entry, catalogue.get(entry.criterionId)),
+  const readings = axis.bundle.map((entry) =>
+    readCriterion(profile, grid, axis, entry, catalogue.get(entry.criterionId)),
   );
-  return runFaisceau(grille, axis, readings);
+  return runBundle(grid, axis, readings);
 }
 
 function readCriterion(
-  dossier: Dossier,
-  grille: Grille,
-  axis: GrilleAxis,
-  entry: FaisceauEntry,
+  profile: Profile,
+  grid: Grid,
+  axis: GridAxis,
+  entry: BundleEntry,
   evaluator: CriterionEvaluator | undefined,
 ): CriterionReading {
   const base = {
@@ -81,7 +81,7 @@ function readCriterion(
     };
   }
 
-  const missing = missingSections(dossier, evaluator.needs);
+  const missing = missingSections(profile, evaluator.needs);
   if (missing.length > 0) {
     return {
       ...base,
@@ -91,13 +91,13 @@ function readCriterion(
       rawValue: undefined,
       confidence: 0,
       limitingFactor: 'sufficiency',
-      evidence: `needs ${missing.join(', ')} — not in the dossier`,
+      evidence: `needs ${missing.join(', ')} — not in the profile`,
     };
   }
 
   const outcome = evaluator.evaluate({
-    dossier,
-    grille,
+    profile,
+    grid,
     axisId: axis.id,
     params: entry.params,
   });
@@ -116,7 +116,7 @@ function readCriterion(
   }
 
   const folded = foldConfidence(outcome.value.confidence);
-  const level = levelById(grille, outcome.value.levelId);
+  const level = levelById(grid, outcome.value.levelId);
 
   return {
     ...base,

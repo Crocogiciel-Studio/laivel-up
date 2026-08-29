@@ -2,7 +2,7 @@
 
 ## What it is
 
-- A generic **developer-evaluation engine**: it takes a developer *dossier* and a *grid* definition, and returns a level per axis, a global level, a confidence, an observation trace, and a progression plan.
+- A generic **developer-evaluation engine**: it takes a developer *profile* and a *grid* definition, and returns a level per axis, a global level, a confidence, an observation trace, and a progression plan.
 - The **AIDD level evaluator** (placing a developer on the White→Gold AIDD grid) is the first grid preset, not the product.
 - Started during the LAIVEL UP hackathon (submission 2026-08-31); the deadline is context, the reusable engine is the goal.
 
@@ -15,15 +15,15 @@
 
 | Term | Meaning |
 | ---- | ------- |
-| Dossier | The input about one developer: a set of pieces (`git-activity`, `pull-requests`, `code`, `sonar-measures`, `repo-context`, `declaratif`, `session`), rarely complete |
+| Profile | The input about one developer: a set of pieces (`git-activity`, `pull-requests`, `code`, `sonar-measures`, `repo-context`, `declaratif`, `session`), rarely complete |
 | Grid (preset) | A config file: axes, ordered levels, which criteria feed which axis, thresholds, weights, aggregation method |
-| Axis | One dimension of a grid (AIDD: Taille, Harness, Intervention, Parallèle) |
+| Axis | One dimension of a grid (AIDD: Size, Harness, Intervention, Parallelism) |
 | Level | An ordered rung, per axis and global (AIDD: White < Red < Blue < Green < Copper < Silver < Gold) |
 | Criterion | A small closed question on one axis, answered by an evaluator |
-| Evaluator | A plugin reading part of the dossier; emits an axis-tagged ordinal reading + raw value + confidence + evidence sentence |
-| Faisceau | The bundle of criteria feeding one axis; the axis verdict is a confidence-weighted vote across them |
+| Evaluator | A plugin reading part of the profile; emits an axis-tagged ordinal reading + raw value + confidence + evidence sentence |
+| Bundle | The set of criteria feeding one axis; the axis verdict is a confidence-weighted vote across them |
 | Confidence | Per criterion, the weakest of three checks: agreement across independent signal families, margin to threshold, evidence sufficiency (missing piece → "unknown", not "false") |
-| Declaratif | Self-reported and unverified: facts win, a contradiction lowers confidence and can cap an axis, never raise it |
+| Self-report (`declaratif.md`) | Self-reported and unverified: facts win, a contradiction lowers confidence and can cap an axis, never raise it |
 
 ## Key features
 

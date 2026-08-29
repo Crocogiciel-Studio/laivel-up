@@ -1,5 +1,5 @@
 /**
- * The evaluation model — the only thing besides the dossier and the grille that
+ * The evaluation model — the only thing besides the profile and the grid that
  * crosses the boundary outward. It carries the verdict, the per-axis and
  * per-criterion trace that justifies it, and a progression plan.
  */
@@ -45,9 +45,9 @@ export interface ProgressionPlan {
   readonly actions: readonly string[];
 }
 
-export interface Resultat {
+export interface Evaluation {
   readonly subjectId: string;
-  readonly grilleId: string;
+  readonly gridId: string;
   readonly global: GlobalVerdict;
   readonly axes: readonly AxisVerdict[];
   readonly progression: ProgressionPlan;

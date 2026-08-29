@@ -1,31 +1,31 @@
-import type { Grille, GrilleAxis } from '../model/grille.js';
-import { levelByRank } from '../model/grille.js';
-import type { AxisVerdict, CriterionReading, LimitingFactor } from '../model/resultat.js';
+import type { Grid, GridAxis } from '../model/grid.js';
+import { levelByRank } from '../model/grid.js';
+import type { AxisVerdict, CriterionReading, LimitingFactor } from '../model/evaluation.js';
 import { weakestOf } from './confidence.js';
 
 /**
- * Axis verdict = a confidence-weighted vote across the axis faisceau.
+ * Axis verdict = a confidence-weighted vote across the axis bundle.
  *
  * Each `level` reading drops `weight × confidence` onto the level it read. The
  * winning level is the heaviest bucket. Axis confidence is the weakest of:
  *  - agreement: how concentrated the vote is on the winner
  *  - margin:    how far the winner leads the runner-up
- *  - sufficiency: how much of the intended faisceau actually produced a reading
+ *  - sufficiency: how much of the intended bundle actually produced a reading
  * `cap` readings clamp the winner down; `confidence` readings only pull the axis
  * confidence down when they disagree.
  */
-export function runFaisceau(
-  grille: Grille,
-  axis: GrilleAxis,
+export function runBundle(
+  grid: Grid,
+  axis: GridAxis,
   readings: readonly CriterionReading[],
 ): AxisVerdict {
   const weightOf = (criterionId: string): number =>
-    axis.faisceau.find((entry) => entry.criterionId === criterionId)?.weight ?? 0;
+    axis.bundle.find((entry) => entry.criterionId === criterionId)?.weight ?? 0;
 
   const levelReads = readings.filter(
     (r) => r.role === 'level' && r.status === 'read' && r.levelId !== undefined,
   );
-  const levelEntryCount = axis.faisceau.filter((entry) => entry.role === 'level').length;
+  const levelEntryCount = axis.bundle.filter((entry) => entry.role === 'level').length;
 
   if (levelReads.length === 0) {
     return {
@@ -50,8 +50,8 @@ export function runFaisceau(
 
   const ranked = [...buckets.entries()].sort((a, b) => {
     if (b[1] !== a[1]) return b[1] - a[1];
-    const rankA = grille.levels.find((l) => l.id === a[0])?.rank ?? 0;
-    const rankB = grille.levels.find((l) => l.id === b[0])?.rank ?? 0;
+    const rankA = grid.levels.find((l) => l.id === a[0])?.rank ?? 0;
+    const rankB = grid.levels.find((l) => l.id === b[0])?.rank ?? 0;
     return rankA - rankB;
   });
 
@@ -72,7 +72,7 @@ export function runFaisceau(
   ]);
 
   let levelId = winnerId;
-  let levelRank = grille.levels.find((l) => l.id === winnerId)?.rank;
+  let levelRank = grid.levels.find((l) => l.id === winnerId)?.rank;
 
   // cap readings clamp the axis down
   for (const reading of readings) {
@@ -84,7 +84,7 @@ export function runFaisceau(
       reading.levelRank < levelRank
     ) {
       levelRank = reading.levelRank;
-      levelId = levelByRank(grille, reading.levelRank)?.id ?? reading.levelId ?? levelId;
+      levelId = levelByRank(grid, reading.levelRank)?.id ?? reading.levelId ?? levelId;
       folded = weakestOf([
         [folded.limitingFactor, folded.value],
         ['margin', reading.confidence],

@@ -1,5 +1,5 @@
 import type { ConfidenceBreakdown } from '../ports/criterion-evaluator.js';
-import type { LimitingFactor } from '../model/resultat.js';
+import type { LimitingFactor } from '../model/evaluation.js';
 
 /**
  * Confidence is the weakest of three checks, not their product — a product

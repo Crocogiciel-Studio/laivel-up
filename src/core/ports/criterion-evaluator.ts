@@ -1,10 +1,10 @@
-import type { Dossier, DossierSection } from '../model/dossier.js';
-import type { Grille } from '../model/grille.js';
+import type { Profile, ProfileSection } from '../model/profile.js';
+import type { Grid } from '../model/grid.js';
 import type { Result } from '../model/result.js';
 
 /**
  * A criterion is a pluggable evaluator behind one generic interface. It declares
- * the dossier sections it needs, returns `err(MissingPiece)` when they are
+ * the profile sections it needs, returns `err(MissingPiece)` when they are
  * absent, and otherwise emits an ordinal level reading plus a three-part
  * confidence breakdown and one evidence sentence. It is deterministic and must
  * degrade without network or API key. One evaluator may be registered on
@@ -12,10 +12,10 @@ import type { Result } from '../model/result.js';
  */
 
 export interface CriterionContext {
-  readonly dossier: Dossier;
-  readonly grille: Grille;
+  readonly profile: Profile;
+  readonly grid: Grid;
   readonly axisId: string;
-  /** The faisceau entry's calibration knobs, straight from the grille. */
+  /** The bundle entry's calibration knobs, straight from the grid. */
   readonly params: Readonly<Record<string, number>>;
 }
 
@@ -36,18 +36,18 @@ export interface CriterionOutput {
 
 export interface MissingPiece {
   readonly kind: 'missing-piece';
-  readonly needed: readonly DossierSection[];
+  readonly needed: readonly ProfileSection[];
   readonly detail: string;
 }
 
 export interface CriterionEvaluator {
   readonly id: string;
-  readonly needs: readonly DossierSection[];
+  readonly needs: readonly ProfileSection[];
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece>;
 }
 
 export function missingPiece(
-  needed: readonly DossierSection[],
+  needed: readonly ProfileSection[],
   detail: string,
 ): MissingPiece {
   return { kind: 'missing-piece', needed, detail };
