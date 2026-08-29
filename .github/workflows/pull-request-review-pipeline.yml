@@ -97,10 +97,15 @@ jobs:
               body: "👀 On it — deep review starting. One review will land here when the axes come back.",
             })
 
+      # AIDD_BOT_TOKEN, not GITHUB_TOKEN: the repo's default workflow token is read-only and the org
+      # does not let a job elevate it, so an `issues: write` call on GITHUB_TOKEN 403s. A missed
+      # reaction is cosmetic, so this never fails the run.
       - name: Mark the comment as read
         if: github.event_name == 'issue_comment'
+        continue-on-error: true
         uses: actions/github-script@v8
         with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
           script: |
             await github.rest.reactions.createForIssueComment({
               ...context.repo, comment_id: ${{ github.event.comment.id }}, content: "eyes",
@@ -134,8 +139,10 @@ jobs:
 
       - name: Say why nothing was reviewed
         if: steps.context.outputs.skip != ''
+        continue-on-error: true
         uses: actions/github-script@v8
         with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
           script: |
             await github.rest.issues.createComment({
               ...context.repo,
@@ -485,8 +492,10 @@ jobs:
 
       - name: Mark the comment as done
         if: always() && github.event_name == 'issue_comment'
+        continue-on-error: true
         uses: actions/github-script@v8
         with:
+          github-token: ${{ secrets.AIDD_BOT_TOKEN }}
           script: |
             await github.rest.reactions.createForIssueComment({
               ...context.repo,
