@@ -112,6 +112,17 @@ describe('prCorrectionLoad', () => {
     }
   });
 
+  it('is more confident at the centre of a band than right on its flip boundary', () => {
+    const onEdge = run({ medianCorrectionCommitsAfterOpen: 2 }); // band 1's lower edge
+    const atCentre = run({ medianCorrectionCommitsAfterOpen: 2.5 }); // band 1's centre
+    expect(onEdge.ok && atCentre.ok).toBe(true);
+    if (onEdge.ok && atCentre.ok) {
+      expect(onEdge.value.rawValue).toBe('after-some');
+      expect(atCentre.value.rawValue).toBe('after-some');
+      expect(atCentre.value.confidence.margin).toBeGreaterThan(onEdge.value.confidence.margin);
+    }
+  });
+
   it('flags single-source and drops sufficiency when only family A is present', () => {
     const out = run({ medianCorrectionCommitsAfterOpen: 4 });
     expect(out.ok).toBe(true);
