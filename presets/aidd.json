@@ -74,6 +74,17 @@
             "failHigh": 0.3,
             "rankCapNonConverging": 4
           }
+        },
+        {
+          "criterionId": "commit-discipline",
+          "weight": 1,
+          "role": "cap",
+          "params": {
+            "aiFloorHard": 0.15,
+            "aiFloorSoft": 0.35,
+            "rankCapHard": 1,
+            "rankCapSoft": 2
+          }
         }
       ]
     },

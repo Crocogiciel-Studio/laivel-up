@@ -9,6 +9,7 @@ import { revertRate } from './revert-rate.js';
 import { concurrentStreams } from './concurrent-streams.js';
 import { branchBurstiness } from './branch-burstiness.js';
 import { loopConvergence } from './loop-convergence.js';
+import { commitDiscipline } from './commit-discipline.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [
@@ -22,6 +23,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   concurrentStreams,
   branchBurstiness,
   loopConvergence,
+  commitDiscipline,
 ];
 
 export {
@@ -35,4 +37,5 @@ export {
   concurrentStreams,
   branchBurstiness,
   loopConvergence,
+  commitDiscipline,
 };
