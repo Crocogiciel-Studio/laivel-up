@@ -14,6 +14,7 @@ function run(
       available: tests === undefined ? [] : ['vcsActivity'],
       vcsActivity: {
         pullRequests: undefined,
+        rawPullRequests: undefined,
         commits: undefined,
         tests:
           tests === undefined

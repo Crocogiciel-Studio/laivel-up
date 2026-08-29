@@ -28,6 +28,36 @@ describe('readProfileFromDirectory', () => {
     expect(result.ok).toBe(false);
   });
 
+  describe('raw pull requests from pull-requests.json', () => {
+    it('bohort — parses the GitHub-style rows into vcsActivity.rawPullRequests', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'bohort'));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const rows = result.value.vcsActivity?.rawPullRequests;
+      expect(rows).toBeDefined();
+      expect(rows).toHaveLength(12);
+      expect(rows?.[0]).toEqual({
+        changedFiles: 6,
+        additions: 132,
+        deletions: 43,
+        commits: 7,
+        reviewComments: 6,
+      });
+    });
+
+    it('leodagan — also carries raw pull requests', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'leodagan'));
+      expect(result.ok && result.value.vcsActivity?.rawPullRequests).toHaveLength(12);
+    });
+
+    it('perceval — no pull-requests.json leaves rawPullRequests undefined', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'perceval'));
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.vcsActivity?.rawPullRequests).toBeUndefined();
+    });
+  });
+
   describe('self-assessed level extraction from declaratif.md', () => {
     const levelOf = (name: string): string | undefined => {
       const result = readProfileFromDirectory(resolve(FIXTURES, name));

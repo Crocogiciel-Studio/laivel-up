@@ -27,6 +27,7 @@ function run(
       },
       vcsActivity: {
         pullRequests: undefined,
+        rawPullRequests: undefined,
         commits: undefined,
         tests: undefined,
         parallelism: undefined,

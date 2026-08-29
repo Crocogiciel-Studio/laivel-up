@@ -99,6 +99,7 @@ describe('revertRate', () => {
         available: ['vcsActivity'],
         vcsActivity: {
           pullRequests: undefined,
+          rawPullRequests: undefined,
           commits: undefined,
           tests: undefined,
           parallelism: undefined,

@@ -36,6 +36,22 @@
           }
         },
         {
+          "criterionId": "pr-raw-distribution",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "rankNone": 0,
+            "rankS": 1,
+            "rankM": 2,
+            "rankL": 3,
+            "rankLxl": 4,
+            "linesS": 120,
+            "linesM": 400,
+            "linesL": 900,
+            "minSamples": 10
+          }
+        },
+        {
           "criterionId": "declaratif-contradiction",
           "weight": 1,
           "role": "confidence",
