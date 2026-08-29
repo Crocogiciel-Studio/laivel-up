@@ -85,6 +85,17 @@
             "rankCapHard": 1,
             "rankCapSoft": 2
           }
+        },
+        {
+          "criterionId": "code-quality-floor",
+          "weight": 1,
+          "role": "cap",
+          "params": {
+            "dupHigh": 12,
+            "smellsHigh": 10,
+            "complexityHigh": 0.05,
+            "rankCapPoor": 2
+          }
         }
       ]
     },
