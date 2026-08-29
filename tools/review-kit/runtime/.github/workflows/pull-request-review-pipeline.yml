@@ -1,0 +1,445 @@
+name: Pull Request - Review Pipeline
+
+# The multi-agent review of docs/agents/review-pipeline.md.
+#
+# Split into jobs so that "posted by a script, never by an agent" is a property of the tokens
+# rather than of the prompts: the jobs that run a model get `contents: read` and nothing else,
+# and the job that can write to the pull request has no model in it.
+
+# A newer request supersedes a review of the same pull request that is still running. That is the
+# only "should we review this" question worth asking - an explicit request is otherwise always
+# honoured, whether the pull request is closed, draft, large, or already reviewed.
+#
+# Issues and pull requests share one numbering space, and concurrency is evaluated before any job's
+# `if`, so keying on the bare issue number would let a comment on issue #N cancel a running review
+# of pull request #N. Comments on a plain issue collapse into one inert group instead.
+concurrency:
+  group: >-
+    ${{ github.workflow }}-pr-${{ (github.event.issue.pull_request && github.event.issue.number)
+    || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+on:
+  issue_comment:
+    types: ["created"]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "The pull request number"
+        required: true
+
+permissions: {}
+
+env:
+  PR_NUMBER: ${{ github.event.issue.number || github.event.inputs.pr_number }}
+
+jobs:
+  context:
+    name: Context
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '{{TRIGGER}}') &&
+        github.event.comment.user.type != 'Bot'
+      )
+
+    permissions:
+      contents: read # To clone the repository
+      pull-requests: read # To read the pull request, its files and its description
+      checks: read # To record whether CI is green at this sha
+      issues: write # To react to the triggering comment, and to say why nothing was reviewed
+
+    outputs:
+      skip: ${{ steps.context.outputs.skip }}
+      key: ${{ steps.context.outputs.key }}
+      head: ${{ steps.context.outputs.head }}
+      baseRef: ${{ steps.context.outputs.baseRef }}
+      docsRoot: ${{ steps.context.outputs.docsRoot }}
+      agentsRoot: ${{ steps.context.outputs.agentsRoot }}
+      reviewDir: ${{ steps.context.outputs.reviewDir }}
+      agents: ${{ steps.context.outputs.agents }}
+      matrix: ${{ steps.context.outputs.matrix }}
+
+    steps:
+      - name: Mark the comment as read
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo, comment_id: ${{ github.event.comment.id }}, content: "eyes",
+            })
+
+      - name: Resolve the head sha
+        id: head
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.pulls.get({
+              ...context.repo, pull_number: Number(process.env.PR_NUMBER),
+            })
+            core.setOutput("sha", data.head.sha)
+
+      # The sha, not refs/pull/N/head, which moves. On an issue_comment trigger, omitting `ref`
+      # would check out the default branch and every reviewer would read the wrong bytes.
+      # fetch-depth 1 is enough: the diff and the merge base come from the API.
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.head.outputs.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Build the reviewer input
+        id: context
+        uses: actions/github-script@v8
+        with:
+          script: await require('./.github/scripts/review-context.js')({ github, context, core })
+
+      - name: Say why nothing was reviewed
+        if: steps.context.outputs.skip != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: Number(process.env.PR_NUMBER),
+              body: `Not reviewing this pull request: ${{ steps.context.outputs.skip }}`,
+            })
+
+      # Two artifacts, so a reviewer job can download the input without run.json coming with it
+      # - review-contract.md#input says run metadata is "which no prompt sees".
+      - name: Upload the review context
+        uses: actions/upload-artifact@v6
+        if: steps.context.outputs.skip == ''
+        with:
+          name: review-context
+          include-hidden-files: true # the run directory is a dot-directory; excluded by default
+          path: ${{ steps.context.outputs.reviewDir }}/*/in/
+          retention-days: 14
+
+      - name: Upload the run context
+        uses: actions/upload-artifact@v6
+        if: steps.context.outputs.skip == ''
+        with:
+          name: review-run
+          include-hidden-files: true
+          path: ${{ steps.context.outputs.reviewDir }}/*/run.json
+          retention-days: 14
+
+  reviewer:
+    name: Review (${{ matrix.axis.agent }})
+    needs: context
+    if: needs.context.outputs.skip == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true # a failed axis is reported by review-merge.js, not fatal
+
+    permissions:
+      contents: read # and nothing else: this job holds a model
+      id-token: write # Required by the Claude Code Action
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # {agent, model, effort, web} per axis. The pin comes from the agent file's frontmatter,
+        # read by review-context.js: the reviewer runs as the session, so nothing else reads it.
+        axis: ${{ fromJson(needs.context.outputs.matrix) }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.context.outputs.head }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      # The base branch, shallow, for any reviewer that must compare against it rather than
+      # against this branch. The checkout above is a depth-1 detached head, so no such ref exists.
+      # The token lives in this step's env only - it is never persisted to .git/config, and the
+      # model runs in a later step, which cannot see it.
+      - name: Fetch the base branch
+        continue-on-error: true # no base ref costs one claim, not the whole axis
+        env:
+          TOKEN: ${{ github.token }}
+          BASE: ${{ needs.context.outputs.baseRef }}
+        run: |
+          git fetch --depth=1 \
+            "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}" "${BASE}:${BASE}"
+
+      - name: Download the review context
+        uses: actions/download-artifact@v8
+        with:
+          name: review-context
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      # Compact, and derived from the review-output schema so the shape the model is held to and
+      # the shape review-check.js validates cannot drift apart.
+      - name: Build the output schema
+        id: schema
+        run: echo "json=$(node .github/scripts/review-schema.js output)" >> "$GITHUB_OUTPUT"
+
+      # The session IS the reviewer. Spawning a subagent buys nothing here: the wrapper has to
+      # marshal the reply into a file, and it spends its turns repairing the prose the subagent
+      # wraps around its JSON instead of reviewing.
+      - name: Perform the review
+        id: review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: false # it posts a comment, and this job must not be able to
+          show_full_output: true
+          prompt: |
+            You are the ${{ matrix.axis.agent }} reviewer of ${{ needs.context.outputs.docsRoot }}/review-pipeline.md.
+
+            Read `${{ needs.context.outputs.agentsRoot }}/${{ matrix.axis.agent }}-reviewer.md`. It is
+            your instructions, not a document to summarise: it names your axis, the rule anchors you
+            own, the docs to read first, and your procedure. Follow it, including everything
+            `${{ needs.context.outputs.docsRoot }}/review-contract.md` adds.
+
+            Your input is ${{ needs.context.outputs.reviewDir }}/${{ needs.context.outputs.key }}/in/input.json
+            - the diff to review, the files in scope, and the line ranges a finding may anchor to.
+
+            Report your findings as the structured output. Write no file. Post nothing. Add no
+            summary and no prose - the run collects your findings and another pass writes the
+            summary.
+          claude_args: |
+            --model ${{ matrix.axis.model }}
+            --effort ${{ matrix.axis.effort }}
+            --json-schema '${{ steps.schema.outputs.json }}'
+            --allowedTools "Read,Grep,Glob,Bash(git ls-tree:*),Bash(git log:*),Bash(git show:*),Bash(git diff:*),Bash(cat:*),Bash(sed:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(find:*),Bash(rg:*),Bash(grep:*)${{ matrix.axis.web && ',WebFetch,WebSearch' || '' }}"
+            --max-turns 200
+          settings: |
+            {
+              "permissions": {
+                "deny": [
+                  "Bash(gh:*)", "Bash(git push:*)", "Bash(git commit:*)", "Bash(curl:*)",
+                  "Edit", "MultiEdit", "Write"
+                ]
+              }
+            }
+
+      # Through the environment, never the shell: this is model output.
+      #
+      # Empty output is an error, not a skip. A wrapper that decides its work is running in the
+      # background, ends its turn and exits 0 leaves a green job with no findings file and nothing
+      # in the log to say so.
+      - name: Save the findings
+        if: always()
+        env:
+          AGENT: ${{ matrix.axis.agent }}
+          KEY: ${{ needs.context.outputs.key }}
+          FINDINGS: ${{ steps.review.outputs.structured_output }}
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          node .github/scripts/review-save.js
+          node .github/scripts/review-check.js "$AGENT" "$KEY"
+
+      - name: Upload the review output
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: review-agent-${{ matrix.axis.agent }}
+          include-hidden-files: true
+          path: ${{ needs.context.outputs.reviewDir }}/*/${{ matrix.axis.agent }}.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  integration:
+    name: Integration
+    needs: [context, reviewer]
+    # `always()` ignores a skipped or failed dependency, and a skipped job's outputs are the empty string
+    if: always() && needs.context.result == 'success' && needs.context.outputs.skip == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true # publish still runs and says the summary is missing
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      REVIEW_KEY: ${{ needs.context.outputs.key }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.context.outputs.head }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Download the review context
+        uses: actions/download-artifact@v8
+        with:
+          name: review-context
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Download the run context
+        uses: actions/download-artifact@v8
+        with:
+          name: review-run
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Download the review output
+        uses: actions/download-artifact@v8
+        with:
+          pattern: review-agent-*
+          merge-multiple: true
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Merge and mint ids
+        uses: actions/github-script@v8
+        with:
+          script: await require('./.github/scripts/review-merge.js')({ github, context, core })
+
+      # Same shape as the reviewer job: the session is the reviewer, its pin comes from its agent
+      # file, and structured output carries the reply out.
+      - name: Build the integration schema and read its pins
+        id: pins
+        run: |
+          echo "json=$(node .github/scripts/review-schema.js integration)" >> "$GITHUB_OUTPUT"
+          node .github/scripts/review-pins.js integration >> "$GITHUB_OUTPUT"
+
+      - name: Deduplicate findings with the integration agent
+        id: integration
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: false
+          show_full_output: true
+          prompt: |
+            You are the integration reviewer of ${{ needs.context.outputs.docsRoot }}/review-pipeline.md.
+
+            Read `${{ needs.context.outputs.agentsRoot }}/integration-reviewer.md`. It is your
+            instructions. You are not a reviewer: you drop true duplicates and write the summary,
+            and you add no findings.
+
+            Your input is ${{ needs.context.outputs.reviewDir }}/${{ needs.context.outputs.key }}/merged.json
+            - every finding from every axis, ids already minted. Do not read the diff.
+
+            Return the summary and the duplicate list as the structured output. Write no file.
+          claude_args: |
+            --model ${{ steps.pins.outputs.model }}
+            --effort ${{ steps.pins.outputs.effort }}
+            --json-schema '${{ steps.pins.outputs.json }}'
+            --allowedTools "Read,Grep,Glob"
+            --max-turns 50
+          settings: |
+            {
+              "permissions": {
+                "deny": ["Bash(gh:*)", "Bash(git:*)", "Bash(curl:*)", "WebFetch", "WebSearch", "Edit", "Write"]
+              }
+            }
+
+      # review-check.js is deliberately not run here: it requires a `findings` array, which
+      # integration-reviewer.md forbids, so it could never pass. The schema above holds the shape.
+      - name: Save the summary
+        if: always()
+        env:
+          AGENT: integration
+          KEY: ${{ needs.context.outputs.key }}
+          FINDINGS: ${{ steps.integration.outputs.structured_output }}
+          EXECUTION_FILE: ${{ steps.integration.outputs.execution_file }}
+        run: node .github/scripts/review-save.js
+
+      - name: Upload the integration output
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: review-integration
+          include-hidden-files: true
+          path: |
+            ${{ needs.context.outputs.reviewDir }}/*/merged.json
+            ${{ needs.context.outputs.reviewDir }}/*/integration.json
+            ${{ needs.context.outputs.reviewDir }}/*/run.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  publish:
+    name: Publish
+    needs: [context, reviewer, integration]
+    if: always() && needs.context.result == 'success' && needs.context.outputs.skip == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # The only job that can write to the pull request, and the only one with no model in it.
+    permissions:
+      contents: read
+      pull-requests: write # To post the review and its comments
+      issues: write # To react to the triggering comment
+
+    env:
+      REVIEW_KEY: ${{ needs.context.outputs.key }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.context.outputs.head }}
+          fetch-depth: 1
+          persist-credentials: false # the API calls below use the job's own token, not the tree's
+
+      - name: Download the review context
+        uses: actions/download-artifact@v8
+        with:
+          name: review-context
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Download the run context
+        uses: actions/download-artifact@v8
+        with:
+          name: review-run
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Download the review output
+        uses: actions/download-artifact@v8
+        with:
+          pattern: review-agent-*
+          merge-multiple: true
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Download the integration output
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: review-integration
+          path: ${{ needs.context.outputs.reviewDir }}/
+
+      - name: Merge, if the integration job did not get that far
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const dir = `${{ needs.context.outputs.reviewDir }}/${process.env.REVIEW_KEY}`
+            if (require('node:fs').existsSync(`${dir}/merged.json`)) return
+            core.warning('merged.json is missing; merging here instead')
+            await require('./.github/scripts/review-merge.js')({ github, context, core })
+
+      - name: Post one review
+        uses: actions/github-script@v8
+        with:
+          script: await require('./.github/scripts/review-publish.js')({ github, context, core })
+
+      - name: Keep the whole run
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: review-run-final
+          include-hidden-files: true
+          path: ${{ needs.context.outputs.reviewDir }}/
+          retention-days: 14
+
+      - name: Mark the comment as done
+        if: always() && github.event_name == 'issue_comment'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: ${{ github.event.comment.id }},
+              content: "${{ job.status == 'success' && 'rocket' || 'confused' }}",
+            })

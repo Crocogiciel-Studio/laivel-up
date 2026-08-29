@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "note": "One rule anchor, one owning reviewer. A finding citing an anchor should come from its owner. Nothing downstream re-attributes or drops one, so an anchor listed under the wrong reviewer produces duplicate comments. Every rule anchor in the docs tree and in the scoped CLAUDE.md / AGENTS.md files belongs here, either under owners or under excluded. review-contract.md, review-pipeline.md and review-onboarding.md are process docs, not rule docs: their anchors are out of scope. Which reviewers a given change puts on a run is NOT decided here - that is review.config.json. Checked by .github/scripts/review-doctor.js",
+  "owners": {
+    "general": [],
+    "complexity": []
+  },
+  "excluded": {
+    "$comment": "Anchors that deliberately belong to nobody, each with a reason - so this file stays a complete account of the rule tree rather than a partial one.",
+    "anchors": []
+  }
+}

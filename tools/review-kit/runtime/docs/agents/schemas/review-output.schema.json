@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.invalid/schemas/review-output.json",
+  "title": "Review output",
+  "description": "What one specialist reviewer returns. A finding is one description, optionally one suggestion, anchored at a line or a line range. Contract: docs/agents/review-contract.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["agent", "findings"],
+  "properties": {
+    "agent": {
+      "type": "string",
+      "description": "Who is speaking. Set by the run from the axis it launched, not by the model: the review attributes each comment."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "skipped": {
+      "type": "array",
+      "description": "In-scope files this reviewer did not actually review, and why. Silence about coverage reads as full coverage.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "why"],
+        "properties": {
+          "file": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "file", "line", "description", "evidence", "confidence"],
+      "properties": {
+        "severity": {
+          "enum": ["blocking", "important", "nit"],
+          "description": "blocking = breaks behaviour, leaks data, or blocks a rollback. Also sets your word budget."
+        },
+        "file": { "type": "string" },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "First line of the finding, in the HEAD version of the file. Must fall inside one of the `lines` ranges you were given for this file, or the finding cannot be attached to the code and is listed in the review body instead."
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Last line, when the finding spans a range. The comment then covers line..endLine, which is what makes a multi-line suggestion readable. Omit for a single line. `line` and `endLine` must sit inside the SAME `lines` range: a span across two hunks cannot be posted."
+        },
+        "description": {
+          "type": "string",
+          "description": "The whole finding, in one field. No title, no separate rationale. Length is capped by severity: blocking 2 sentences, important 1, nit a few words. Say what is wrong and what breaks; stop there.",
+          "minLength": 1
+        },
+        "suggestion": {
+          "type": "string",
+          "description": "Optional. One sentence, or a ```suggestion fenced block with the replacement code for line..endLine — the code form is preferred and is exempt from the sentence limit, but keep it minimal; pseudo-code is often enough. The block replaces line..endLine wholesale, so it need not have the same number of lines, and is passed through to GitHub verbatim."
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Short verbatim quote of the offending code. Never rendered in the review: it exists so you cannot report what you have not read."
+        },
+        "confidence": {
+          "enum": ["confirmed", "plausible"],
+          "description": "confirmed = you read the surrounding code and the failure holds. plausible = it looks wrong from the diff alone."
+        },
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+\\.(md|mdc)(#[a-z0-9-]+)?$",
+          "description": "The rule this finding cites, exactly as the `id` given in the input's `rules` list: `<doc>.md#<anchor>` for an anchored rule, or the rule file's path for a filed one. Required for blocking and important; omitted for an unanchored nit. Cite only a rule your axis owns."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "severity": { "const": "blocking" } } },
+          "then": { "properties": { "description": { "maxLength": 400 } } }
+        },
+        {
+          "if": { "properties": { "severity": { "const": "important" } } },
+          "then": { "properties": { "description": { "maxLength": 200 } } }
+        },
+        {
+          "if": { "properties": { "severity": { "const": "nit" } } },
+          "then": { "properties": { "description": { "maxLength": 120 } } }
+        }
+      ]
+    }
+  }
+}

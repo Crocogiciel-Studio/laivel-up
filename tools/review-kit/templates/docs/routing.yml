@@ -1,0 +1,34 @@
+# Task routing table.
+#
+# DATA, not prose. Parsed by tooling, never pasted whole into a prompt.
+# Must stay valid YAML: quote any value containing ? : or @.
+# touch patterns are globs matched against a changed-file list - a directory needs its /** suffix.
+#
+# Fields:
+#   task     one line, how the model recognises this kind of work
+#   read     docs the CODING agent should load. Write-time only.
+#            Bare name = relative to the docs root. Contains a slash = relative to repo root.
+#            Review specialists do NOT use this - their scope is declared in their own agent file,
+#            and the rules they obey live in review-contract.md.
+#   touch    where the work lands.
+#   gotchas  short reminders / questions. NOT rules - the rule lives in the doc.
+#            If a gotcha grows into a rule, move it to the doc and leave a keyword here.
+#
+# Consumer: the dev-context skill. Checked by doc-lint.
+#
+# One entry per kind of work someone actually does here. Adding an entry is part of the change that
+# needed it. Keep `read` short: what the work would break without, not everything related.
+
+vocabulary:
+  task: unfamiliar domain term, or a word that seems to mean two things
+  read: [glossary.md]
+  touch: []
+  gotchas: [the words this codebase uses for two different things]
+
+# The shape to copy. Uncomment, rename, and point it at docs that exist here:
+#
+# rest-endpoint:
+#   task: add or change an HTTP endpoint
+#   read: [api-contracts.md, security.md, testing.md]
+#   touch: [src/**/controllers/**, src/**/services/**]
+#   gotchas: [integration test required, permission check, "breaking contract?"]

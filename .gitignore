@@ -21,3 +21,6 @@ coverage/
 
 # IntelliJ project settings (run configs live in versioned /.run/ instead)
 /.idea/
+
+# Review pipeline run artefacts
+.review/

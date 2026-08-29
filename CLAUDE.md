@@ -51,3 +51,19 @@ Project docs, memory, specs, and plans live in `aidd_docs/`.
 - If the block above is empty, run `ls -1tr aidd_docs/memory/` and read each file.
 - Load `aidd_docs/memory/external/*` when the user asks.
 - Load `aidd_docs/memory/internal/*` when the task needs it.
+
+<!-- review-kit:begin -->
+## Code review pipeline
+
+This repo reviews pull requests with a multi-agent pipeline. Before changing any part of it, read
+`docs/agents/review-pipeline.md` (how a review is produced) and `docs/agents/review-contract.md` (how a
+reviewer judges and reports).
+
+- Run a review locally: the `review-pr` skill, or execute `.claude/skills/review-pr/SKILL.md`.
+- Install, add or tune a reviewer axis: the `review-kit` skill, or execute
+  `docs/agents/review-onboarding.md`.
+- Which reviewers exist here, and what routes them: `docs/agents/review.config.json`.
+- The rules live in the generated corpus (AIDD). `node .github/scripts/review-corpus.js`
+  lists them; `--match <files>` shows which ones a change engages. Never edit them here.
+- After changing any of it: `node .github/scripts/review-doctor.js --all`.
+<!-- review-kit:end -->

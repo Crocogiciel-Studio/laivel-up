@@ -1,0 +1,29 @@
+{
+  "$comment": "The only file in the pipeline that knows this repo's shape. Fill it in with docs/agents/review-onboarding.md open: every entry needs evidence from the repo, not a guess. Validate with `node .github/scripts/review-doctor.js`.",
+  "schemaVersion": 1,
+
+  "docsRoot": "docs/agents",
+  "agentsRoot": ".claude/agents",
+  "reviewDir": ".review",
+
+  "$comment.trigger": "The pull request comment that starts a CI review. Must match the workflow - the doctor checks it.",
+  "trigger": "@claude deep-review",
+
+  "limits": { "nitsInline": 10, "maxComments": 50 },
+
+  "$comment.coverageNotes": "Metrics this run knows it cannot gather. Printed in the review as missing, rather than replaced by an ad-hoc analysis. Delete the entries that do not apply.",
+  "coverageNotes": {},
+
+  "$comment.exclude": "Files no reviewer may see: generated output, vendored code, lockfiles, snapshots, binaries. Each one is recorded with its reason in the review's coverage section. Add every generator output you found in the survey.",
+  "exclude": [
+    { "pattern": "(^|/)(pnpm-lock\\.yaml|package-lock\\.json|yarn\\.lock|Cargo\\.lock|poetry\\.lock|go\\.sum)$", "reason": "lockfile" },
+    { "pattern": "\\.(png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot|pdf|zip|jar|class|so|dll)$", "reason": "binary" },
+    { "pattern": "\\.min\\.(js|css)$", "reason": "minified output" }
+  ],
+
+  "$comment.axes": "One entry per reviewer. `always` runs every time; `route` is a regex over the changed paths and should over-select on purpose. `prefix` mints finding ids and must never be renamed. `web: true` grants WebFetch/WebSearch. `routeIncludesExcluded: true` also routes on excluded paths.",
+  "axes": [
+    { "name": "general", "prefix": "gen", "always": true },
+    { "name": "complexity", "prefix": "cx", "always": true }
+  ]
+}

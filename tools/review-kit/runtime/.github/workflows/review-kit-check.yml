@@ -1,0 +1,62 @@
+name: Review pipeline - self check
+
+# The review pipeline's own wiring, checked on every pull request that touches it.
+#
+# No model, no secrets, no network: two Node scripts with no dependencies. It exists because every
+# way this pipeline breaks is silent - an axis whose agent file was renamed simply stops running,
+# a rule the corpus regenerated out of existence simply stops being cited, and the review that
+# comes back looks exactly like a review that found nothing.
+
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/review-*.js"
+      - ".github/workflows/pull-request-review-pipeline.yml"
+      - ".claude/agents/**"
+      - ".claude/skills/**"
+      - ".claude/rules/**"
+      - ".cursor/rules/**"
+      - ".github/instructions/**"
+      - "docs/agents/**"
+      - "aidd_docs/**"
+      - "**/CLAUDE.md"
+      - "**/AGENTS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Wiring and corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The rules-engaged step diffs against the base branch, which a depth-1 clone lacks.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      # The wiring: every configured axis has a pinned agent file, the schemas still reduce, the
+      # workflow trigger and the config still agree. --all adds the documentation tree.
+      - name: review-doctor
+        run: node .github/scripts/review-doctor.js --all
+
+      # What the reviewers will actually be handed for this pull request's own changes. Printed,
+      # not gated: a change that engages no rule is normal, and a rule that owns nothing is caught
+      # above.
+      - name: Rules engaged by this pull request
+        if: always()
+        run: |
+          FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
+          if [ -n "$FILES" ]; then
+            node .github/scripts/review-corpus.js --match $FILES | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "no changed files resolved" >> "$GITHUB_STEP_SUMMARY"
+          fi
