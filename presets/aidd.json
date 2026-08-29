@@ -97,6 +97,17 @@
             "rankAfterSome": 2,
             "rankKeyStages": 4
           }
+        },
+        {
+          "criterionId": "revert-rate",
+          "weight": 1,
+          "role": "cap",
+          "params": {
+            "revertHigh": 0.15,
+            "revertMid": 0.08,
+            "rankCapHigh": 2,
+            "rankCapMid": 3
+          }
         }
       ]
     },
