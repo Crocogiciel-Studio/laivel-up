@@ -19,4 +19,5 @@ coverage/
 # OS
 .DS_Store
 
-.idea
+# IntelliJ project settings (run configs live in versioned /.run/ instead)
+/.idea/
