@@ -33,13 +33,13 @@ module.exports = {
       name: 'no-orphans',
       comment: 'Every module should be reachable from an entry point or a test.',
       severity: 'warn',
-      from: { orphan: true, pathNot: ['\\.d\\.ts$'] },
+      from: { orphan: true, pathNot: [String.raw`\.d\.ts$`] },
       to: {},
     },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '\\.test\\.ts$' },
+    exclude: { path: String.raw`\.test\.ts$` },
     tsConfig: { fileName: 'tsconfig.json' },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {

@@ -1,7 +1,8 @@
 // @ts-check
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+/** Flat config as a plain array — no `tseslint.config()` wrapper, no `extends`. */
+export default [
   {
     ignores: ['dist/**', 'node_modules/**', 'coverage/**', '**/*.cjs'],
   },
@@ -36,6 +37,6 @@ export default tseslint.config(
   },
   {
     files: ['*.config.js', '*.config.ts'],
-    extends: [tseslint.configs.disableTypeChecked],
+    ...tseslint.configs.disableTypeChecked,
   },
-);
+];
