@@ -1,10 +1,10 @@
 name: Queue runner
 
-# Overnight autopilot. Every hour, if nothing is in flight, promote the oldest `queued` issue to
+# Autopilot queue. Every hour, if nothing is in flight, promote the oldest `queued` issue to
 # `to-implement` — which the aidd-async pipeline picks up and turns into a draft PR. The
 # `claude/working` guard serialises the batch so two runs never edit the shared files at once.
 #
-# Nothing here merges anything. The morning's job is to review the PRs.
+# Nothing here merges anything. Reviewing the resulting PRs is a human job.
 
 on:
   schedule:
@@ -28,16 +28,22 @@ jobs:
           github-token: ${{ secrets.AIDD_BOT_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
+            const STALE_HOURS = 3; // a to-implement issue with no PR after this long is not "in flight"
+
             const issuesWith = (labels) =>
               github.paginate(github.rest.issues.listForRepo, {
                 owner, repo, state: "open", labels, sort: "created", direction: "asc", per_page: 100,
               }).then((rows) => rows.filter((i) => !i.pull_request));
+            const swallow404 = (e) => { if (e.status !== 404) throw e; };
 
-            const openPRs = await github.paginate(github.rest.pulls.list, {
-              owner, repo, state: "open", per_page: 100,
+            // Closing-PR reference. This convention is also matched in
+            // .github/workflows/aidd-async.yml (its dispatch and finalize steps) — keep the three
+            // in sync, or factor them into a shared script.
+            const CLOSES = (n) => new RegExp(`\\b(Closes|Fixes|Resolves)\\s+#${n}\\b`, "i");
+            const allPRs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: "all", per_page: 100,
             });
-            const hasClosingPR = (n) =>
-              openPRs.some((p) => new RegExp(`\\b(Closes|Fixes|Resolves)\\s+#${n}\\b`, "i").test(p.body || ""));
+            const closingPR = (n) => allPRs.find((p) => CLOSES(n).test(p.body || ""));
 
             // 1. A run is active — leave it alone.
             const working = await issuesWith("claude/working");
@@ -46,32 +52,42 @@ jobs:
               return;
             }
 
-            // 2. Work dispatched but not yet a PR, and not blocked — still landing; wait.
+            // 2. Work dispatched but genuinely still landing — wait. A blocked issue, a closed
+            //    closing PR, or a label older than STALE_HOURS with nothing to show does not count
+            //    as landing: strip the stale to-implement and move on.
             const dispatched = await issuesWith("to-implement");
             for (const i of dispatched) {
-              const blocked = i.labels.some((l) => (l.name || l) === "claude/blocked");
-              if (blocked) continue;
-              if (!hasClosingPR(i.number)) {
-                core.info(`#${i.number} is to-implement with no PR yet — waiting`);
+              if (i.labels.some((l) => (l.name ?? l) === "claude/blocked")) continue;
+              const pr = closingPR(i.number);
+              if (pr && pr.state === "open") {
+                core.info(`#${i.number} → open PR #${pr.number}, still in review — waiting`);
                 return;
               }
-              // Its PR exists: strip the now-stale to-implement so the queue reads cleanly.
+              if (!pr) {
+                const ageHours = (Date.now() - Date.parse(i.updated_at)) / 3.6e6;
+                if (ageHours < STALE_HOURS) {
+                  core.info(`#${i.number} is to-implement with no PR yet (${ageHours.toFixed(1)}h) — waiting`);
+                  return;
+                }
+                core.warning(`#${i.number} stuck as to-implement for ${ageHours.toFixed(1)}h with no PR — clearing`);
+              }
               await github.rest.issues
                 .removeLabel({ owner, repo, issue_number: i.number, name: "to-implement" })
-                .catch(() => {});
+                .catch(swallow404);
             }
 
-            // 3. Promote the oldest queued issue.
+            // 3. Promote the oldest queued issue. Add the new label before removing the old one, so
+            //    a failure never leaves the issue in neither list.
             const queued = await issuesWith("queued");
             if (!queued.length) {
               core.info("queue empty — nothing to do");
               return;
             }
             const next = queued[0];
-            await github.rest.issues
-              .removeLabel({ owner, repo, issue_number: next.number, name: "queued" })
-              .catch(() => {});
             await github.rest.issues.addLabels({
               owner, repo, issue_number: next.number, labels: ["to-implement"],
             });
+            await github.rest.issues
+              .removeLabel({ owner, repo, issue_number: next.number, name: "queued" })
+              .catch(swallow404);
             core.notice(`promoted #${next.number}: ${next.title}`);
