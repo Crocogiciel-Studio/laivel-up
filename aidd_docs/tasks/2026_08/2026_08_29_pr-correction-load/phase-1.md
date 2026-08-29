@@ -25,10 +25,13 @@ status: done
 flowchart TD
   A[CLI: evaluate a profile against presets/aidd.json] --> B[engine reads vcsActivity.pullRequests]
   B --> C{medianCorrectionCommitsAfterOpen present?}
-  C -- no --> D[unknown: missing-piece]
   C -- yes --> E[band from family A thresholds]
+  C -- no --> C2{mergedWithoutHumanEditRatio present?}
+  C2 -- no --> D[unknown: missing-piece]
+  C2 -- yes --> E2[band from family B alone, sufficiency 0.7]
   E --> F[corroborate with mergedWithoutHumanEditRatio band, agreement only]
   F --> G[rank via params, level via levelByRank]
+  E2 --> G
   G --> H[Intervention axis reads a level]
 ```
 
@@ -53,8 +56,10 @@ journey
     profile without vcsActivity => err(missing-piece): 1: system
   section Edge case - missing both signals
     pullRequests present but both fields undefined => err(missing-piece): 1: system
-  section Edge case - single family present
+  section Edge case - single family present (A)
     only medianCorrectionCommitsAfterOpen present => ok reading, singleSource true, sufficiency 0.7: 1: system
+  section Edge case - single family present (B)
+    only mergedWithoutHumanEditRatio present => ok reading from family B alone, sufficiency 0.7: 1: system
   section Regression
     run the four fixture profiles through presets/aidd.json => intervention axis reads >= each profile's known level: 5: cli
 ```

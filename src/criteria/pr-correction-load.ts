@@ -84,8 +84,12 @@ function marginFromCorrections(value: number, band: number, p: Params): number {
     const span = Math.max(p.correctionsAfterSome, 1);
     return Math.max(MIN_MARGIN, Math.min(1, (p.correctionsAfterSome - value) / span));
   }
-  const span = Math.max(p.correctionsAfterMost, 1);
-  return Math.max(MIN_MARGIN, Math.min(1, (p.correctionsAfterMost - value) / span));
+  const width = Math.max(p.correctionsAfterMost - p.correctionsAfterSome, 1);
+  const distanceToNearestEdge = Math.min(
+    value - p.correctionsAfterSome,
+    p.correctionsAfterMost - value,
+  );
+  return Math.max(MIN_MARGIN, Math.min(1, Math.max(0, distanceToNearestEdge) / (width / 2)));
 }
 
 /** Mirror of `marginFromCorrections` for the ratio family — lower is band 0 here. */
@@ -98,8 +102,9 @@ function marginFromRatio(value: number, band: number, p: Params): number {
     const span = Math.max(1 - p.ratioKeyStages, 0.01);
     return Math.max(MIN_MARGIN, Math.min(1, (value - p.ratioKeyStages) / span));
   }
-  const span = Math.max(p.ratioKeyStages, 0.01);
-  return Math.max(MIN_MARGIN, Math.min(1, (p.ratioKeyStages - value) / span));
+  const width = Math.max(p.ratioKeyStages - p.ratioAfterSome, 0.01);
+  const distanceToNearestEdge = Math.min(value - p.ratioAfterSome, p.ratioKeyStages - value);
+  return Math.max(MIN_MARGIN, Math.min(1, Math.max(0, distanceToNearestEdge) / (width / 2)));
 }
 
 export const prCorrectionLoad: CriterionEvaluator = {
