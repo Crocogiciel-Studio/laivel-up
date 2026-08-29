@@ -10,14 +10,20 @@ name: Pull Request - Review Pipeline
 # only "should we review this" question worth asking - an explicit request is otherwise always
 # honoured, whether the pull request is closed, draft, large, or already reviewed.
 #
-# Issues and pull requests share one numbering space, and concurrency is evaluated before any job's
-# `if`, so keying on the bare issue number would let a comment on issue #N cancel a running review
-# of pull request #N. Comments on a plain issue collapse into one inert group instead.
+# Concurrency is evaluated before any job's `if`, so a run that will do nothing still cancels the
+# group it lands in. Only a genuine trigger - a review request, the trigger phrase, a dispatch -
+# gets the `pr-<n>` group; every other event (a plain comment, our own acknowledgement comment,
+# a comment on an issue) gets a unique inert group so it collides with nothing.
 concurrency:
   group: >-
-    ${{ github.workflow }}-pr-${{ github.event.pull_request.number
-    || (github.event.issue.pull_request && github.event.issue.number)
-    || github.event.inputs.pr_number }}
+    ${{ github.workflow }}-${{
+      (github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number))
+      || (github.event_name == 'workflow_dispatch' && format('pr-{0}', github.event.inputs.pr_number))
+      || (github.event_name == 'issue_comment' && github.event.issue.pull_request
+          && startsWith(github.event.comment.body, '@Crok-Bot deep-review')
+          && format('pr-{0}', github.event.issue.number))
+      || format('inert-{0}', github.run_id)
+    }}
   cancel-in-progress: true
 
 on:
