@@ -7,6 +7,7 @@ import { reviewCommentLoad } from './review-comment-load.js';
 import { ciIterationLoad } from './ci-iteration-load.js';
 import { revertRate } from './revert-rate.js';
 import { concurrentStreams } from './concurrent-streams.js';
+import { branchBurstiness } from './branch-burstiness.js';
 import { loopConvergence } from './loop-convergence.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
@@ -19,6 +20,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   ciIterationLoad,
   revertRate,
   concurrentStreams,
+  branchBurstiness,
   loopConvergence,
 ];
 
@@ -31,5 +33,6 @@ export {
   ciIterationLoad,
   revertRate,
   concurrentStreams,
+  branchBurstiness,
   loopConvergence,
 };
