@@ -302,12 +302,73 @@ function buildStaticAnalysis(sonar: z.infer<typeof sonarSchema>): StaticAnalysis
   };
 }
 
+/**
+ * Shallow heuristics read off a `session.md` transcript. The file is a single
+ * prompt→commit session written as alternating role turns
+ * (`**Personne**` / `**Assistant**`); three coarse signals come from its shape
+ * and wording:
+ *
+ *  - `promptToCommitSteps`  number of human turns — how many prompt→response
+ *    rounds it took to reach the commit. Falls back to counting `Étape`/`Step`
+ *    headings when the transcript has no role headers.
+ *  - `humanInterventionsMidTask`  count of explicit course-corrections in the
+ *    human turns: « non, … », « je (te) reprends », « corrige ce … », « plutôt
+ *    … », a signalled manual edit (« j'ai corrigé/édité/… »).
+ *  - `framingOnly`  `true` when the transcript has turn structure but not one
+ *    mid-task correction was detected — the human framed the task and let it run
+ *    to the commit.
+ *
+ * Deliberately regex-based and forgiving. When the text shows no recognisable
+ * turn structure every signal is left `undefined` and the criterion abstains.
+ */
+const HUMAN_TURN_HEADER =
+  /^\s*\*\*(?:Personne|Humain|Utilisateur|User|Dev|Développeur)\*\*\s*$/i;
+const ASSISTANT_TURN_HEADER =
+  /^\s*\*\*(?:Assistant|IA|AI|Agent|Claude|Copilot|Bot)\*\*\s*$/i;
+const STEP_HEADING = /^\s*#{1,4}\s+(?:[ÉE]tape|Step|Tour|Turn)\b/i;
+const MID_TASK_INTERVENTION =
+  /je te reprends|je repr(?:ends|is)|je corrige|corrige[- ](?:moi|ce|cet|cette|le|la|les|[çc]a)|non[,.]|plut[oô]t|j'ai (?:repris|corrig[ée]|[ée]dit[ée]|modifié|réécrit|refait)/gi;
+
 function buildWorkSession(text: string): WorkSession {
+  const trimmed = text.trim();
+  const lines = trimmed.split(/\r?\n/);
+
+  const humanLines: string[] = [];
+  let humanTurns = 0;
+  let inHumanTurn = false;
+  for (const line of lines) {
+    if (HUMAN_TURN_HEADER.test(line)) {
+      humanTurns += 1;
+      inHumanTurn = true;
+      continue;
+    }
+    if (ASSISTANT_TURN_HEADER.test(line)) {
+      inHumanTurn = false;
+      continue;
+    }
+    if (inHumanTurn) humanLines.push(line);
+  }
+
+  const stepHeadings = lines.filter((line) => STEP_HEADING.test(line)).length;
+
+  let promptToCommitSteps: number | undefined;
+  if (humanTurns > 0) promptToCommitSteps = humanTurns;
+  else if (stepHeadings > 0) promptToCommitSteps = stepHeadings;
+
+  let humanInterventionsMidTask: number | undefined;
+  if (promptToCommitSteps !== undefined) {
+    const scanned = humanLines.length > 0 ? humanLines.join('\n') : trimmed;
+    humanInterventionsMidTask = (scanned.match(MID_TASK_INTERVENTION) ?? []).length;
+  }
+
+  const framingOnly =
+    humanInterventionsMidTask === undefined ? undefined : humanInterventionsMidTask === 0;
+
   return {
-    promptToCommitSteps: undefined,
-    humanInterventionsMidTask: undefined,
-    framingOnly: undefined,
-    rawText: text.trim(),
+    promptToCommitSteps,
+    humanInterventionsMidTask,
+    framingOnly,
+    rawText: trimmed,
   };
 }
 

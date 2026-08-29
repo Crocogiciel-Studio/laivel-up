@@ -58,6 +58,46 @@ describe('readProfileFromDirectory', () => {
     });
   });
 
+  describe('work session heuristics from session.md', () => {
+    it('bohort — counts the turns and the mid-task reprises', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'bohort'));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const ws = result.value.workSession;
+      expect(result.value.available).toContain('workSession');
+      expect(ws?.promptToCommitSteps).toBe(6);
+      expect(ws?.humanInterventionsMidTask).toBe(2);
+      expect(ws?.framingOnly).toBe(false);
+      expect(ws?.rawText).toContain('relance de facture impayée');
+    });
+
+    it('arthur — a longer framing then one explicit "je te reprends"', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'arthur'));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const ws = result.value.workSession;
+      expect(ws?.promptToCommitSteps).toBe(3);
+      expect(ws?.humanInterventionsMidTask).toBe(1);
+      expect(ws?.framingOnly).toBe(false);
+    });
+
+    it('perceval — no session.md leaves the work session unread', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'perceval'));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.workSession).toBeUndefined();
+        expect(result.value.available).not.toContain('workSession');
+      }
+    });
+
+    it('leodagan — also has no session.md', () => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, 'leodagan'));
+      expect(result.ok && result.value.workSession).toBeUndefined();
+    });
+  });
+
   describe('self-assessed level extraction from declaratif.md', () => {
     const levelOf = (name: string): string | undefined => {
       const result = readProfileFromDirectory(resolve(FIXTURES, name));

@@ -185,6 +185,18 @@
           }
         },
         {
+          "criterionId": "session-intervention",
+          "weight": 1,
+          "role": "level",
+          "params": {
+            "interventionsSome": 1,
+            "interventionsMost": 3,
+            "rankAfterMost": 1,
+            "rankAfterSome": 2,
+            "rankKeyStages": 4
+          }
+        },
+        {
           "criterionId": "review-comment-load",
           "weight": 1,
           "role": "level",
