@@ -1,38 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { prCorrectionLoad } from './pr-correction-load.js';
-import { makeProfile, makeGrid } from '../../test/support/factories.js';
-import type { Profile, PullRequestFacts } from '../core/model/profile.js';
+import { makeProfile, makeGrid, makePrProfile } from '../../test/support/factories.js';
+import type { PullRequestFacts } from '../core/model/profile.js';
 
 const grid = makeGrid();
-
-function prProfile(pr: Partial<PullRequestFacts>): Profile {
-  return makeProfile({
-    available: ['vcsActivity'],
-    vcsActivity: {
-      pullRequests: {
-        total: undefined,
-        sizeDistribution: undefined,
-        medianFilesChanged: undefined,
-        medianLinesChanged: undefined,
-        medianCorrectionCommitsAfterOpen: undefined,
-        mergedWithoutHumanEditRatio: undefined,
-        revertedRatio: undefined,
-        medianReviewComments: undefined,
-        ...pr,
-      },
-      commits: undefined,
-      tests: undefined,
-      parallelism: undefined,
-      ci: undefined,
-    },
-  });
-}
 
 function run(
   pr: Partial<PullRequestFacts>,
   params: Record<string, number> = {},
 ): ReturnType<typeof prCorrectionLoad.evaluate> {
-  return prCorrectionLoad.evaluate({ profile: prProfile(pr), grid, axisId: 'intervention', params });
+  return prCorrectionLoad.evaluate({
+    profile: makePrProfile(pr),
+    grid,
+    axisId: 'intervention',
+    params,
+  });
 }
 
 describe('prCorrectionLoad', () => {
@@ -60,8 +42,9 @@ describe('prCorrectionLoad', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l2');
       expect(out.value.confidence.agreement).toBe(1);
-      // 2 sits exactly on the band's achievable lower edge — must not zero out confidence.
-      expect(out.value.confidence.margin).toBeGreaterThan(0);
+      // The canonical "after some" profile sits comfortably inside the band, not on its edge:
+      // its confidence must be well clear of the floor, not stuck at it.
+      expect(out.value.confidence.margin).toBeGreaterThan(0.3);
     }
   });
 
@@ -104,7 +87,7 @@ describe('prCorrectionLoad', () => {
   });
 
   it('reads the boundary value exactly at correctionsAfterSome as band 1', () => {
-    const out = run({ medianCorrectionCommitsAfterOpen: 2 });
+    const out = run({ medianCorrectionCommitsAfterOpen: 1.5 });
     expect(out.ok).toBe(true);
     if (out.ok) {
       expect(out.value.rawValue).toBe('after-some');
@@ -113,8 +96,8 @@ describe('prCorrectionLoad', () => {
   });
 
   it('is more confident at the centre of a band than at either of its edges (family A)', () => {
-    const lowerEdge = run({ medianCorrectionCommitsAfterOpen: 2 }); // band 1's lower edge
-    const centre = run({ medianCorrectionCommitsAfterOpen: 2.5 }); // band 1's centre
+    const lowerEdge = run({ medianCorrectionCommitsAfterOpen: 1.6 }); // just inside band 1's lower edge
+    const centre = run({ medianCorrectionCommitsAfterOpen: 2.25 }); // band 1's centre ([1.5, 3])
     const upperEdge = run({ medianCorrectionCommitsAfterOpen: 2.9 }); // near band 1's upper edge
     expect(lowerEdge.ok && centre.ok && upperEdge.ok).toBe(true);
     if (lowerEdge.ok && centre.ok && upperEdge.ok) {
@@ -184,5 +167,32 @@ describe('prCorrectionLoad', () => {
     const out = run({ total: 12 });
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.error.kind).toBe('missing-piece');
+  });
+
+  it('does not let family B lift the band when it reads *higher* than family A', () => {
+    // A: 4 corrections → band 0 (after-most). B: 0.9 no-edit → band 2 (key-stages).
+    const out = run({ medianCorrectionCommitsAfterOpen: 4, mergedWithoutHumanEditRatio: 0.9 });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.value.levelId).toBe('l1'); // stays on family A's band, not lifted to l4
+      expect(out.value.rawValue).toBe('after-most');
+      expect(out.value.confidence.agreement).toBeCloseTo(0.2, 5); // 1 - 0.4 * |0 - 2|
+    }
+  });
+
+  it('returns missing-piece when the profile shipped no pull requests', () => {
+    const out = run({ total: 0, medianCorrectionCommitsAfterOpen: 0 });
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.error.kind).toBe('missing-piece');
+  });
+
+  it('folds sample size into sufficiency — a thin PR history is trusted less', () => {
+    const thin = run({ medianCorrectionCommitsAfterOpen: 4, mergedWithoutHumanEditRatio: 0.05, total: 3 });
+    const thick = run({ medianCorrectionCommitsAfterOpen: 4, mergedWithoutHumanEditRatio: 0.05, total: 100 });
+    expect(thin.ok && thick.ok).toBe(true);
+    if (thin.ok && thick.ok) {
+      expect(thin.value.confidence.sufficiency).toBeCloseTo(0.3, 5); // 3 / minSamples(10)
+      expect(thick.value.confidence.sufficiency).toBe(1);
+    }
   });
 });
