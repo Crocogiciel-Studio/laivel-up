@@ -6,6 +6,7 @@ import { prCorrectionLoad } from './pr-correction-load.js';
 import { reviewCommentLoad } from './review-comment-load.js';
 import { revertRate } from './revert-rate.js';
 import { concurrentStreams } from './concurrent-streams.js';
+import { loopConvergence } from './loop-convergence.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [
@@ -16,6 +17,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   reviewCommentLoad,
   revertRate,
   concurrentStreams,
+  loopConvergence,
 ];
 
 export {
@@ -26,4 +28,5 @@ export {
   reviewCommentLoad,
   revertRate,
   concurrentStreams,
+  loopConvergence,
 };

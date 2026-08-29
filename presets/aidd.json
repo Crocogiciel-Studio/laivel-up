@@ -64,6 +64,16 @@
             "rankMemory": 2,
             "rankBehavior": 4
           }
+        },
+        {
+          "criterionId": "loop-convergence",
+          "weight": 1,
+          "role": "cap",
+          "params": {
+            "runsHigh": 4,
+            "failHigh": 0.3,
+            "rankCapNonConverging": 4
+          }
         }
       ]
     },
