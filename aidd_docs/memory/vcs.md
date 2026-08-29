@@ -21,6 +21,8 @@
 
 AI should auto commit: never
 
+- No AI-attribution in history: commit messages carry no `Co-Authored-By` trailer, and PR / issue bodies carry no "generated with" line. Commits are authored by the human only.
+
 ## Platform rules
 
 - `main` is protected: PR required (0 approvals — solo), linear history, no force-push, conversation resolution required, `enforce_admins=false`.
