@@ -96,6 +96,17 @@
             "complexityHigh": 0.05,
             "rankCapPoor": 2
           }
+        },
+        {
+          "criterionId": "bugs-floor",
+          "weight": 1,
+          "role": "cap",
+          "params": {
+            "bugsHigh": 2,
+            "bugsMid": 0.5,
+            "rankCapBuggy": 2,
+            "rankCapMid": 3
+          }
         }
       ]
     },
