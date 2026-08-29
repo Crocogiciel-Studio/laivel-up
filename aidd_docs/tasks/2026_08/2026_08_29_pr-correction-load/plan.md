@@ -1,6 +1,6 @@
 ---
 objective: "The Intervention axis reads a level from a wired `pr-correction-load` criterion, calibrated against the four sample profiles."
-status: in-progress
+status: implemented
 ---
 
 <!-- Fill or omit these sections; never add, rename, or reorder one. -->
