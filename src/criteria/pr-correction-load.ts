@@ -71,9 +71,13 @@ function rankForBand(band: number, p: Params): number {
 
 /**
  * Distance from `value` to the boundary its band was read against, normalized
- * to `[MIN_MARGIN, 1]` — a reading squarely on an achievable integer boundary
+ * to `[MIN_MARGIN, 1]`. Bands 0 and 2 are open-ended: distance is measured
+ * from the single boundary that bounds them. Band 1 is bounded on both
+ * sides, so distance is measured from the *nearer* of the two boundaries,
+ * over half the band's width — peaking at the band's centre, not at either
+ * edge. Floored so a reading squarely on an achievable integer boundary
  * (e.g. a correction-commit median sitting exactly on the band edge) still
- * carries some evidence, it is never zeroed out.
+ * carries some evidence; it is never zeroed out.
  */
 function marginFromCorrections(value: number, band: number, p: Params): number {
   if (band === 0) {
