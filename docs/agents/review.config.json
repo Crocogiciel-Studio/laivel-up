@@ -4,8 +4,8 @@
   "docsRoot": "docs/agents",
   "agentsRoot": ".claude/agents",
   "reviewDir": ".review",
-  "$comment.trigger": "The pull request comment that starts a CI review. Must match the workflow - the doctor checks it.",
-  "trigger": "@claude deep-review",
+  "$comment.trigger": "The pull request comment that starts a CI review. Must match the workflow - the doctor checks it. The pipeline also starts when the crocogiciel-crew team is requested as reviewer (pr-intake.yml does that on every PR).",
+  "trigger": "@Crok-Bot deep-review",
   "limits": {
     "nitsInline": 10,
     "maxComments": 50
@@ -36,6 +36,10 @@
     {
       "pattern": "^test/fixtures/profiles/",
       "reason": "vendored subject profiles (MIT) — the input contract, not this repo's code"
+    },
+    {
+      "pattern": "^aidd_docs/(tasks|async-runs)/",
+      "reason": "per-task working notes and async-run audit trail — process artefacts, not reviewable code or rules"
     }
   ],
   "$comment.axes": "One entry per reviewer. `always` runs every time; `route` is a regex over the changed paths and should over-select on purpose. `prefix` mints finding ids and must never be renamed. `web: true` grants WebFetch/WebSearch. `routeIncludesExcluded: true` also routes on excluded paths.",
