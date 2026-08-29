@@ -5,6 +5,7 @@ import { readProfileFromDirectory } from './json-profile.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EXAMPLE = resolve(HERE, '../../../examples/dev-sample');
+const FIXTURES = resolve(HERE, '../../../test/fixtures/profiles');
 
 describe('readProfileFromDirectory', () => {
   it('parses the shipped example profile directory', () => {
@@ -25,5 +26,29 @@ describe('readProfileFromDirectory', () => {
   it('fails when profile.json is missing', () => {
     const result = readProfileFromDirectory(resolve(HERE, 'does-not-exist'));
     expect(result.ok).toBe(false);
+  });
+
+  describe('self-assessed level extraction from declaratif.md', () => {
+    const levelOf = (name: string): string | undefined => {
+      const result = readProfileFromDirectory(resolve(FIXTURES, name));
+      if (!result.ok) throw new Error(`fixture ${name} failed to parse`);
+      return result.value.declared?.selfAssessedLevel;
+    };
+
+    it('perceval — "plutôt avancé" / "haut du panier" maps to green', () => {
+      expect(levelOf('perceval')).toBe('green');
+    });
+
+    it('bohort — "milieu de tableau" maps to blue', () => {
+      expect(levelOf('bohort')).toBe('blue');
+    });
+
+    it('leodagan — "façon par défaut de travailler" maps to green', () => {
+      expect(levelOf('leodagan')).toBe('green');
+    });
+
+    it('arthur — no declaratif.md at all leaves the self-assessed level unknown', () => {
+      expect(levelOf('arthur')).toBeUndefined();
+    });
   });
 });
