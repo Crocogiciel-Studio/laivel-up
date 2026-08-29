@@ -17,6 +17,7 @@ import { memoryMaintenance } from './memory-maintenance.js';
 import { testEnforcement } from './test-enforcement.js';
 import { declaratifContradiction } from './declaratif-contradiction.js';
 import { sessionIntervention } from './session-intervention.js';
+import { assistantIntegration } from './assistant-integration.js';
 
 /** Every coded criterion the engine ships with. A grid picks from these by id. */
 export const builtInEvaluators: readonly CriterionEvaluator[] = [
@@ -38,6 +39,7 @@ export const builtInEvaluators: readonly CriterionEvaluator[] = [
   testEnforcement,
   declaratifContradiction,
   sessionIntervention,
+  assistantIntegration,
 ];
 
 export {
@@ -59,4 +61,5 @@ export {
   testEnforcement,
   declaratifContradiction,
   sessionIntervention,
+  assistantIntegration,
 };

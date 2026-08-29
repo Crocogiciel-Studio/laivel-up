@@ -16,6 +16,8 @@ function tc(overrides: Partial<ToolingContext> = {}): ToolingContext {
     autoRetryLoopPresent: false,
     declaredAssistantTools: [],
     editorIntegration: undefined,
+    sessionsPerWeek: undefined,
+    tokensPerWeek: undefined,
     ...overrides,
   };
 }

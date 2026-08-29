@@ -111,6 +111,8 @@ export interface ToolingContext {
   readonly autoRetryLoopPresent: boolean | undefined;
   readonly declaredAssistantTools: readonly string[];
   readonly editorIntegration: boolean | undefined;
+  readonly sessionsPerWeek: number | undefined;
+  readonly tokensPerWeek: number | undefined;
 }
 
 export interface WorkSession {

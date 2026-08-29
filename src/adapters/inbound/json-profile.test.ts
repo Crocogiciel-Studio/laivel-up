@@ -20,7 +20,21 @@ describe('readProfileFromDirectory', () => {
     expect(profile.available).toContain('toolingContext');
     expect(profile.toolingContext?.projectMemoryPresent).toBe(true);
     expect(profile.toolingContext?.rulesCount).toBe(2);
+    expect(profile.toolingContext?.sessionsPerWeek).toBe(18);
+    expect(profile.toolingContext?.tokensPerWeek).toBe(900000);
     expect(profile.vcsActivity?.commits?.aiCoauthoredRatio).toBeCloseTo(0.72);
+  });
+
+  it('maps assistant_usage volume — sessions/tokens per week — onto the tooling context', () => {
+    const result = readProfileFromDirectory(resolve(FIXTURES, 'bohort'));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const tc = result.value.toolingContext;
+    expect(tc?.editorIntegration).toBe(true);
+    expect(tc?.declaredAssistantTools).toEqual(['claude-code', 'chatgpt-web']);
+    expect(tc?.sessionsPerWeek).toBe(31);
+    expect(tc?.tokensPerWeek).toBe(1_900_000);
   });
 
   it('fails when profile.json is missing', () => {

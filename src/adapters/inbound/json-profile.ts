@@ -281,6 +281,8 @@ function buildToolingContext(ga: z.infer<typeof gitActivitySchema>): ToolingCont
     autoRetryLoopPresent: cf?.auto_retry_loop,
     declaredAssistantTools: au?.declared_tools ?? [],
     editorIntegration: au?.editor_integration,
+    sessionsPerWeek: au?.sessions_per_week,
+    tokensPerWeek: au?.tokens_per_week,
   };
 }
 
