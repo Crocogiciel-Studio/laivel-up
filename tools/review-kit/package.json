@@ -1,0 +1,16 @@
+{
+  "name": "review-kit",
+  "version": "1.0.0",
+  "description": "A multi-agent pull request review you can drop into any repository: specialist reviewers in parallel, blind to each other, posted as one GitHub review by a script.",
+  "bin": { "review-kit": "./install.mjs" },
+  "main": "install.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "node selftest.mjs",
+    "install-into": "node install.mjs"
+  },
+  "files": ["install.mjs", "selftest.mjs", "runtime", "templates", "README.md"],
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "keywords": ["code-review", "claude-code", "github-actions", "aidd", "agents"]
+}

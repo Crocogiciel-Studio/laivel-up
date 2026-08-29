@@ -4,7 +4,16 @@ import tseslint from 'typescript-eslint';
 /** Flat config as a plain array — no `tseslint.config()` wrapper, no `extends`. */
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '**/*.cjs'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '**/*.cjs',
+      // Vendored review-kit runtime — plain CommonJS Node scripts, not part of the TS project.
+      '.github/scripts/**',
+      'tools/review-kit/**',
+      '.claude/**',
+    ],
   },
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,

@@ -1,0 +1,20 @@
+{
+  "$comment": "Corpus preset for a repo whose rules are hand-written here: one doc per topic, one rule per heading, each with a permanent {#anchor}, cited as `doc.md#anchor`.",
+  "corpus": {
+    "adapter": "native",
+    "$comment.exclude": "The process docs describe the machinery and hold no reviewable rules, so their anchors are owned by nobody on purpose. Keep this list and doc-lint's PROCESS_DOCS in step.",
+    "sources": [
+      {
+        "kind": "anchored",
+        "dir": "docs/agents",
+        "generated": false,
+        "exclude": [
+          "review-contract.md",
+          "review-pipeline.md",
+          "review-onboarding.md",
+          "INDEX.md"
+        ]
+      }
+    ]
+  }
+}
