@@ -1,0 +1,3 @@
+# esbuild ships a platform binary via a postinstall step; vitest needs it.
+onlyBuiltDependencies:
+  - esbuild
