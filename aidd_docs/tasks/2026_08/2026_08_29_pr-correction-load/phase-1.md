@@ -69,10 +69,10 @@ journey
 2. `bandFromCorrections(value, p)`: `>= correctionsAfterMost` → band 0; `>= correctionsAfterSome` → band 1; else band 2.
 3. `bandFromRatio(value, p)`: `< ratioAfterSome` → band 0; `< ratioKeyStages` → band 1; else band 2.
 4. `rankForBand(band, p)`: band 0 → `rankAfterMost`, band 1 → `rankAfterSome`, band 2 → `rankKeyStages`.
-5. `evaluate`: read `context.profile.vcsActivity?.pullRequests`; `err(missingPiece(['vcsActivity'], ...))` when absent. Read `medianCorrectionCommitsAfterOpen` (family A) and `mergedWithoutHumanEditRatio` (family B); `err(missingPiece(...))` when both are `undefined`.
-6. Band = family A's band when present; when family A is absent but family B is present, still `err` (family B alone cannot decide the band — it is corroboration only, per the issue). Confirm this against the calibration table before deviating.
+5. `evaluate`: read `context.profile.vcsActivity?.pullRequests`; `err(missingPiece(['vcsActivity'], ...))` when absent.
+6. Band = family A's band when present (family B never lifts it — corroboration only, per the issue). When family A is absent, family B decides alone at reduced `sufficiency` (the issue's confidence section defines `sufficiency = 0.7` for "only one family present", which is only reachable if a single-family reading is emitted rather than `err`ed); `err(missingPiece(...))` only when both families are `undefined`.
 7. `rank = rankForBand(band, p)`; `level = levelByRank(context.grid, rank) ?? orderedLevels(context.grid)[0]`; `err` when the grid declares no levels.
-8. Confidence: `singleSource = family B undefined`; `agreement = family B present ? max(0, 1 - 0.4 * |bandA - bandB|) : 1`; `margin` = distance from `medianCorrectionCommitsAfterOpen` to the crossed band boundary, normalized to `[0,1]`; `sufficiency = both families present ? 1 : 0.7`.
+8. Confidence: `singleSource = either family undefined`; `agreement = both families present ? max(0, 1 - 0.4 * |bandA - bandB|) : 1`; `margin` = distance from the deciding family's value to the boundary its band was read against, normalized to `[MIN_MARGIN, 1]` — floored so a reading sitting exactly on an achievable integer boundary is not reported as zero confidence; `sufficiency = both families present ? 1 : 0.7`.
 9. `evidence`: one sentence naming both raw values and the reconciled band/level, mirroring `describe()` in `pr-feature-size.ts`.
 10. Export `prCorrectionLoad: CriterionEvaluator` with `id: 'pr-correction-load'`, `needs: ['vcsActivity']`.
 

@@ -44,8 +44,10 @@ describe('prCorrectionLoad', () => {
     expect(out.ok).toBe(true);
     if (out.ok) {
       expect(out.value.levelId).toBe('l1');
+      expect(out.value.rawValue).toBe('after-most');
       expect(out.value.confidence.singleSource).toBe(false);
       expect(out.value.confidence.agreement).toBe(1);
+      expect(out.value.confidence.margin).toBeGreaterThan(0);
     }
   });
 
@@ -58,6 +60,8 @@ describe('prCorrectionLoad', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l2');
       expect(out.value.confidence.agreement).toBe(1);
+      // 2 sits exactly on the band's achievable lower edge — must not zero out confidence.
+      expect(out.value.confidence.margin).toBeGreaterThan(0);
     }
   });
 
@@ -88,6 +92,24 @@ describe('prCorrectionLoad', () => {
   it('honours the grid calibration for the band ranks', () => {
     const out = run({ medianCorrectionCommitsAfterOpen: 4 }, { rankAfterMost: 5 });
     expect(out.ok && out.value.levelId).toBe('l5');
+  });
+
+  it('reads the boundary value exactly at correctionsAfterMost as band 0', () => {
+    const out = run({ medianCorrectionCommitsAfterOpen: 3 });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.value.rawValue).toBe('after-most');
+      expect(out.value.confidence.margin).toBeGreaterThan(0);
+    }
+  });
+
+  it('reads the boundary value exactly at correctionsAfterSome as band 1', () => {
+    const out = run({ medianCorrectionCommitsAfterOpen: 2 });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.value.rawValue).toBe('after-some');
+      expect(out.value.confidence.margin).toBeGreaterThan(0);
+    }
   });
 
   it('flags single-source and drops sufficiency when only family A is present', () => {
@@ -133,5 +155,6 @@ describe('prCorrectionLoad', () => {
   it('returns missing-piece when neither signal family is available', () => {
     const out = run({ total: 12 });
     expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.error.kind).toBe('missing-piece');
   });
 });
