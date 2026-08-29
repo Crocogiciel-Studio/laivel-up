@@ -117,6 +117,19 @@
             "rankPrompts": 1,
             "rankMemory": 2
           }
+        },
+        {
+          "criterionId": "test-enforcement",
+          "weight": 1,
+          "role": "confidence",
+          "params": {
+            "testsHigh": 0.7,
+            "testsLow": 0.4,
+            "coverageDrop": -0.02,
+            "rankPrompts": 1,
+            "rankMemory": 2,
+            "rankBehavior": 4
+          }
         }
       ]
     },
