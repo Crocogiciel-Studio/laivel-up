@@ -1,0 +1,9 @@
+{
+  "profile_id": "dev-sample",
+  "role": "backend developer",
+  "experience_years": 6,
+  "stack": ["TypeScript", "Node", "PostgreSQL"],
+  "team_size": 5,
+  "available": ["git-activity.json"],
+  "note": "synthetic profile shipped with the repo so the README command runs with no external data"
+}

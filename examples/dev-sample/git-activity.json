@@ -1,0 +1,36 @@
+{
+  "period": { "from": "2026-01-01", "to": "2026-06-30" },
+  "pull_requests": {
+    "total": 40,
+    "size_distribution": { "xs": 2, "s": 8, "m": 22, "l": 7, "xl": 1 },
+    "median_correction_commits_after_open": 1
+  },
+  "commits": {
+    "ai_coauthored_ratio": 0.72,
+    "message_convention_compliance": 0.9
+  },
+  "tests": {
+    "coverage_start": 0.55,
+    "coverage_end": 0.71,
+    "prs_with_tests_ratio": 0.8
+  },
+  "parallelism": {
+    "max_concurrent_branches": 2,
+    "median_concurrent_branches": 1
+  },
+  "context_files": {
+    "agents_md": true,
+    "rules_count": 2,
+    "skills_count": 1,
+    "hooks_count": 0,
+    "agents_count": 1,
+    "auto_retry_loop": false,
+    "last_updated": "2026-06-20"
+  },
+  "assistant_usage": {
+    "declared_tools": ["claude-code"],
+    "editor_integration": true,
+    "sessions_per_week": 18,
+    "tokens_per_week": 900000
+  }
+}

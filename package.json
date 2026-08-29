@@ -1,0 +1,43 @@
+{
+  "name": "laivel-up",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Parameterizable engine that places a developer on a leveling grid from evidence about their work",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "laivel-up": "./dist/cli/main.js"
+  },
+  "exports": {
+    ".": "./dist/core/index.js"
+  },
+  "files": [
+    "dist",
+    "presets"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "depcruise": "depcruise src --config .dependency-cruiser.cjs",
+    "build": "tsc --project tsconfig.build.json",
+    "evaluate": "node --experimental-strip-types src/cli/main.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "dependency-cruiser": "^16.9.0",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^3.0.2"
+  }
+}

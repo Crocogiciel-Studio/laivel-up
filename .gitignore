@@ -3,6 +3,14 @@
 
 # Dependencies
 node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
 
 # Environment
 .env
