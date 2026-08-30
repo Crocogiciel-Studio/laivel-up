@@ -1,0 +1,17 @@
+{
+  "run_id": "2026-08-30T08-37-12Z-i23",
+  "started_at": "2026-08-30T08:37:12Z",
+  "ended_at": "2026-08-30T08:55:51Z",
+  "issue_number": 23,
+  "outcome": "success",
+  "pr_number": 45,
+  "pr_url": "https://github.com/Crocogiciel-Studio/laivel-up/pull/45",
+  "default_before": "e380dfa9ff854f10277f948c178d26eb5797be01",
+  "default_after": "e380dfa9ff854f10277f948c178d26eb5797be01",
+  "default_drift_shas": [],
+  "current_branch": "feat/cli-format-help-exit-codes",
+  "recovery_applied": false,
+  "pr_decoration_applied": true,
+  "delegated_via_skill": true,
+  "error": null
+}
