@@ -1,0 +1,35 @@
+{
+  "name": "@laivel-up/studio-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Studio web app — the SPA a Lead Tech signs into (never imported by the core)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm run typecheck && vite build",
+    "preview": "vite preview --port 4174",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@laivel-up/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.3",
+    "vite": "^8.2.2",
+    "vitest": "^3.2.7"
+  }
+}
