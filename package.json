@@ -26,6 +26,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "depcruise": "depcruise src --config .dependency-cruiser.cjs",
+    "i18n:check": "node scripts/i18n-extract.mjs",
     "build": "tsc --project tsconfig.build.json",
     "dev": "tsx src/cli/main.ts",
     "dev:watch": "tsx watch src/cli/main.ts",

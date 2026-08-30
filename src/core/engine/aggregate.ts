@@ -1,6 +1,7 @@
 import type { Grid } from '../model/grid.js';
 import { levelById } from '../model/grid.js';
 import type { AxisVerdict, GlobalVerdict } from '../model/evaluation.js';
+import { msg } from '../model/evaluation.js';
 
 /**
  * Global level = the lowest axis level — a level is reached only if every axis
@@ -25,9 +26,11 @@ export function aggregate(
       levelRank: undefined,
       confidence: 0,
       bindingAxisId: undefined,
-      note:
-        `evidence bar not met: ${String(ruled.length)}/${String(grid.axes.length)} ` +
-        `axes could be ruled on, ${String(minRuledAxes)} required`,
+      note: msg('aggregate.evidence-bar-not-met', {
+        ruled: ruled.length,
+        total: grid.axes.length,
+        required: minRuledAxes,
+      }),
     };
   }
 
@@ -38,7 +41,7 @@ export function aggregate(
       levelRank: undefined,
       confidence: 0,
       bindingAxisId: undefined,
-      note: 'no axis could be ruled on',
+      note: msg('aggregate.no-axis-ruled'),
     };
   }
 
@@ -52,8 +55,11 @@ export function aggregate(
     bindingAxisId: binding.axisId,
     note:
       coverage < 1
-        ? `ruled on ${String(ruled.length)}/${String(grid.axes.length)} axes; ` +
-          `${binding.axisId} is binding`
-        : `${binding.axisId} is binding`,
+        ? msg('aggregate.binding-partial-coverage', {
+            ruled: ruled.length,
+            total: grid.axes.length,
+            axis: binding.axisId,
+          })
+        : msg('aggregate.binding', { axis: binding.axisId }),
   };
 }

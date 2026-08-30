@@ -4,6 +4,23 @@
  * per-criterion trace that justifies it, and a progression plan.
  */
 
+/**
+ * A translatable sentence: a stable `key` plus the values that fill its
+ * template. The core emits these and names no language; a consumer (an outbound
+ * adapter, the viewer) resolves them against a catalogue it owns.
+ */
+export interface Message {
+  readonly key: string;
+  readonly params?: Readonly<Record<string, string | number>>;
+}
+
+export function msg(
+  key: string,
+  params?: Readonly<Record<string, string | number>>,
+): Message {
+  return params === undefined ? { key } : { key, params };
+}
+
 export type LimitingFactor = 'agreement' | 'margin' | 'sufficiency' | 'none';
 
 export type ReadingStatus = 'read' | 'unknown';
@@ -36,13 +53,13 @@ export interface GlobalVerdict {
   readonly levelRank: number | undefined;
   readonly confidence: number;
   readonly bindingAxisId: string | undefined;
-  readonly note: string;
+  readonly note: Message;
 }
 
 export interface ProgressionPlan {
   readonly targetLevelId: string | undefined;
   readonly bindingAxisId: string | undefined;
-  readonly actions: readonly string[];
+  readonly actions: readonly Message[];
 }
 
 export interface Evaluation {
