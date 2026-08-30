@@ -1,0 +1,5 @@
+-- Seed data for a fresh local stack.
+--
+-- The seeded references -- the four sample profiles and the AIDD reference grid,
+-- inserted as `is_template = true` rows -- are added in issue #61. Until then a
+-- reset leaves the studio tables empty.

@@ -27,6 +27,41 @@ jobs:
       - run: pnpm i18n:check
       - run: pnpm build
 
+  db:
+    # Studio schema (supabase/). Applies the migrations to a bare Postgres with a
+    # thin Supabase shim, then runs the RLS smoke test. Does not need the full
+    # Supabase stack. Runs in parallel with `check`.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGURL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Apply Supabase shim + migrations
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/auth_shim.sql
+          for f in supabase/migrations/*.sql; do
+            echo "-- $f"
+            psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: RLS smoke test
+        run: psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql
+
   ui:
     # Satellite viewer (ui/). A pnpm workspace package with its own Vite/Vitest
     # toolchain — runs in parallel with `check` and never blocks the core job.

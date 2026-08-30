@@ -1,6 +1,8 @@
 # esbuild (pulled in by vitest) runs a postinstall to place its platform binary.
+# supabase runs a postinstall to download the platform CLI binary.
 allowBuilds:
   esbuild: true
+  supabase: true
 
 packages:
   - "ui"
