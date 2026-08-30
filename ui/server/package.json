@@ -1,0 +1,31 @@
+{
+  "name": "@laivel-up/studio-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Studio backend — CRUD for grids/profiles/runs and the engine-run endpoint (never imported by the core)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "pnpm run typecheck && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@supabase/supabase-js": "^2.47.10",
+    "fastify": "^5.2.1",
+    "laivel-up": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.2"
+  }
+}

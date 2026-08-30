@@ -75,3 +75,24 @@ jobs:
       - run: pnpm -C ui run typecheck
       - run: pnpm -C ui test
       - run: pnpm -C ui run build
+
+  studio-server:
+    # Studio backend (ui/server). Imports the core through `laivel-up/compose`,
+    # so the core is built first. Parallel with `check`.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+      - run: pnpm -C ui/server run typecheck
+      - run: pnpm -C ui/server test
+      - run: pnpm -C ui/server run build

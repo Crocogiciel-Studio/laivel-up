@@ -2,13 +2,11 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { realpathSync } from 'node:fs';
-import { evaluate } from '../core/index.js';
 import { type Result, ok, err } from '../core/model/result.js';
-import { inMemoryCatalogue } from '../adapters/catalogue/in-memory-catalogue.js';
+import { evaluateWithBuiltins } from '../compose.js';
 import { readProfileFromDirectory } from '../adapters/inbound/json-profile.js';
 import { jsonGridSource } from '../adapters/inbound/json-grid.js';
 import { jsonStreamSink } from '../adapters/outbound/json-evaluation.js';
-import { builtInEvaluators } from '../criteria/index.js';
 
 export type Options =
   | { readonly help: true }
@@ -116,9 +114,8 @@ export function main(): void {
     fail(gridResult.error.message, gridResult.error.issues);
   }
 
-  const catalogue = inMemoryCatalogue(builtInEvaluators);
   const evalOptions = options.minAxes === undefined ? {} : { minRuledAxes: options.minAxes };
-  const evaluation = evaluate(profileResult.value, gridResult.value, catalogue, evalOptions);
+  const evaluation = evaluateWithBuiltins(profileResult.value, gridResult.value, evalOptions);
 
   const emitted = jsonStreamSink().emit(evaluation);
   if (!emitted.ok) {
