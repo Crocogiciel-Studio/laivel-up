@@ -1,37 +1,46 @@
 # Studio database
 
-Local Supabase stack (Postgres + Auth) for the grid & profile studio — see
+Schema, RLS, and migrations for the grid & profile studio — see
 [`docs/studio.md`](../docs/studio.md) for how it fits the whole app, and epic
 [#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54).
 
+The deployed database is a **Supabase Cloud** project. A local stack
+(`supabase start`) is optional, for offline development.
+
 ## Prerequisites
 
-- Docker running.
 - `pnpm install` (pins the Supabase CLI as a dev dependency).
-- `psql` on `PATH` — used by `pnpm db:test`. `pnpm db:test:bare` needs only Docker.
+- Docker — only for a local stack or `pnpm db:test:bare`.
+- `psql` on `PATH` — only for `pnpm db:test`.
 
 ## Commands
 
 | Command | Does |
 | --- | --- |
-| `pnpm db:start` | Bring the local stack up. Prints the API URL, anon key, and service-role key — copy them into `.env`. |
-| `pnpm db:stop` | Stop the stack. |
-| `pnpm db:status` | Show URLs and keys for a running stack. |
-| `pnpm db:reset` | Drop, recreate, re-run every migration, then `seed.sql`. |
 | `pnpm db:new <name>` | Scaffold a new timestamped migration under `migrations/`. |
-| `pnpm db:test` | Reset, then run the RLS smoke test. Non-zero exit means a policy regressed. |
+| `pnpm db:link` | Link the CLI to the Cloud project (`--project-ref <ref>`). Once. |
+| `pnpm db:push` | Apply pending migrations to the linked Cloud project. |
+| `pnpm db:test` | Reset a local DB, then run the RLS smoke test. Non-zero exit = a policy regressed. |
+| `pnpm db:test:bare` | Same, against a throwaway Docker Postgres — no Supabase images. |
+| `pnpm db:start` / `db:stop` / `db:status` / `db:reset` | Local stack, for offline dev. |
+
+CI runs the smoke test on every push (`.github/workflows/ci.yml`, job `db`), so
+a broken policy or migration fails the build before it can reach Cloud.
 
 ## Layout
 
-- `config.toml` — stack configuration. `realtime`, `storage`, and `edge_runtime`
-  are off (unused). OAuth providers are defined but disabled; enable one and
-  supply credentials via environment variables (`.env.example`).
+- `config.toml` — configuration for a *local* stack only. `realtime`, `storage`,
+  `edge_runtime`, `analytics` are off; OAuth blocks are defined but disabled.
+  Cloud auth providers and redirect URLs are set in the dashboard.
 - `migrations/` — ordered schema changes. `20260830120000_studio_init.sql`
   creates `grid`, `profile`, `run` and their RLS policies.
-- `seed.sql` — data for a fresh stack. Templates land here in
+- `seed.sql` — data for a fresh local DB. Templates land here in
   [#61](https://github.com/Crocogiciel-Studio/laivel-up/issues/61).
 - `tests/rls_smoke.sql` — proves one user cannot read or write another's rows,
-  and that templates are read-only.
+  and that templates are read-only. `tests/auth_shim.sql` fakes the minimal
+  Supabase surface so it runs on a bare Postgres.
+- `scripts/db-smoke.sh` (repo root) — apply shim + migrations + smoke test; the
+  CI `db` job and `db:test:bare` both call it.
 
 ## Schema
 
