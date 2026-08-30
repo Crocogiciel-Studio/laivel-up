@@ -1,0 +1,113 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fbfbfa;
+  --fg: #1b1b1a;
+  --muted: #6b6b68;
+  --line: #d9d9d5;
+  --accent: #3b5bdb;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171a;
+    --fg: #ececec;
+    --muted: #9a9a97;
+    --line: #33333a;
+    --accent: #91a7ff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#app {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 0.35rem 0 1.75rem;
+  font-size: 0.9rem;
+}
+
+.lang label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-right: 0.4rem;
+}
+
+.dropzone {
+  border: 1.5px dashed var(--line);
+  border-radius: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone:hover,
+.dropzone.is-dragover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.dropzone .cta {
+  font-weight: 600;
+}
+
+.dropzone .hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+}
+
+.status {
+  margin-top: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.status.err {
+  color: #c92a2a;
+}
+
+.notice {
+  margin-top: 2rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+pre.dump {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}

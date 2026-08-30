@@ -13,6 +13,8 @@ export default [
       '.github/scripts/**',
       'tools/review-kit/**',
       '.claude/**',
+      // Satellite viewer — standalone package with its own toolchain (ui/tsconfig.json).
+      'ui/**',
     ],
   },
   ...tseslint.configs.strictTypeChecked,

@@ -25,3 +25,25 @@ jobs:
       - run: pnpm test
       - run: pnpm depcruise
       - run: pnpm build
+
+  ui:
+    # Satellite viewer (ui/). Standalone npm package, its own toolchain — runs in
+    # parallel with `check` and never blocks the core job.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - run: npm ci
+        working-directory: ui
+
+      - run: npm run typecheck
+        working-directory: ui
+
+      - run: npm run build
+        working-directory: ui
