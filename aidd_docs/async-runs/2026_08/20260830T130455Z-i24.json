@@ -1,0 +1,17 @@
+{
+  "run_id": "20260830T130455Z-i24",
+  "started_at": "2026-08-30T12:52:00Z",
+  "ended_at": "2026-08-30T13:04:55Z",
+  "issue_number": 24,
+  "outcome": "success",
+  "pr_number": 50,
+  "pr_url": "https://github.com/Crocogiciel-Studio/laivel-up/pull/50",
+  "default_before": "d12017830e6e2ca190a3d4cc68e33aa2bbeacf90",
+  "default_after": "d12017830e6e2ca190a3d4cc68e33aa2bbeacf90",
+  "default_drift_shas": [],
+  "current_branch": "feat/issue-24-readme-quickstart",
+  "recovery_applied": false,
+  "pr_decoration_applied": true,
+  "delegated_via_skill": true,
+  "error": null
+}
