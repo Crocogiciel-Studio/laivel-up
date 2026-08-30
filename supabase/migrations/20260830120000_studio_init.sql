@@ -18,10 +18,13 @@
 -- needed.
 
 -- Bump `updated_at` on every UPDATE. Runs as the invoking role (the default
--- SECURITY INVOKER); it only rewrites NEW, so RLS never bears on it.
+-- SECURITY INVOKER); it only rewrites NEW, so RLS never bears on it. Empty
+-- search_path so an injected schema cannot shadow anything (now() is in
+-- pg_catalog, which is always resolved).
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at := now();

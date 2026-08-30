@@ -1,7 +1,9 @@
-# For detailed configuration reference documentation, visit:
-# https://supabase.com/docs/guides/local-development/cli/config
-# A string used to distinguish different Supabase projects on the same host. Defaults to the
-# working directory name when running `supabase init`.
+# Config for a *local* Supabase stack (`supabase start`), used for offline dev.
+# The deployed database is a Supabase Cloud project; migrations reach it with
+# `supabase link --project-ref <ref>` then `pnpm db:push`. Cloud auth providers
+# and redirect URLs are set in the dashboard, not here.
+#
+# Reference: https://supabase.com/docs/guides/local-development/cli/config
 project_id = "laivel-up"
 
 [api]

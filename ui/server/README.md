@@ -15,9 +15,10 @@ untouched.
 ## Auth and ownership
 
 Every `/api/*` request needs `Authorization: Bearer <supabase-jwt>`. The token is
-verified against the local Supabase auth server, then **forwarded to Postgres**
-on each query, so row-level security (issue #55) is what decides access — the
-server adds no ownership checks of its own. There is no service-role key.
+verified against the Supabase auth server (`SUPABASE_URL`), then **forwarded to
+Postgres** on each query, so row-level security (issue #55) is what decides
+access — the server adds no ownership checks of its own. There is no
+service-role key.
 
 ## Routes
 
@@ -43,17 +44,19 @@ CLI adapters use, so anything saved here also runs in the CLI.
 
 ```
 pnpm install
-pnpm db:start                 # from the repo root — Supabase + the keys for .env
+cp .env.example .env          # SUPABASE_URL + SUPABASE_ANON_KEY from the dashboard
 pnpm build                    # build the core; ui/server imports laivel-up/compose
 pnpm -C ui/server dev         # tsx watch on :8787
 ```
 
-`pnpm -C ui/server test` needs the core built first (the integration test in
-`engine.test.ts` loads the real wiring); the route tests use fakes and do not.
+Points at whatever `SUPABASE_URL` names — the Cloud project, or a local
+`pnpm db:start` stack. `pnpm -C ui/server test` needs the core built first (the
+integration test in `engine.test.ts` loads the real wiring); the route tests use
+fakes and do not.
 
 ## Container
 
 ```
 docker build -f ui/server/Dockerfile -t laivel-up-studio-server .
-docker compose up --build     # server on :8787, Supabase via `pnpm db:start`
+docker compose up --build     # server on :8787, against the .env Supabase project
 ```

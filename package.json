@@ -32,13 +32,15 @@
     "dev": "tsx src/cli/main.ts",
     "dev:watch": "tsx watch src/cli/main.ts",
     "viz": "node scripts/viz.mjs",
+    "db:new": "supabase migration new",
+    "db:link": "supabase link",
+    "db:push": "supabase db push",
+    "db:test": "supabase db reset && psql \"${SUPABASE_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql",
+    "db:test:bare": "scripts/rls-test-bare.sh",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
-    "db:reset": "supabase db reset",
-    "db:new": "supabase migration new",
-    "db:test": "supabase db reset && psql \"${SUPABASE_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql",
-    "db:test:bare": "scripts/rls-test-bare.sh"
+    "db:reset": "supabase db reset"
   },
   "dependencies": {
     "zod": "^3.24.1"

@@ -1,11 +1,8 @@
-# Studio stack. Phase 2 wires the backend only; the web app (issue #57) and a
-# bundled Supabase join here next.
+# Studio stack. Phase 2 wires the backend only; the web app (issue #57) joins next.
 #
-# For now Supabase runs via the CLI on the host (`pnpm db:start`), and the
-# server reaches it through the host gateway. Copy `.env.example` to `.env` and
-# fill in the keys `pnpm db:start` prints.
+# The database is a Supabase project (Cloud by default). Copy `.env.example` to
+# `.env` and fill in SUPABASE_URL and SUPABASE_ANON_KEY from the dashboard, then:
 #
-#   pnpm db:start
 #   docker compose up --build
 
 services:
@@ -18,8 +15,6 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8787
-      SUPABASE_URL: http://host.docker.internal:54321
+      SUPABASE_URL: ${SUPABASE_URL:?set it in .env}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set it in .env}
       STUDIO_SITE_URL: ${STUDIO_SITE_URL:-http://127.0.0.1:5173}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
