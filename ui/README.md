@@ -3,10 +3,12 @@
 Static viewer for a laivel-up **evaluation** — the JSON that
 `node dist/cli/main.js --profile <dir>` prints. Drop the file in, read the result.
 
-> **Status: scaffold.** Today it parses an `evaluation.json` and echoes it. The
-> rendered view — global verdict, per-axis confidence, criterion table,
-> progression plan — lands with issue #41, which waits on the output schema
-> (#21) and the i18n descriptor contract (#42).
+> **Status.** Renders the global verdict, per-axis confidence and readings, and
+> the progression plan, with the raw JSON behind a toggle. Level and axis labels
+> come from a bundled copy of `presets/aidd.json`; an evaluation scored against
+> another grid falls back to raw ids. Engine sentences (`evidence`, `note`,
+> `actions`) show in English until the i18n descriptor contract (#42) lands —
+> everything the UI itself labels is already FR/EN.
 
 ## Why it is a separate package
 

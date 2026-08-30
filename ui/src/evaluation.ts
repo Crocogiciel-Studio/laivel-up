@@ -1,45 +1,51 @@
 /**
  * Shape of the JSON emitted by `src/adapters/outbound/json-evaluation.ts` in the
- * core repo, as of today. Kept here by hand for the scaffold.
+ * core repo, kept in step with `docs/evaluation.schema.json` (#21).
  *
- * TODO(#21): regenerate this from `docs/evaluation.schema.json` once that lands.
  * TODO(#42): `evidence` / `note` / `actions` become `{ key, params }` descriptors
- * resolved through the shared i18n catalogue — this file changes with it.
+ * resolved through the shared i18n catalogue — this file and view-model.ts change
+ * with it.
  */
+
+// `JSON.stringify` drops `undefined` properties, so a field the model types as
+// `X | undefined` is simply absent from the JSON. Model those as optional here;
+// a hand-written file that puts an explicit `null` is tolerated too.
+type Absent<T> = T | null | undefined;
+type Factor = 'agreement' | 'margin' | 'sufficiency' | 'none';
 
 export interface CriterionReading {
   readonly criterionId: string;
   readonly axisId: string;
   readonly status: 'read' | 'unknown';
   readonly role: 'level' | 'confidence' | 'cap';
-  readonly levelId: string | null;
-  readonly levelRank: number | null;
-  readonly rawValue: number | string | null;
+  readonly levelId?: Absent<string>;
+  readonly levelRank?: Absent<number>;
+  readonly rawValue?: Absent<number | string>;
   readonly confidence: number;
-  readonly limitingFactor: 'agreement' | 'margin' | 'sufficiency' | 'none';
+  readonly limitingFactor: Factor;
   readonly evidence: string;
 }
 
 export interface AxisVerdict {
   readonly axisId: string;
-  readonly levelId: string | null;
-  readonly levelRank: number | null;
+  readonly levelId?: Absent<string>;
+  readonly levelRank?: Absent<number>;
   readonly confidence: number;
-  readonly limitingFactor: 'agreement' | 'margin' | 'sufficiency' | 'none';
+  readonly limitingFactor: Factor;
   readonly readings: readonly CriterionReading[];
 }
 
 export interface GlobalVerdict {
-  readonly levelId: string | null;
-  readonly levelRank: number | null;
+  readonly levelId?: Absent<string>;
+  readonly levelRank?: Absent<number>;
   readonly confidence: number;
-  readonly bindingAxisId: string | null;
+  readonly bindingAxisId?: Absent<string>;
   readonly note: string;
 }
 
 export interface ProgressionPlan {
-  readonly targetLevelId: string | null;
-  readonly bindingAxisId: string | null;
+  readonly targetLevelId?: Absent<string>;
+  readonly bindingAxisId?: Absent<string>;
   readonly actions: readonly string[];
 }
 
