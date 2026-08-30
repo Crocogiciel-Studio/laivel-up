@@ -7,12 +7,16 @@
 // i18n/en.json — EN is the pivot, so a missing EN key exits non-zero. Missing FR
 // keys and catalogue entries no code references are reported but do not fail.
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KEY_CALL = /\bmsg\(\s*(['"])((?:(?!\1).)+)\1/g;
+
+// Keys built dynamically (`factor.${limitingFactor}` in progression.ts) so the
+// static scan cannot see them. LimitingFactor is a closed enum; keep in step.
+const DYNAMIC_KEYS = ['factor.agreement', 'factor.margin', 'factor.sufficiency', 'factor.none'];
 
 function walk(dir) {
   const out = [];
@@ -26,7 +30,7 @@ function walk(dir) {
 
 /** @returns {{ keys: string[], missingEn: string[], missingFr: string[], orphanEn: string[], orphanFr: string[] }} */
 export function checkCatalogues(root = ROOT) {
-  const keys = new Set();
+  const keys = new Set(DYNAMIC_KEYS);
   for (const file of walk(join(root, 'src'))) {
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(KEY_CALL)) keys.add(match[2]);
@@ -44,7 +48,11 @@ export function checkCatalogues(root = ROOT) {
   };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+
+if (invokedDirectly) {
   const r = checkCatalogues();
   const line = (label, list) => {
     if (list.length > 0) process.stdout.write(`${label}:\n  ${list.join('\n  ')}\n`);

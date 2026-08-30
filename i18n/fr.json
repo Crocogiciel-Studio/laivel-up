@@ -6,5 +6,9 @@
   "progression.insufficient-axes": "Complétez le profil : trop peu d'axes ont pu être statués pour situer un niveau.",
   "progression.top-level": "Niveau maximum atteint sur l'axe contraignant {axis}.",
   "progression.raise-axis": "Faites progresser {axis} de {from} vers {to}.",
-  "progression.confidence-limited": "La confiance sur {axis} est limitée par {factor} ; ajoutez des preuves qui l'adressent."
+  "progression.confidence-limited": "La confiance sur {axis} est limitée par {factor} ; ajoutez des preuves qui l'adressent.",
+  "factor.agreement": "l'accord des signaux",
+  "factor.margin": "la marge au seuil",
+  "factor.sufficiency": "la suffisance des preuves",
+  "factor.none": "rien"
 }

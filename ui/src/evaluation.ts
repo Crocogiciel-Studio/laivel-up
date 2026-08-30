@@ -2,9 +2,10 @@
  * Shape of the JSON emitted by `src/adapters/outbound/json-evaluation.ts` in the
  * core repo, kept in step with `docs/evaluation.schema.json` (#21).
  *
- * TODO(#42): `evidence` / `note` / `actions` become `{ key, params }` descriptors
- * resolved through the shared i18n catalogue — this file and view-model.ts change
- * with it.
+ * TODO(#42): the core now emits `note` and `actions[]` as `{ key, params }`
+ * descriptors (PR #47), and `evidence` will follow. Until this file and
+ * view-model.ts resolve them against the i18n catalogue, the viewer renders
+ * `[object Object]` for `note` and each progression action.
  */
 
 // `JSON.stringify` drops `undefined` properties, so a field the model types as
