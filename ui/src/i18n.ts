@@ -17,6 +17,7 @@ const en: Catalogue = {
   'drop.hint': 'Everything runs in your browser. No upload, no network.',
   'loaded.error': 'Could not read that file: {reason}',
   'lang.label': 'Language',
+  'profile.label': 'Profile',
 
   'verdict.heading': 'Level',
   'verdict.for': '{subject} · grid {grid}',
@@ -60,6 +61,7 @@ const fr: Catalogue = {
   'drop.hint': 'Tout s’exécute dans votre navigateur. Aucun envoi, aucun réseau.',
   'loaded.error': 'Lecture du fichier impossible : {reason}',
   'lang.label': 'Langue',
+  'profile.label': 'Profil',
 
   'verdict.heading': 'Niveau',
   'verdict.for': '{subject} · grille {grid}',

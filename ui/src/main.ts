@@ -12,6 +12,25 @@ import { detectLang, persistLang, t, LANGS, type Lang } from './i18n';
 let lang: Lang = detectLang();
 let loaded: Evaluation | null = null;
 let error: string | null = null;
+/** Populated when `pnpm viz` (no arg) has written an evaluations/ catalogue. */
+let profiles: string[] | null = null;
+let currentProfile: string | null = null;
+
+const PROFILE_KEY = 'laivel-up.ui.profile';
+const readProfile = (): string | null => {
+  try {
+    return localStorage.getItem(PROFILE_KEY);
+  } catch {
+    return null;
+  }
+};
+const writeProfile = (name: string): void => {
+  try {
+    localStorage.setItem(PROFILE_KEY, name);
+  } catch {
+    // best effort only.
+  }
+};
 
 const app = document.querySelector<HTMLElement>('#app');
 if (app === null) {
@@ -157,12 +176,38 @@ function render(): void {
     render();
   });
 
-  const header = el('header', {}, [
-    el('h1', {}, [t(lang, 'app.title')]),
+  const controls: HTMLElement[] = [];
+  if (profiles !== null && profiles.length > 0) {
+    const pick = el('select', { id: 'profile-select' });
+    for (const name of profiles) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      opt.selected = name === currentProfile;
+      pick.append(opt);
+    }
+    pick.addEventListener('change', () => {
+      currentProfile = (pick as HTMLSelectElement).value;
+      writeProfile(currentProfile);
+      void loadProfile(currentProfile);
+    });
+    controls.push(
+      el('div', { class: 'lang' }, [
+        el('label', { for: 'profile-select' }, [t(lang, 'profile.label')]),
+        pick,
+      ]),
+    );
+  }
+  controls.push(
     el('div', { class: 'lang' }, [
       el('label', { for: 'lang-select' }, [t(lang, 'lang.label')]),
       select,
     ]),
+  );
+
+  const header = el('header', {}, [
+    el('h1', {}, [t(lang, 'app.title')]),
+    el('div', { class: 'controls' }, controls),
   ]);
 
   const input = document.createElement('input');
@@ -236,13 +281,63 @@ async function ingest(file: File): Promise<void> {
   }
 }
 
-/** Startup: pull an evaluation from `?src=` or `evaluation.json`; stay quiet if there is none. */
-async function autoload(): Promise<void> {
+async function fetchText(url: string): Promise<string | null> {
   try {
-    const res = await fetch(evaluationSource(window.location.search));
-    if (res.ok) accept(await res.text());
+    const res = await fetch(url);
+    return res.ok ? await res.text() : null;
   } catch {
-    // no co-located evaluation (e.g. opened from file://) — the drop zone stands.
+    return null;
+  }
+}
+
+async function loadProfile(name: string): Promise<void> {
+  const text = await fetchText(`evaluations/${encodeURIComponent(name)}.json`);
+  if (text !== null) accept(text);
+}
+
+/** A JSON array of strings, or null — the dev server answers a missing file with the HTML shell. */
+function parseNameList(text: string | null): string[] | null {
+  if (text === null) return null;
+  try {
+    const value: unknown = JSON.parse(text);
+    return Array.isArray(value) && value.every((n) => typeof n === 'string') ? (value as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Startup. `?src=<url>` wins. Then a `pnpm viz` catalogue
+ * (`evaluations/index.json` + a per-profile picker). Then a single co-located
+ * `evaluation.json`. Otherwise the drop zone stands (e.g. opened from file://).
+ */
+async function autoload(): Promise<void> {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('src')) {
+    const text = await fetchText(evaluationSource(window.location.search));
+    if (text !== null) accept(text);
+    return;
+  }
+
+  const names = parseNameList(await fetchText('evaluations/index.json'));
+  if (names !== null && names.length > 0) {
+    profiles = names;
+    const remembered = readProfile();
+    currentProfile = remembered !== null && names.includes(remembered) ? remembered : names[0]!;
+    await loadProfile(currentProfile);
+    return;
+  }
+
+  // A dev server with nothing written yet answers this with its HTML shell —
+  // parse quietly and leave the drop zone up rather than flashing an error.
+  const single = await fetchText(evaluationSource(window.location.search));
+  if (single !== null) {
+    const parsed = parseEvaluation(single);
+    if (parsed.ok) {
+      loaded = parsed.value;
+      error = null;
+      render();
+    }
   }
 }
 

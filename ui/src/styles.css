@@ -53,6 +53,12 @@ h1 {
   font-size: 0.9rem;
 }
 
+.controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .lang label {
   color: var(--muted);
   font-size: 0.8rem;
