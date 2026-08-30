@@ -10,9 +10,9 @@ thresholds sit. The engine core hardcodes no axis and no level. The AIDD
 reference grid ships as one preset (`presets/aidd.json`); a game progression
 system or an internal review rubric would be another.
 
-> Status: **walking skeleton**. The hexagon, the JSON adapters, the confidence
-> and aggregation engine, and one wired criterion run end to end. Real criteria
-> per axis (Size, Intervention, Parallelism, Harness) land next.
+> Status: hexagonal engine operational — four axes wired (Size, Harness,
+> Intervention, Parallelism), each with its own bundle of criteria, JSON
+> output conforming to the schema, and a bilingual viewer.
 
 ## Run it
 
@@ -47,6 +47,41 @@ Flags:
 No network, no API key. Every evaluator is deterministic and returns `unknown`
 rather than guessing when the evidence it needs is absent.
 
+## See it rendered
+
+```bash
+pnpm viz                         # evaluates test/fixtures/profiles/* and opens the viewer
+pnpm viz -p <dir> -g <preset>    # one profile
+```
+
+Serves the HTML locally — no application server required (Vite in dev); the
+`ui/` bundle is also a single static file openable from `file://`. See
+[`ui/README.md`](ui/README.md) for detail (Docker, `?src=`).
+
+## What it measures
+
+Four axes, each fed by its own bundle of criteria plus a cross-cutting
+self-report check (`declaratif-contradiction`) that can lower confidence and
+cap a level but never raise one:
+
+- **Size** — how large the changes the subject typically ships are: PR
+  feature-size distribution (files, lines, tier histogram), corroborated by
+  the raw PR sizes.
+- **Harness** — how deeply the subject has invested in and kept up an
+  AI-assisted working environment: tooling context depth, behavior-artifact
+  density, loop convergence, commit discipline, code-quality and bugs floors,
+  memory maintenance, test enforcement, assistant integration.
+- **Intervention** — how much manual correction the work needed to land:
+  session transcripts when present, PR correction load, review-comment load,
+  CI-iteration load, revert rate. Fewer interventions place higher.
+- **Parallelism** — how many streams of work the subject usually runs at
+  once: concurrent streams and branch burstiness.
+
+An axis with no supporting evidence stays `unknown` rather than guessing, the
+global level is the `min()` across axes that could be ruled on, and per
+criterion the confidence is the weakest of agreement / margin / sufficiency —
+the report names whichever one is limiting.
+
 ## How a verdict is built
 
 1. **Inbound adapter** parses a profile directory into a `Profile` — a portable
@@ -64,6 +99,10 @@ rather than guessing when the evidence it needs is absent.
 5. **Global level** = the lowest axis level — a level holds only if every axis
    reaches it. The binding axis is the one holding the subject back.
 6. **Progression plan** points at the one move that raises the global level.
+
+`GlobalVerdict.note` and `ProgressionPlan.actions` are i18n descriptors —
+`{ key, params }` resolved by the consumer against `i18n/{en,fr}.json`;
+`evidence` sentences are still English-only.
 
 ## Layout
 
