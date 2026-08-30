@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Crocogiciel-Studio/laivel-up/docs/evaluation.schema.json",
+  "title": "Evaluation",
+  "description": "Shape emitted by renderEvaluationJson (JSON.stringify(evaluation, null, 2)) for src/core/model/evaluation.ts#Evaluation. Fields typed `X | undefined` in the model are declared here but omitted from `required`: JSON.stringify drops undefined properties, it never serializes them as null. Inlined (no $ref/definitions): kept to the type/enum/required/properties/additionalProperties/items subset the project's structural test validator understands.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subjectId", "gridId", "global", "axes", "progression", "generatedAt"],
+  "properties": {
+    "subjectId": { "type": "string" },
+    "gridId": { "type": "string" },
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "note"],
+      "properties": {
+        "levelId": { "type": "string" },
+        "levelRank": { "type": "number" },
+        "confidence": { "type": "number" },
+        "bindingAxisId": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "axes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["axisId", "confidence", "limitingFactor", "readings"],
+        "properties": {
+          "axisId": { "type": "string" },
+          "levelId": { "type": "string" },
+          "levelRank": { "type": "number" },
+          "confidence": { "type": "number" },
+          "limitingFactor": {
+            "type": "string",
+            "enum": ["agreement", "margin", "sufficiency", "none"]
+          },
+          "readings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "criterionId",
+                "axisId",
+                "status",
+                "role",
+                "confidence",
+                "limitingFactor",
+                "evidence"
+              ],
+              "properties": {
+                "criterionId": { "type": "string" },
+                "axisId": { "type": "string" },
+                "status": { "type": "string", "enum": ["read", "unknown"] },
+                "role": { "type": "string", "enum": ["level", "confidence", "cap"] },
+                "levelId": { "type": "string" },
+                "levelRank": { "type": "number" },
+                "rawValue": { "type": ["number", "string"] },
+                "confidence": { "type": "number" },
+                "limitingFactor": {
+                  "type": "string",
+                  "enum": ["agreement", "margin", "sufficiency", "none"]
+                },
+                "evidence": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "progression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actions"],
+      "properties": {
+        "targetLevelId": { "type": "string" },
+        "bindingAxisId": { "type": "string" },
+        "actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "ISO 8601 timestamp."
+    }
+  }
+}

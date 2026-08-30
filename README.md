@@ -25,7 +25,8 @@ node dist/cli/main.js --profile examples/dev-sample
 ```
 
 That reads the sample profile directory, evaluates it against
-`presets/aidd.json`, and prints the evaluation as JSON.
+`presets/aidd.json`, and prints the evaluation as JSON. The emitted JSON's
+shape is documented in [`docs/evaluation.schema.json`](docs/evaluation.schema.json).
 
 To run straight from the TypeScript source without a build (local dev):
 
