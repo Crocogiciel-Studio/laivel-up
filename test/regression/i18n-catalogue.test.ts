@@ -62,13 +62,27 @@ describe('i18n catalogue', () => {
     expect([...placeholders(frT ?? '')].sort()).toEqual([...placeholders(enT ?? '')].sort());
   });
 
+  /** Keys reachable from a message: the key itself, plus any `.`-string param and nested Message. */
+  const keysOf = (m: Message): string[] => {
+    const out = [m.key];
+    for (const v of Object.values(m.params ?? {})) {
+      if (typeof v === 'string' && /^[a-z][\w-]*(\.[\w-]+)+$/.test(v)) out.push(v);
+      else if (typeof v === 'object') out.push(...keysOf(v));
+    }
+    return out;
+  };
+
   it.each(['perceval', 'bohort', 'leodagan', 'arthur'])(
-    'resolves %s in both languages with no leftover placeholder',
+    'resolves %s in both languages with no leftover placeholder or raw key',
     (name) => {
       const messages = messagesFor(name);
       expect(messages.length).toBeGreaterThan(0);
-      for (const lang of [en, fr]) {
-        for (const message of messages) {
+      for (const message of messages) {
+        for (const key of keysOf(message)) {
+          expect(en[key], `en.json missing ${key} (from ${message.key})`).toBeDefined();
+          expect(fr[key], `fr.json missing ${key} (from ${message.key})`).toBeDefined();
+        }
+        for (const lang of [en, fr]) {
           const text = resolveMessage(message, lang);
           expect(text, `${message.key} not found`).not.toBe(message.key);
           expect(text, `${message.key} left a hole`).not.toMatch(/\{[a-z]+\}/i);

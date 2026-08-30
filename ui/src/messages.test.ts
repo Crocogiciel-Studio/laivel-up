@@ -32,6 +32,22 @@ describe('resolveMessage', () => {
     expect(resolveMessage('size is binding', 'en')).toBe('size is binding');
   });
 
+  it('resolves a nested Message param recursively, in both languages', () => {
+    const m = {
+      key: 'criterion.memory-maintenance',
+      params: {
+        state: { key: 'criterion.memory-maintenance.present-updated', params: { date: '2026-07-12' } },
+        tier: 'tier.memory',
+      },
+    };
+    expect(resolveMessage(m, 'en')).toBe(
+      'project memory maintenance: present, last updated 2026-07-12 => memory',
+    );
+    expect(resolveMessage(m, 'fr')).toBe(
+      'entretien de la mémoire projet : présente, dernière mise à jour 2026-07-12 => mémoire',
+    );
+  });
+
   it('yields "" for a malformed descriptor instead of throwing', () => {
     for (const bad of [undefined, null, 42, {}, { key: 7 }, []]) {
       expect(resolveMessage(bad as never, 'en')).toBe('');
