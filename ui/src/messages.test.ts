@@ -31,4 +31,10 @@ describe('resolveMessage', () => {
   it('tolerates a plain string (pre-#42 evaluation.json)', () => {
     expect(resolveMessage('size is binding', 'en')).toBe('size is binding');
   });
+
+  it('yields "" for a malformed descriptor instead of throwing', () => {
+    for (const bad of [undefined, null, 42, {}, { key: 7 }, []]) {
+      expect(resolveMessage(bad as never, 'en')).toBe('');
+    }
+  });
 });
