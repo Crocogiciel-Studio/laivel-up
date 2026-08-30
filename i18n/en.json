@@ -6,5 +6,9 @@
   "progression.insufficient-axes": "Provide more of the profile: too few axes could be ruled on to place a level.",
   "progression.top-level": "Top level reached on the binding axis {axis}.",
   "progression.raise-axis": "Raise {axis} from {from} toward {to}.",
-  "progression.confidence-limited": "Confidence on {axis} is limited by {factor}; add evidence that addresses it."
+  "progression.confidence-limited": "Confidence on {axis} is limited by {factor}; add evidence that addresses it.",
+  "factor.agreement": "signal agreement",
+  "factor.margin": "margin to threshold",
+  "factor.sufficiency": "evidence sufficiency",
+  "factor.none": "nothing"
 }

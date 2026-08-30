@@ -1,6 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { evaluate } from '../../src/core/index.js';
 import type { Message } from '../../src/core/model/evaluation.js';
@@ -9,6 +9,7 @@ import { readProfileFromDirectory } from '../../src/adapters/inbound/json-profil
 import { jsonGridSource } from '../../src/adapters/inbound/json-grid.js';
 import { builtInEvaluators } from '../../src/criteria/index.js';
 import { resolveMessage, type MessageCatalogue } from '../../src/adapters/outbound/resolve-message.js';
+import { checkCatalogues } from '../../scripts/i18n-extract.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '../..');
@@ -18,23 +19,8 @@ const GRID = resolve(ROOT, 'presets/aidd.json');
 const load = (lang: string): MessageCatalogue =>
   JSON.parse(readFileSync(resolve(ROOT, 'i18n', `${lang}.json`), 'utf8')) as MessageCatalogue;
 
-/** Same scan as `scripts/i18n-extract.mjs`: every `msg('key', …)` literal in src/. */
-function keysInSource(): Set<string> {
-  const keys = new Set<string>();
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
-        for (const m of readFileSync(full, 'utf8').matchAll(/\bmsg\(\s*(['"])((?:(?!\1).)+)\1/g)) {
-          keys.add(m[2]!);
-        }
-      }
-    }
-  };
-  walk(resolve(ROOT, 'src'));
-  return keys;
-}
+const placeholders = (template: string): Set<string> =>
+  new Set([...template.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!));
 
 const gridResult = jsonGridSource(GRID).load();
 if (!gridResult.ok) throw new Error(gridResult.error.message);
@@ -50,13 +36,26 @@ function messagesFor(name: string): Message[] {
 }
 
 describe('i18n catalogue', () => {
-  const keys = [...keysInSource()].sort();
+  const report = checkCatalogues(ROOT);
+  const en = load('en');
+  const fr = load('fr');
 
   it('every msg() key in src/ has an en.json and fr.json entry', () => {
-    const en = new Set(Object.keys(load('en')));
-    const fr = new Set(Object.keys(load('fr')));
-    expect(keys.filter((k) => !en.has(k)), 'missing in en.json').toEqual([]);
-    expect(keys.filter((k) => !fr.has(k)), 'missing in fr.json').toEqual([]);
+    expect(report.missingEn).toEqual([]);
+    expect(report.missingFr).toEqual([]);
+  });
+
+  it('no catalogue entry is unreferenced', () => {
+    expect(report.orphanEn).toEqual([]);
+    expect(report.orphanFr).toEqual([]);
+  });
+
+  it.each(report.keys)('%s declares the same placeholders in en and fr', (key) => {
+    const enT = en[key];
+    const frT = fr[key];
+    expect(enT, `en.json missing ${key}`).toBeDefined();
+    expect(frT, `fr.json missing ${key}`).toBeDefined();
+    expect([...placeholders(frT ?? '')].sort()).toEqual([...placeholders(enT ?? '')].sort());
   });
 
   it.each(['perceval', 'bohort', 'leodagan', 'arthur'])(
@@ -64,12 +63,11 @@ describe('i18n catalogue', () => {
     (name) => {
       const messages = messagesFor(name);
       expect(messages.length).toBeGreaterThan(0);
-      for (const lang of ['en', 'fr'] as const) {
-        const cat = load(lang);
+      for (const lang of [en, fr]) {
         for (const message of messages) {
-          const text = resolveMessage(message, cat);
-          expect(text, `${lang}: ${message.key} not found`).not.toBe(message.key);
-          expect(text, `${lang}: ${message.key} left a hole`).not.toMatch(/\{[a-z]+\}/i);
+          const text = resolveMessage(message, lang);
+          expect(text, `${message.key} not found`).not.toBe(message.key);
+          expect(text, `${message.key} left a hole`).not.toMatch(/\{[a-z]+\}/i);
         }
       }
     },

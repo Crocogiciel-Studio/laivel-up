@@ -5,6 +5,8 @@ import { resolveMessage, type MessageCatalogue } from './resolve-message.js';
 const catalogue: MessageCatalogue = {
   'aggregate.binding': '{axis} is binding',
   'progression.raise-axis': 'Raise {axis} from {from} toward {to}.',
+  'progression.confidence-limited': 'limited by {factor}',
+  'factor.margin': 'margin to threshold',
   'plain': 'no placeholders here',
 };
 
@@ -30,5 +32,17 @@ describe('resolveMessage', () => {
 
   it('falls back to the key when the catalogue has no entry', () => {
     expect(resolveMessage(msg('unknown.key', { a: 1 }), catalogue)).toBe('unknown.key');
+  });
+
+  it('resolves a param value that is itself a namespaced catalogue key', () => {
+    expect(resolveMessage(msg('progression.confidence-limited', { factor: 'factor.margin' }), catalogue)).toBe(
+      'limited by margin to threshold',
+    );
+  });
+
+  it('leaves a namespaced param untouched when the catalogue lacks it', () => {
+    expect(resolveMessage(msg('progression.confidence-limited', { factor: 'factor.none' }), catalogue)).toBe(
+      'limited by factor.none',
+    );
   });
 });

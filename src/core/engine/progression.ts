@@ -48,7 +48,7 @@ export function planProgression(
     actions.push(
       msg('progression.confidence-limited', {
         axis: axisLabel,
-        factor: bindingVerdict.limitingFactor,
+        factor: `factor.${bindingVerdict.limitingFactor}`,
       }),
     );
   }
