@@ -3,12 +3,14 @@
  * view model the DOM layer renders. All display strings are resolved here so the
  * rendering stays mechanical and this stays unit-testable without a DOM.
  *
- * Engine sentences (`evidence`, `note`, progression `actions`) pass through
- * verbatim — they are English until #42 turns them into translatable
- * descriptors. Everything the UI itself labels goes through `t`.
+ * `note` and progression `actions` are `{ key, params }` descriptors resolved
+ * against the bundled core catalogue. `evidence` is still a plain sentence and
+ * stays English until the criteria emit descriptors too (#42). Everything the UI
+ * itself labels goes through `t`.
  */
 import type { Evaluation } from './evaluation';
 import { type Grid, resolveGrid, levelLabel, axisLabel, orderedLevelIds } from './grid';
+import { resolveMessage } from './messages';
 import { t, type Lang } from './i18n';
 
 export interface ReadingRow {
@@ -94,14 +96,14 @@ export function buildViewModel(evaluation: Evaluation, lang: Lang): ViewModel {
       level: levelLabel(grid, evaluation.global.levelId),
       confidencePct: pct(evaluation.global.confidence),
       bindingAxis: has(bindingId) ? axisLabel(grid, bindingId) : null,
-      note: evaluation.global.note,
+      note: resolveMessage(evaluation.global.note, lang),
     },
     scale: orderedLevelIds(grid).map((id) => levelLabel(grid, id)),
     axes,
     progression: {
       targetLevel: levelLabel(grid, evaluation.progression.targetLevelId),
       bindingAxis: has(progressionBinding) ? axisLabel(grid, progressionBinding) : null,
-      actions: evaluation.progression.actions,
+      actions: evaluation.progression.actions.map((a) => resolveMessage(a, lang)),
     },
   };
 }
