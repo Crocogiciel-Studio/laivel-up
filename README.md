@@ -61,8 +61,8 @@ Serves the HTML locally — no application server required (Vite in dev); the
 ## What it measures
 
 Four axes, each fed by its own bundle of criteria plus a cross-cutting
-self-report check (`declaratif-contradiction`) that can lower confidence when
-it disagrees with the vote but never raise a level:
+self-report check (`declaratif-contradiction`) that only lowers confidence when
+it disagrees with the vote, never moving a level:
 
 - **Size** — how large the changes the subject typically ships are: PR
   feature-size distribution (files, lines, tier histogram), corroborated by
