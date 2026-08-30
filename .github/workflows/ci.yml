@@ -27,26 +27,21 @@ jobs:
       - run: pnpm build
 
   ui:
-    # Satellite viewer (ui/). Standalone npm package, its own toolchain — runs in
-    # parallel with `check` and never blocks the core job.
+    # Satellite viewer (ui/). A pnpm workspace package with its own Vite/Vitest
+    # toolchain — runs in parallel with `check` and never blocks the core job.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache: pnpm
 
-      - run: npm ci
-        working-directory: ui
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run typecheck
-        working-directory: ui
-
-      - run: npm test
-        working-directory: ui
-
-      - run: npm run build
-        working-directory: ui
+      - run: pnpm -C ui run typecheck
+      - run: pnpm -C ui test
+      - run: pnpm -C ui run build
