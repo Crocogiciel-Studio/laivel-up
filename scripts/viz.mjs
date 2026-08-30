@@ -1,49 +1,86 @@
 #!/usr/bin/env node
-// One command to see an evaluation rendered:
+// One command to see evaluations rendered:
 //
-//   pnpm viz                        # evaluates examples/dev-sample
-//   pnpm viz -p test/fixtures/profiles/arthur
+//   pnpm viz                       # every profile in test/fixtures/profiles/
+//   pnpm viz arthur                # just that fixture
 //   pnpm viz -p <dir> -g <preset.json>
 //
-// Builds the core if needed, evaluates the profile, drops the JSON where the
+// Builds the core if needed, evaluates the profile(s), drops the JSON where the
 // viewer's dev server picks it up, then opens the browser.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
+const consumed = new Set();
 const flag = (...names) => {
   for (const name of names) {
     const i = argv.indexOf(name);
-    if (i !== -1 && argv[i + 1] !== undefined) return argv[i + 1];
+    if (i !== -1 && argv[i + 1] !== undefined) {
+      consumed.add(i).add(i + 1);
+      return argv[i + 1];
+    }
   }
   return undefined;
 };
 
-const profile = flag('--profile', '-p') ?? 'examples/dev-sample';
+const FIXTURES = 'test/fixtures/profiles';
 const grid = flag('--grid', '-g') ?? 'presets/aidd.json';
-const run = (cmd, args) => execFileSync(cmd, args, { cwd: root, stdio: ['ignore', 'pipe', 'inherit'] });
+const publicDir = resolve(root, 'ui/public');
+const evalDir = resolve(publicDir, 'evaluations');
+
+/** `--profile`/`-p`, or a bare positional; a path as-is, or a name under the fixtures dir. */
+const positional = argv.find((a, i) => !consumed.has(i) && !a.startsWith('-'));
+const asked = flag('--profile', '-p') ?? positional;
+const resolveProfile = (v) => {
+  if (v.includes('/')) return v;
+  if (existsSync(resolve(root, FIXTURES, v))) return `${FIXTURES}/${v}`;
+  if (existsSync(resolve(root, 'examples', v))) return `examples/${v}`;
+  return v;
+};
 
 if (!existsSync(resolve(root, 'dist/cli/main.js'))) {
   process.stderr.write('building core (one-time)…\n');
   execFileSync('pnpm', ['build'], { cwd: root, stdio: 'inherit' });
 }
 
-let json;
+const evaluate = (profileDir) =>
+  execFileSync('node', ['dist/cli/main.js', '--profile', profileDir, '--grid', grid], {
+    cwd: root,
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+
+mkdirSync(publicDir, { recursive: true });
+rmSync(evalDir, { recursive: true, force: true });
+rmSync(resolve(publicDir, 'evaluation.json'), { force: true });
+
 try {
-  json = run('node', ['dist/cli/main.js', '--profile', profile, '--grid', grid]);
-} catch {
-  process.stderr.write(`\nevaluation failed for "${profile}" — check the path and the preset.\n`);
+  if (asked === undefined) {
+    const names = readdirSync(resolve(root, FIXTURES), { withFileTypes: true })
+      .filter((e) => e.isDirectory() && existsSync(resolve(root, FIXTURES, e.name, 'profile.json')))
+      .map((e) => e.name)
+      .sort();
+    if (names.length === 0) throw new Error(`no profiles under ${FIXTURES}`);
+    mkdirSync(evalDir, { recursive: true });
+    for (const name of names) {
+      writeFileSync(resolve(evalDir, `${name}.json`), evaluate(`${FIXTURES}/${name}`));
+    }
+    writeFileSync(resolve(evalDir, 'index.json'), JSON.stringify(names));
+    process.stderr.write(`evaluated ${String(names.length)} profiles: ${names.join(', ')}\n`);
+  } else {
+    const profileDir = resolveProfile(asked);
+    writeFileSync(resolve(publicDir, 'evaluation.json'), evaluate(profileDir));
+    process.stderr.write(`evaluated ${profileDir}\n`);
+  }
+} catch (err) {
+  process.stderr.write(`\nevaluation failed: ${err.message}\n`);
   process.exit(1);
 }
 
-mkdirSync(resolve(root, 'ui/public'), { recursive: true });
-writeFileSync(resolve(root, 'ui/public/evaluation.json'), json);
-process.stderr.write(`evaluated ${profile} → opening the viewer (Ctrl+C to stop)…\n`);
-
+process.stderr.write('opening the viewer (Ctrl+C to stop)…\n');
 try {
   execFileSync('pnpm', ['-C', 'ui', 'exec', 'vite', '--open'], { cwd: root, stdio: 'inherit' });
 } catch {

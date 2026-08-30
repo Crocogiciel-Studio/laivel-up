@@ -21,14 +21,15 @@ its **own** Vite / Vitest toolchain, and `dependency-cruiser` forbids any
 
 ```bash
 pnpm install     # from the repo root
-pnpm viz         # evaluates examples/dev-sample and opens the viewer
-pnpm viz -p test/fixtures/profiles/arthur      # any profile dir
+pnpm viz         # evaluates every profile in test/fixtures/profiles/
+pnpm viz arthur  # just that fixture (bare name or a path)
 pnpm viz -p <dir> -g <preset.json>
 ```
 
-`pnpm viz` builds the core if needed, evaluates the profile, writes the JSON
+`pnpm viz` builds the core if needed, evaluates the profile(s), writes the JSON
 where the dev server serves it, and opens the browser on the rendered result —
-no drag-and-drop.
+no drag-and-drop. With no argument it evaluates all four fixture profiles and
+the viewer shows a profile picker.
 
 ## Develop
 
@@ -36,8 +37,9 @@ no drag-and-drop.
 pnpm -C ui run dev      # viewer alone, http://localhost:5173 (drop a file in)
 ```
 
-The viewer auto-loads `evaluation.json` if the server has one (what `pnpm viz`
-writes) or `?src=<url>`; otherwise it waits for a dropped file.
+The viewer auto-loads, in order: `?src=<url>`, a `pnpm viz` catalogue
+(`evaluations/index.json` + a per-profile picker), a single co-located
+`evaluation.json`. Otherwise it waits for a dropped file.
 
 ## Build
 
