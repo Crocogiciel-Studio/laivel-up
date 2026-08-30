@@ -91,69 +91,61 @@ function validateAgainstSchema(value: JsonValue, schema: JsonSchema): string[] {
   return violations;
 }
 
-function loadSchema(): JsonSchema {
-  return JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')) as JsonSchema;
-}
-
 // -------------------------------------------------------------------------
+
+const gridResult = jsonGridSource(GRID_PATH).load();
+if (!gridResult.ok) {
+  throw new Error(`preset failed to load: ${gridResult.error.message}`);
+}
+const grid = gridResult.value;
+
+const profileResult = readProfileFromDirectory(PROFILE_DIR);
+if (!profileResult.ok) {
+  throw new Error(`profile failed to load: ${profileResult.error.message}`);
+}
+const profile = profileResult.value;
+
+const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')) as JsonSchema;
+
+function parsedEvaluation(catalogue: ReturnType<typeof inMemoryCatalogue>): Record<string, JsonValue> {
+  const evaluation = evaluate(profile, grid, catalogue, { now: NOW });
+  return JSON.parse(renderEvaluationJson(evaluation)) as Record<string, JsonValue>;
+}
 
 describe('renderEvaluationJson conforms to docs/evaluation.schema.json', () => {
   it('validates a real evaluate() output clean', () => {
-    const gridResult = jsonGridSource(GRID_PATH).load();
-    expect(gridResult.ok).toBe(true);
-    const profileResult = readProfileFromDirectory(PROFILE_DIR);
-    expect(profileResult.ok).toBe(true);
-    if (!gridResult.ok || !profileResult.ok) return;
+    const parsed = parsedEvaluation(inMemoryCatalogue(builtInEvaluators));
 
-    const catalogue = inMemoryCatalogue(builtInEvaluators);
-    const evaluation = evaluate(profileResult.value, gridResult.value, catalogue, { now: NOW });
-    const parsed = JSON.parse(renderEvaluationJson(evaluation)) as JsonValue;
-
-    const violations = validateAgainstSchema(parsed, loadSchema());
+    const violations = validateAgainstSchema(parsed, schema);
     expect(violations).toEqual([]);
   });
 
   it('omits levelId/levelRank/bindingAxisId (not null) when every axis is unknown, and still validates clean', () => {
-    const gridResult = jsonGridSource(GRID_PATH).load();
-    expect(gridResult.ok).toBe(true);
-    const profileResult = readProfileFromDirectory(PROFILE_DIR);
-    expect(profileResult.ok).toBe(true);
-    if (!gridResult.ok || !profileResult.ok) return;
-
-    const emptyCatalogue = inMemoryCatalogue([]);
-    const evaluation = evaluate(profileResult.value, gridResult.value, emptyCatalogue, {
-      now: NOW,
-    });
-    const parsed = JSON.parse(renderEvaluationJson(evaluation)) as Record<string, JsonValue>;
+    const parsed = parsedEvaluation(inMemoryCatalogue([]));
     const parsedGlobal = parsed.global as Record<string, JsonValue>;
 
     expect('levelId' in parsedGlobal).toBe(false);
     expect('levelRank' in parsedGlobal).toBe(false);
     expect('bindingAxisId' in parsedGlobal).toBe(false);
 
-    const violations = validateAgainstSchema(parsed, loadSchema());
+    const violations = validateAgainstSchema(parsed, schema);
     expect(violations).toEqual([]);
   });
 
   it('reports a violation for an unmodeled extra field (schema drift guard)', () => {
-    const gridResult = jsonGridSource(GRID_PATH).load();
-    expect(gridResult.ok).toBe(true);
-    const profileResult = readProfileFromDirectory(PROFILE_DIR);
-    expect(profileResult.ok).toBe(true);
-    if (!gridResult.ok || !profileResult.ok) return;
-
-    const catalogue = inMemoryCatalogue(builtInEvaluators);
-    const evaluation = evaluate(profileResult.value, gridResult.value, catalogue, { now: NOW });
-    const parsed = JSON.parse(renderEvaluationJson(evaluation)) as Record<string, JsonValue>;
+    const parsed = parsedEvaluation(inMemoryCatalogue(builtInEvaluators));
 
     // The model has no spare field to add without editing src/core/model/evaluation.ts,
     // which is out of scope here. Injecting an unexpected key into the serialized
     // output exercises the same guard: additionalProperties: false catching a shape
     // the schema doesn't declare, which is what "the test fails if Evaluation gains
-    // an undocumented field" cashes out to for a structural (not ajv) validator.
+    // an undocumented field" cashes out to for a structural (not ajv) validator. The
+    // real drift guard is additionalProperties: false in the two tests above, which
+    // reject any unmodeled property at any depth; this test proves the validator
+    // itself is not vacuously permissive.
     parsed.extraField = 'x';
 
-    const violations = validateAgainstSchema(parsed, loadSchema());
+    const violations = validateAgainstSchema(parsed, schema);
     expect(violations.length).toBeGreaterThan(0);
   });
 });
