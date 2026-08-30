@@ -19,6 +19,9 @@ export interface Message {
   readonly params?: Readonly<Record<string, string | number | Message>>;
 }
 
+export const isMessage = (v: unknown): v is Message =>
+  typeof v === 'object' && v !== null && typeof (v as { key?: unknown }).key === 'string';
+
 export interface CriterionReading {
   readonly criterionId: string;
   readonly axisId: string;
