@@ -1,5 +1,15 @@
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
 import { supabaseAuthenticator } from './auth.js';
+
+// Local dev: load the repo-root `.env` (this package has none of its own). In a
+// container the environment is already populated, so a missing file is fine.
+try {
+  process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
+} catch {
+  // no .env file — rely on the ambient environment
+}
 import { supabaseDb } from './db.js';
 import { runEvaluation } from './engine.js';
 import { validateArtifact } from './validation.js';
