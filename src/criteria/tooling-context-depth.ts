@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ToolingContext } from '../core/model/profile.js';
@@ -85,7 +86,7 @@ export const toolingContextDepth: CriterionEvaluator = {
         sufficiency,
         singleSource: true,
       },
-      evidence: `tooling context: ${describe(tc)}`,
+      evidence: msg('criterion.tooling-context-depth', { detail: describe(tc) }),
     });
   },
 };

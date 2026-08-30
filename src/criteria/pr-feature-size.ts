@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { PrSizeDistribution, PullRequestFacts } from '../core/model/profile.js';
@@ -174,7 +175,7 @@ function describe(
   tierA: Tier | undefined,
   tierB: Tier | undefined,
   tier: number,
-): string {
+): Message {
   const parts: string[] = [];
   if (dist !== undefined) {
     parts.push(
@@ -192,5 +193,5 @@ function describe(
   const bumped = families.length > 0 && Math.min(...families) === TIER.l && tier === TIER.xl;
   const reconciled = `${TIER_LABEL[tier] ?? String(tier)}${bumped ? ' (xl share routine)' : ''}`;
   parts.push(`histogram ${famA}, magnitude ${famB} => ${reconciled}`);
-  return `usual feature size: ${parts.join('; ')}`;
+  return msg('criterion.pr-feature-size', { detail: parts.join('; ') });
 }

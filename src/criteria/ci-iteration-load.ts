@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { CiFacts } from '../core/model/profile.js';
@@ -128,11 +129,11 @@ export const ciIterationLoad: CriterionEvaluator = {
   },
 };
 
-function describe(ci: CiFacts, band: number): string {
-  const runs = ci.medianRunsToGreen === undefined ? '?' : String(ci.medianRunsToGreen);
-  const fail =
-    ci.failureRate === undefined
-      ? '?'
-      : `${String(Math.round(ci.failureRate * 1000) / 10)}%`;
-  return `CI iteration load: median ${runs} runs to green, failure rate ${fail} => ${BAND_LABEL[band] ?? String(band)}`;
+function describe(ci: CiFacts, band: number): Message {
+  return msg('criterion.ci-iteration-load', {
+    runs: ci.medianRunsToGreen === undefined ? '?' : String(ci.medianRunsToGreen),
+    failRate:
+      ci.failureRate === undefined ? '?' : `${String(Math.round(ci.failureRate * 1000) / 10)}%`,
+    band: `band.${BAND_LABEL[band] ?? String(band)}`,
+  });
 }

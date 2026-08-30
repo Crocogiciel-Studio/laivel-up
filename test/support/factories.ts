@@ -1,6 +1,7 @@
 import type { Profile, PullRequestFacts, RawPullRequest } from '../../src/core/model/profile.js';
 import type { Grid } from '../../src/core/model/grid.js';
 import type { CriterionReading } from '../../src/core/model/evaluation.js';
+import { msg } from '../../src/core/model/evaluation.js';
 import type {
   CriterionEvaluator,
   CriterionOutput,
@@ -99,7 +100,7 @@ export function makeReading(overrides: Partial<CriterionReading> = {}): Criterio
     rawValue: undefined,
     confidence: 1,
     limitingFactor: 'none',
-    evidence: 'test',
+    evidence: msg('test.reading'),
     ...overrides,
   };
 }
@@ -122,7 +123,7 @@ export function fixedEvaluator(
           sufficiency: 1,
           singleSource: true,
         },
-        evidence: output.evidence ?? `fixed ${id}`,
+        evidence: output.evidence ?? msg('test.fixed', { id }),
       }),
   };
 }

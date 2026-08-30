@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { evidenceText } from '../support/evidence.js';
 import { describe, expect, it } from 'vitest';
 import { evaluate } from '../../src/core/index.js';
 import { inMemoryCatalogue } from '../../src/adapters/catalogue/in-memory-catalogue.js';
@@ -41,8 +42,8 @@ describe('declaratif-contradiction end to end', () => {
       expect(reading, `no declaratif-contradiction reading on ${axis.axisId}`).toBeDefined();
       expect(reading?.status).toBe('read');
       expect(reading?.levelId).toBe('green');
-      expect(reading?.evidence).toContain('self-assessment');
-      expect(reading?.evidence).toContain('never raises it');
+      expect(evidenceText(reading!.evidence)).toContain('self-assessment');
+      expect(evidenceText(reading!.evidence)).toContain('never raises it');
     }
 
     const size = evaluation.axes.find((a) => a.axisId === 'size');
@@ -72,7 +73,7 @@ describe('declaratif-contradiction end to end', () => {
     for (const axis of evaluation.axes) {
       const reading = axis.readings.find((r) => r.criterionId === 'declaratif-contradiction');
       expect(reading?.status).toBe('unknown');
-      expect(reading?.evidence).toBe('no self-assessed level');
+      expect(reading ? evidenceText(reading.evidence) : '').toBe('no self-assessed level');
     }
   });
 });

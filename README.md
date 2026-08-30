@@ -102,7 +102,7 @@ the report names whichever one is limiting.
 
 `GlobalVerdict.note` and `ProgressionPlan.actions` are i18n descriptors —
 `{ key, params }` resolved by the consumer against `i18n/{en,fr}.json`;
-`evidence` sentences are still English-only.
+each reading's `evidence` is a descriptor too; the sentence frame and the verdict/band read FR/EN, a few data-dense fragments stay as codes.
 
 ## Layout
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { declaratifContradiction } from './declaratif-contradiction.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeGrid, makeProfile } from '../../test/support/factories.js';
 import type { DeclaredProfile } from '../core/model/profile.js';
 
@@ -39,8 +40,8 @@ describe('declaratifContradiction', () => {
 
   it('quotes the declared level label in the evidence', () => {
     const out = run({ selfAssessedLevel: 'l4' });
-    expect(out.ok && out.value.evidence).toContain('L4');
-    expect(out.ok && out.value.evidence).toContain('never raises it');
+    expect(out.ok ? evidenceText(out.value.evidence) : '').toContain('L4');
+    expect(out.ok ? evidenceText(out.value.evidence) : '').toContain('never raises it');
   });
 
   it('falls back to the raw id in the evidence when the grid has no such level', () => {
@@ -48,7 +49,7 @@ describe('declaratifContradiction', () => {
     expect(out.ok).toBe(true);
     if (out.ok) {
       expect(out.value.levelId).toBe('wizard');
-      expect(out.value.evidence).toContain('wizard');
+      expect(evidenceText(out.value.evidence)).toContain('wizard');
     }
   });
 
@@ -92,7 +93,7 @@ describe('declaratifContradiction', () => {
       expect(out.value.levelId).toBe('l3');
       // the raw self-report token is kept for the evidence trail
       expect(out.value.rawValue).toBe('advanced');
-      expect(out.value.evidence).toContain('L3');
+      expect(evidenceText(out.value.evidence)).toContain('L3');
     }
   });
 

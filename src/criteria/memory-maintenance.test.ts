@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { memoryMaintenance } from './memory-maintenance.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeGrid, makeProfile } from '../../test/support/factories.js';
 import type { ToolingContext } from '../core/model/profile.js';
 
@@ -54,7 +55,7 @@ describe('memoryMaintenance', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l0');
       expect(out.value.rawValue).toBe('nothing');
-      expect(out.value.evidence).toContain('absent');
+      expect(evidenceText(out.value.evidence)).toContain('absent');
     }
   });
 
@@ -64,7 +65,7 @@ describe('memoryMaintenance', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l2');
       expect(out.value.rawValue).toBe('memory');
-      expect(out.value.evidence).toContain('2026-07-12');
+      expect(evidenceText(out.value.evidence)).toContain('2026-07-12');
     }
   });
 
@@ -86,7 +87,7 @@ describe('memoryMaintenance', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l1');
       expect(out.value.rawValue).toBe('prompts');
-      expect(out.value.evidence).toContain('no recorded update');
+      expect(evidenceText(out.value.evidence)).toContain('no recorded update');
     }
   });
 

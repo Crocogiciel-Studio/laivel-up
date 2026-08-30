@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ToolingContext } from '../core/model/profile.js';
@@ -56,13 +57,15 @@ function readTier(tc: ToolingContext, p: Params): Tier {
     : { rank: p.rankPrompts, label: 'prompts' };
 }
 
-function describe(tc: ToolingContext, tier: Tier): string {
+function describe(tc: ToolingContext, tier: Tier): Message {
   const state = !tc.projectMemoryPresent
-    ? 'absent'
+    ? msg('criterion.memory-maintenance.absent')
     : tier.label === 'memory'
-      ? `present, last updated ${String(tc.projectMemoryLastUpdated)}`
-      : 'present, no recorded update';
-  return `project memory maintenance: ${state} => ${tier.label}`;
+      ? msg('criterion.memory-maintenance.present-updated', {
+          date: String(tc.projectMemoryLastUpdated),
+        })
+      : msg('criterion.memory-maintenance.present-stale');
+  return msg('criterion.memory-maintenance', { state, tier: `tier.${tier.label}` });
 }
 
 export const memoryMaintenance: CriterionEvaluator = {

@@ -3,6 +3,7 @@ import { missingSections } from '../model/profile.js';
 import type { Grid, GridAxis, BundleEntry } from '../model/grid.js';
 import { levelById } from '../model/grid.js';
 import type { AxisVerdict, CriterionReading, Evaluation } from '../model/evaluation.js';
+import { msg } from '../model/evaluation.js';
 import type { CriterionEvaluator } from '../ports/criterion-evaluator.js';
 import type { EvaluatorCatalogue } from '../ports/evaluator-catalogue.js';
 import { aggregate } from './aggregate.js';
@@ -83,7 +84,7 @@ function readCriterion(
       rawValue: undefined,
       confidence: 0,
       limitingFactor: 'sufficiency',
-      evidence: `no evaluator registered for "${entry.criterionId}"`,
+      evidence: msg('reading.no-evaluator', { criterionId: entry.criterionId }),
     };
   }
 
@@ -97,7 +98,7 @@ function readCriterion(
       rawValue: undefined,
       confidence: 0,
       limitingFactor: 'sufficiency',
-      evidence: `needs ${missing.join(', ')} — not in the profile`,
+      evidence: msg('reading.needs-sections', { sections: missing.join(', ') }),
     };
   }
 
@@ -117,7 +118,7 @@ function readCriterion(
       rawValue: undefined,
       confidence: 0,
       limitingFactor: 'sufficiency',
-      evidence: outcome.error.detail,
+      evidence: msg('reading.evaluator-abstained', { detail: outcome.error.detail }),
     };
   }
 

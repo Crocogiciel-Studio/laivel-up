@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { testEnforcement } from './test-enforcement.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeGrid, makeProfile } from '../../test/support/factories.js';
 import type { TestFacts } from '../core/model/profile.js';
 
@@ -62,7 +63,7 @@ describe('testEnforcement', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l4');
       expect(out.value.rawValue).toBe('behavior');
-      expect(out.value.evidence).toContain('+21%');
+      expect(evidenceText(out.value.evidence)).toContain('+21%');
     }
   });
 

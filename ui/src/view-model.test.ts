@@ -31,7 +31,7 @@ const base: Evaluation = {
           rawValue: 'M',
           confidence: 0.55,
           limitingFactor: 'margin',
-          evidence: 'histogram M',
+          evidence: { key: 'criterion.pr-feature-size', params: { detail: 'histogram M' } },
         },
         {
           criterionId: 'declaratif-contradiction',
@@ -40,7 +40,7 @@ const base: Evaluation = {
           status: 'unknown',
           confidence: 0,
           limitingFactor: 'sufficiency',
-          evidence: 'no self-assessed level',
+          evidence: { key: 'reading.evaluator-abstained', params: { detail: 'no self-assessed level' } },
         },
       ],
     },
@@ -81,13 +81,13 @@ describe('buildViewModel', () => {
     expect(harness?.level).toBe('—');
   });
 
-  it('localises role / status / limiting factor and passes evidence through verbatim', () => {
+  it('localises role / status / limiting factor and resolves the evidence descriptor', () => {
     const fr = buildViewModel(base, 'fr');
     const size = fr.axes[0];
     expect(size?.limitingFactor).toBe('suffisance des preuves');
     expect(size?.readings[0]?.role).toBe('niveau');
     expect(size?.readings[1]?.status).toBe('inconnu');
-    expect(size?.readings[0]?.evidence).toBe('histogram M');
+    expect(size?.readings[0]?.evidence).toBe('taille de feature habituelle : histogram M');
   });
 
   it('resolves the note and progression actions against the bundled catalogue', () => {

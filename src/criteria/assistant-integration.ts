@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ToolingContext } from '../core/model/profile.js';
@@ -66,14 +67,15 @@ function readTier(score: number, p: Params): Tier {
   return { rank: p.rankMemory, label: 'memory' };
 }
 
-function describe(tc: ToolingContext, score: number, tier: Tier): string {
-  const tokens = tc.tokensPerWeek === undefined ? '?' : String(tc.tokensPerWeek);
-  const sessions = tc.sessionsPerWeek === undefined ? '?' : String(tc.sessionsPerWeek);
-  return (
-    `assistant integration: editor ${tc.editorIntegration === true ? 'yes' : 'no'}, ` +
-    `${String(tc.declaredAssistantTools.length)} declared tools, ${tokens} tokens/wk, ` +
-    `${sessions} sessions/wk => score ${String(score)}/4 => ${tier.label}`
-  );
+function describe(tc: ToolingContext, score: number, tier: Tier): Message {
+  return msg('criterion.assistant-integration', {
+    editor: tc.editorIntegration === true ? 'flag.yes' : 'flag.no',
+    tools: tc.declaredAssistantTools.length,
+    tokens: tc.tokensPerWeek === undefined ? '?' : String(tc.tokensPerWeek),
+    sessions: tc.sessionsPerWeek === undefined ? '?' : String(tc.sessionsPerWeek),
+    score,
+    tier: `tier.${tier.label}`,
+  });
 }
 
 export const assistantIntegration: CriterionEvaluator = {

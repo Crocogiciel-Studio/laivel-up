@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ParallelismFacts } from '../core/model/profile.js';
@@ -91,12 +92,12 @@ function describe(
   burstyRatio: number,
   band: number,
   bursty: boolean,
-): string {
+): Message {
   const rounded = Math.round(ratio * 100) / 100;
   const tail = bursty ? ` (>= ${String(burstyRatio)}, bursty)` : ` (< ${String(burstyRatio)})`;
-  return (
-    `branch burstiness: peak ${String(parallelism.maxConcurrentBranches)} vs median ` +
+  const detail =
+    `peak ${String(parallelism.maxConcurrentBranches)} vs median ` +
     `${String(parallelism.medianConcurrentBranches)} concurrent branches, ratio ${String(rounded)}` +
-    `${tail} => ${BAND_LABEL[band] ?? String(band)}`
-  );
+    `${tail} => ${BAND_LABEL[band] ?? String(band)}`;
+  return msg('criterion.branch-burstiness', { detail });
 }

@@ -31,6 +31,9 @@ function keyOf(message: unknown): string {
  * resolved too. A malformed value (missing `note`, a non-object action) yields
  * `''` rather than throwing out of `render()`.
  */
+const isMessage = (v: unknown): v is Message =>
+  typeof v === 'object' && v !== null && typeof (v as { key?: unknown }).key === 'string';
+
 export function resolveMessage(message: Message | string, lang: Lang): string {
   const key = keyOf(message);
   if (key === '') return '';
@@ -42,6 +45,7 @@ export function resolveMessage(message: Message | string, lang: Lang): string {
   return fillTemplate(lookupCatalogue(key) ?? key, (name) => {
     const value = params?.[name];
     if (value === undefined) return undefined;
+    if (isMessage(value)) return resolveMessage(value, lang);
     const text = String(value);
     return text.includes('.') ? (lookupCatalogue(text) ?? text) : text;
   });

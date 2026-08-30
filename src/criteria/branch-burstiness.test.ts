@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { branchBurstiness } from './branch-burstiness.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeGrid, makeProfile } from '../../test/support/factories.js';
 import type { ParallelismFacts } from '../core/model/profile.js';
 
@@ -61,7 +62,7 @@ describe('branchBurstiness', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l0');
       expect(out.value.rawValue).toBe('none');
-      expect(out.value.evidence).toContain('bursty');
+      expect(evidenceText(out.value.evidence)).toContain('bursty');
       expect(out.value.confidence.margin).toBeCloseTo(0, 5);
     }
   });
@@ -103,7 +104,7 @@ describe('branchBurstiness', () => {
   it('divides by max(median, 1) so a zero median does not blow up the ratio', () => {
     const out = run({ medianConcurrentBranches: 0, maxConcurrentBranches: 2 });
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.value.evidence).toContain('ratio 2');
+    if (out.ok) expect(evidenceText(out.value.evidence)).toContain('ratio 2');
   });
 
   it('honours the grid calibration for the band ranks', () => {

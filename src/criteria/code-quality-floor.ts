@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import type { GridLevel } from '../core/model/grid.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
@@ -164,7 +165,9 @@ export const codeQualityFloor: CriterionEvaluator = {
   },
 };
 
-function describe(checks: readonly Check[], band: number): string {
-  const signals = checks.map((c) => c.label).join(', ');
-  return `code quality floor: ${signals} => ${BAND_LABEL[band] ?? String(band)}`;
+function describe(checks: readonly Check[], band: number): Message {
+  return msg('criterion.code-quality-floor', {
+    signals: checks.map((c) => c.label).join(', '),
+    band: `band.${BAND_LABEL[band] ?? String(band)}`,
+  });
 }
