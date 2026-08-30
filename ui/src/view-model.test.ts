@@ -6,7 +6,13 @@ const base: Evaluation = {
   subjectId: 'dev-sample',
   gridId: 'aidd',
   generatedAt: '2026-08-30T00:00:00.000Z',
-  global: { levelId: 'blue', levelRank: 2, confidence: 0.55, bindingAxisId: 'size', note: 'size is binding' },
+  global: {
+    levelId: 'blue',
+    levelRank: 2,
+    confidence: 0.55,
+    bindingAxisId: 'size',
+    note: { key: 'aggregate.binding', params: { axis: 'size' } },
+  },
   axes: [
     {
       axisId: 'size',
@@ -48,7 +54,10 @@ const base: Evaluation = {
   progression: {
     targetLevelId: 'green',
     bindingAxisId: 'size',
-    actions: ['Raise Size from Blue toward Green.'],
+    actions: [
+      { key: 'progression.raise-axis', params: { axis: 'Size', from: '🔹 Blue', to: '🟢 Green' } },
+      { key: 'progression.confidence-limited', params: { axis: 'Size', factor: 'factor.sufficiency' } },
+    ],
   },
 };
 
@@ -81,6 +90,20 @@ describe('buildViewModel', () => {
     expect(size?.readings[0]?.evidence).toBe('histogram M');
   });
 
+  it('resolves the note and progression actions against the bundled catalogue', () => {
+    const en = buildViewModel(base, 'en');
+    expect(en.verdict.note).toBe('size is binding');
+    expect(en.progression.actions).toEqual([
+      'Raise Size from 🔹 Blue toward 🟢 Green.',
+      'Confidence on Size is limited by evidence sufficiency; add evidence that addresses it.',
+    ]);
+
+    const fr = buildViewModel(base, 'fr');
+    expect(fr.verdict.note).toBe("size est l'axe contraignant");
+    expect(fr.progression.actions[0]).toBe('Faites progresser Size de 🔹 Blue vers 🟢 Green.');
+    expect(fr.progression.actions[1]).toContain('la suffisance des preuves');
+  });
+
   it('shows an unknown reading with a dash for its missing value and level', () => {
     const vm = buildViewModel(base, 'en');
     const unknown = vm.axes[0]?.readings[1];
@@ -99,11 +122,25 @@ describe('buildViewModel', () => {
 
   it('handles a global verdict with no level ruled', () => {
     const vm = buildViewModel(
-      { ...base, global: { confidence: 0.1, note: 'evidence bar not met' } },
+      {
+        ...base,
+        global: {
+          confidence: 0.1,
+          note: { key: 'aggregate.evidence-bar-not-met', params: { ruled: 1, total: 4, required: 2 } },
+        },
+      },
       'en',
     );
     expect(vm.verdict.ruled).toBe(false);
     expect(vm.verdict.bindingAxis).toBeNull();
-    expect(vm.verdict.note).toBe('evidence bar not met');
+    expect(vm.verdict.note).toBe('evidence bar not met: 1/4 axes could be ruled on, 2 required');
+  });
+
+  it('tolerates a pre-#42 string note (unknown key falls back to itself)', () => {
+    const vm = buildViewModel(
+      { ...base, global: { ...base.global, note: 'legacy string' } as never },
+      'en',
+    );
+    expect(vm.verdict.note).toBe('legacy string');
   });
 });

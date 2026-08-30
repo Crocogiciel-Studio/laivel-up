@@ -6,9 +6,10 @@ Static viewer for a laivel-up **evaluation** — the JSON that
 > **Status.** Renders the global verdict, per-axis confidence and readings, and
 > the progression plan, with the raw JSON behind a toggle. Level and axis labels
 > come from a bundled copy of `presets/aidd.json`; an evaluation scored against
-> another grid falls back to raw ids. Engine sentences (`evidence`, `note`,
-> `actions`) show in English until the i18n descriptor contract (#42) lands —
-> everything the UI itself labels is already FR/EN.
+> another grid falls back to raw ids. The verdict `note` and the progression
+> `actions` are resolved FR/EN from the bundled core catalogue (`i18n/`); the
+> per-criterion `evidence` sentences are still English until the criteria emit
+> descriptors too (#42).
 
 ## Why it is a separate package
 
@@ -67,6 +68,7 @@ docker run --rm -p 8080:80 laivel-up-ui
 
 ## Languages
 
-FR / EN, switchable in the top-right, remembered in `localStorage`. The scaffold
-only translates its own chrome. Engine sentences (`evidence`, `note`, `actions`)
-become translatable with #42 and are resolved here afterwards.
+FR / EN, switchable in the top-right, remembered in `localStorage`. The UI chrome
+is in `i18n.ts`; the engine's `note` and `actions` resolve against the bundled
+core catalogue (`i18n/en.json`, `i18n/fr.json`) via `messages.ts`. `evidence`
+sentences follow once the criteria emit descriptors (#42).

@@ -2,10 +2,9 @@
  * Shape of the JSON emitted by `src/adapters/outbound/json-evaluation.ts` in the
  * core repo, kept in step with `docs/evaluation.schema.json` (#21).
  *
- * TODO(#42): the core now emits `note` and `actions[]` as `{ key, params }`
- * descriptors (PR #47), and `evidence` will follow. Until this file and
- * view-model.ts resolve them against the i18n catalogue, the viewer renders
- * `[object Object]` for `note` and each progression action.
+ * TODO(#42): `evidence` is still a plain sentence and stays English until the
+ * criteria emit descriptors too. `note` and `actions[]` are already
+ * `{ key, params }` and resolved in view-model.ts against the bundled catalogue.
  */
 
 // `JSON.stringify` drops `undefined` properties, so a field the model types as
@@ -13,6 +12,12 @@
 // a hand-written file that puts an explicit `null` is tolerated too.
 type Absent<T> = T | null | undefined;
 type Factor = 'agreement' | 'margin' | 'sufficiency' | 'none';
+
+/** A translatable sentence emitted by the core: a catalogue key plus its fill values. */
+export interface Message {
+  readonly key: string;
+  readonly params?: Readonly<Record<string, string | number>>;
+}
 
 export interface CriterionReading {
   readonly criterionId: string;
@@ -41,13 +46,13 @@ export interface GlobalVerdict {
   readonly levelRank?: Absent<number>;
   readonly confidence: number;
   readonly bindingAxisId?: Absent<string>;
-  readonly note: string;
+  readonly note: Message;
 }
 
 export interface ProgressionPlan {
   readonly targetLevelId?: Absent<string>;
   readonly bindingAxisId?: Absent<string>;
-  readonly actions: readonly string[];
+  readonly actions: readonly Message[];
 }
 
 export interface Evaluation {
