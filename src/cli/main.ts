@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { realpathSync } from 'node:fs';
@@ -55,6 +56,9 @@ export function parseArgs(argv: readonly string[]): Result<Options, string> {
         return err('missing value for --min-axes');
       }
       minAxes = Number(next);
+      if (!Number.isInteger(minAxes) || minAxes < 0) {
+        return err(`invalid --min-axes value: ${next} (expected: a non-negative integer)`);
+      }
       i += 1;
     } else if (arg === '--format') {
       if (next === undefined) {
