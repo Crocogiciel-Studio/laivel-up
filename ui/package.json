@@ -13,7 +13,7 @@
     "build": "pnpm run typecheck && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --dir src"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
