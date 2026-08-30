@@ -34,14 +34,16 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 | --- | --- | --- |
 | Schema + RLS, Supabase Cloud | #55 | this change (`supabase/`) |
 | Node backend: CRUD + run endpoint | #56 | this change (`ui/server/`) |
-| Web shell: routing + OAuth login | #57 | — |
+| Web shell: routing + OAuth login | #57 | this change (`ui/web/`) |
 | Profile form editor | #58 | — |
 | Drag-and-drop grid builder | #59 | — |
 | Run + persisted history + comparison | #60 | — |
 | Seeded read-only templates | #61 | — |
 
-#55 and #56 ship together in one PR (the Cloud-DB decision made splitting them
-pointless).
+#55 and #56 shipped together in one PR (the Cloud-DB decision made splitting
+them pointless). The web app under `ui/web` — React + Vite + React Router,
+Supabase OAuth client-side, all data through the backend — carries #57's shell:
+`/login` plus placeholder `/profiles`, `/grids`, `/runs` behind an auth gate.
 
 ## Data model
 
@@ -57,13 +59,16 @@ the policies apply to every query.
 
 ```
 pnpm install
-cp .env.example .env           # fill SUPABASE_URL + SUPABASE_ANON_KEY (dashboard)
+cp .env.example .env           # SUPABASE_* for the server, VITE_* for the web app
 pnpm build                     # the core — ui/server imports laivel-up/compose
 pnpm -C ui/server dev          # backend on :8787, against the Cloud project
+pnpm -C ui/web dev             # app on :5173
 ```
 
-`docker compose up --build` runs the backend against the same project. The `web`
-tier joins the compose file with #57.
+Add `http://127.0.0.1:5173` to the project's redirect allow-list and enable an
+OAuth provider (dashboard: Authentication → URL Configuration / Providers).
+
+`docker compose up --build` builds both tiers from the repo-root `.env`.
 
 Applying migrations to Cloud: `pnpm db:link` once, then `pnpm db:push`.
 Offline dev instead: `pnpm db:start` for a local stack, `pnpm db:test` /

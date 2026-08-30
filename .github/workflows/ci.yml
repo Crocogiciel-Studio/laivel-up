@@ -96,3 +96,27 @@ jobs:
       - run: pnpm -C ui/server run typecheck
       - run: pnpm -C ui/server test
       - run: pnpm -C ui/server run build
+
+  studio-web:
+    # Studio web app (ui/web). React SPA; VITE_* are stubbed for typecheck/test
+    # and given placeholder values for the build. Parallel with `check`.
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: http://localhost:54321
+      VITE_SUPABASE_ANON_KEY: ci-placeholder
+      VITE_API_URL: http://localhost:8787
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -C ui/web run typecheck
+      - run: pnpm -C ui/web test
+      - run: pnpm -C ui/web run build
