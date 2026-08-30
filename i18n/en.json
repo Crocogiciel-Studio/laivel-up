@@ -8,6 +8,7 @@
   "progression.top-level": "Top level reached on the binding axis {axis}.",
   "progression.raise-axis": "Raise {axis} from {from} toward {to}.",
   "progression.confidence-limited": "Confidence on {axis} is limited by {factor}; add evidence that addresses it.",
+  "progression.confidence-below-floor": "Raise confidence on {axis} before a level can be placed — {factor} is what falls short.",
   "factor.agreement": "signal agreement",
   "factor.margin": "margin to threshold",
   "factor.sufficiency": "evidence sufficiency",

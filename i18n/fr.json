@@ -8,6 +8,7 @@
   "progression.top-level": "Niveau maximum atteint sur l'axe contraignant {axis}.",
   "progression.raise-axis": "Faites progresser {axis} de {from} vers {to}.",
   "progression.confidence-limited": "La confiance sur {axis} est limitée par {factor} ; ajoutez des preuves qui l'adressent.",
+  "progression.confidence-below-floor": "Renforcez la confiance sur {axis} avant qu'un niveau puisse être posé — c'est {factor} qui manque.",
   "factor.agreement": "l'accord des signaux",
   "factor.margin": "la marge au seuil",
   "factor.sufficiency": "la suffisance des preuves",

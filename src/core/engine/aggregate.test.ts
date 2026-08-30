@@ -65,10 +65,10 @@ describe('aggregate', () => {
     });
   });
 
-  it('rules normally when confidence sits on or above the floor', () => {
+  it('rules when confidence is exactly the floor (the gate is strict <)', () => {
     const global = aggregate(
       grid,
-      [verdict('a', 2, 0.6), verdict('b', 1, 0.6), verdict('c', 3, 0.6)],
+      [verdict('a', 2, 0.5), verdict('b', 1, 0.5), verdict('c', 3, 0.5)],
       1,
       0.5,
     );

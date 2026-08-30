@@ -71,7 +71,11 @@ describe('evaluate', () => {
     // grid floor 0.6 > folded confidence 0.4 -> no level
     const gated = evaluate(makeProfile(), withFloor, catalogue, { now: clock });
     expect(gated.global.levelId).toBeUndefined();
+    expect(gated.global.bindingAxisId).toBe('a');
     expect(gated.global.note.key).toBe('aggregate.confidence-below-floor');
+    // the plan points at confidence, not "too few axes ruled"
+    expect(gated.progression.bindingAxisId).toBe('a');
+    expect(gated.progression.actions[0]?.key).toBe('progression.confidence-below-floor');
 
     // option would allow it, but the grid still wins
     const stillGated = evaluate(makeProfile(), withFloor, catalogue, { now: clock, evidenceFloor: 0 });
