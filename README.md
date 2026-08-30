@@ -41,6 +41,8 @@ Flags:
 | `--profile <dir>`, `-p` | profile directory (the `profiles/<name>/` layout) | — (required) |
 | `--grid <file>`, `-g` | grid preset JSON | `presets/aidd.json` |
 | `--min-axes <n>` | axes that must be ruled on before a global level is emitted | `1` |
+| `--format <json>` | output format; `json` is the only accepted value today | `json` |
+| `--help`, `-h` | print usage and exit | — |
 
 No network, no API key. Every evaluator is deterministic and returns `unknown`
 rather than guessing when the evidence it needs is absent.
