@@ -10,6 +10,7 @@ WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY ui/package.json ui/package.json
 RUN pnpm install --frozen-lockfile
+COPY presets/ presets/
 COPY ui/ ui/
 RUN pnpm -C ui run build
 

@@ -1,11 +1,12 @@
 import './styles.css';
 import { parseEvaluation, type Evaluation } from './evaluation';
+import { buildViewModel, type AxisCard, type ViewModel } from './view-model';
 import { detectLang, persistLang, t, LANGS, type Lang } from './i18n';
 
 /**
- * Scaffold entry point. Wires a no-server file drop that parses an evaluation.json
- * and echoes it. The actual rendered view (global verdict, per-axis bars,
- * criterion table, progression plan) is #41 viewer work, blocked on #21 and #42.
+ * Entry point. A no-server file drop parses an evaluation.json and renders the
+ * verdict, the per-axis confidence and readings, and the progression plan.
+ * Engine sentences stay English until #42; everything the UI labels is FR/EN.
  */
 
 let lang: Lang = detectLang();
@@ -18,28 +19,131 @@ if (app === null) {
 }
 const root = app;
 
-// A file dropped anywhere but the dropzone would otherwise make the browser
-// navigate away to the raw file, losing the app.
+// A file dropped outside the dropzone would otherwise navigate the tab away.
 for (const type of ['dragover', 'drop'] as const) {
   window.addEventListener(type, (event) => {
     event.preventDefault();
   });
 }
 
+type Attrs = Record<string, string>;
+
+function el(tag: string, attrs: Attrs = {}, children: (Node | string)[] = []): HTMLElement {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === 'class') node.className = value;
+    else node.setAttribute(key, value);
+  }
+  node.append(...children);
+  return node;
+}
+
+function meter(pct: number): HTMLElement {
+  const fill = el('span', { class: 'meter-fill', style: `width:${String(pct)}%` });
+  return el('span', { class: 'meter', role: 'img', 'aria-label': `${String(pct)}%` }, [fill]);
+}
+
+function axisCard(card: AxisCard): HTMLElement {
+  const tags: HTMLElement[] = [];
+  if (card.binding) tags.push(el('span', { class: 'tag tag-binding' }, [t(lang, 'axis.binding')]));
+  if (!card.ruled) tags.push(el('span', { class: 'tag' }, [t(lang, 'axis.unknown')]));
+
+  const head = el('div', { class: 'axis-head' }, [
+    el('span', { class: 'axis-name' }, [card.name]),
+    el('span', { class: 'axis-level' }, [card.level]),
+    ...tags,
+  ]);
+
+  const sub = el('div', { class: 'axis-sub' }, [
+    t(lang, 'axis.confidence', { pct: String(card.confidencePct) }),
+    ' · ',
+    t(lang, 'axis.limitedBy', { factor: card.limitingFactor }),
+  ]);
+
+  const rows = card.readings.map((r) =>
+    el('tr', r.ruled ? {} : { class: 'is-unknown' }, [
+      el('td', {}, [r.criterion]),
+      el('td', {}, [r.role]),
+      el('td', {}, [r.status]),
+      el('td', {}, [r.level]),
+      el('td', { class: 'num' }, [r.raw]),
+      el('td', { class: 'num' }, [`${String(r.confidencePct)}%`]),
+      el('td', { class: 'evidence' }, [r.evidence]),
+    ]),
+  );
+
+  const table = el('table', { class: 'readings' }, [
+    el('thead', {}, [
+      el('tr', {}, [
+        el('th', {}, [t(lang, 'reading.criterion')]),
+        el('th', {}, [t(lang, 'reading.role')]),
+        el('th', {}, [t(lang, 'reading.status')]),
+        el('th', {}, [t(lang, 'reading.level')]),
+        el('th', { class: 'num' }, [t(lang, 'reading.raw')]),
+        el('th', { class: 'num' }, [t(lang, 'reading.confidence')]),
+        el('th', {}, [t(lang, 'reading.evidence')]),
+      ]),
+    ]),
+    el('tbody', {}, rows),
+  ]);
+
+  return el('article', { class: card.binding ? 'axis is-binding' : 'axis' }, [
+    head,
+    sub,
+    meter(card.confidencePct),
+    el('div', { class: 'readings-wrap' }, [table]),
+  ]);
+}
+
+function results(vm: ViewModel): HTMLElement {
+  const verdict = el('section', { class: 'verdict' }, [
+    el('div', { class: 'verdict-label' }, [t(lang, 'verdict.heading')]),
+    el('div', { class: 'verdict-level' }, [vm.verdict.ruled ? vm.verdict.level : t(lang, 'verdict.unranked')]),
+    el('div', { class: 'verdict-meta' }, [
+      t(lang, 'verdict.for', { subject: vm.subjectId, grid: vm.gridId }),
+    ]),
+    el('div', { class: 'verdict-meta' }, [
+      t(lang, 'verdict.confidence', { pct: String(vm.verdict.confidencePct) }),
+      ...(vm.verdict.bindingAxis === null
+        ? []
+        : [' · ', t(lang, 'verdict.binding', { axis: vm.verdict.bindingAxis })]),
+    ]),
+    ...(vm.verdict.note === '' ? [] : [el('div', { class: 'verdict-note' }, [vm.verdict.note])]),
+  ]);
+
+  const axes = el('section', { class: 'axes' }, [
+    el('h2', {}, [t(lang, 'axes.heading')]),
+    ...vm.axes.map(axisCard),
+  ]);
+
+  const progression = el('section', { class: 'progression' }, [
+    el('h2', {}, [t(lang, 'progression.heading')]),
+    el('p', { class: 'prog-target' }, [t(lang, 'progression.target', { level: vm.progression.targetLevel })]),
+    el(
+      'ul',
+      {},
+      vm.progression.actions.map((a) => el('li', {}, [a])),
+    ),
+  ]);
+
+  const notes: HTMLElement[] = [el('p', { class: 'note' }, [t(lang, 'engine.note')])];
+  if (!vm.gridKnown) {
+    notes.unshift(el('p', { class: 'note' }, [t(lang, 'grid.unknown', { grid: vm.gridId })]));
+  }
+
+  const raw = el('details', { class: 'raw' }, [
+    el('summary', {}, [t(lang, 'raw.summary')]),
+    el('pre', {}, [JSON.stringify(loaded, null, 2)]),
+  ]);
+
+  return el('div', { class: 'results' }, [verdict, axes, progression, ...notes, raw]);
+}
+
 function render(): void {
   document.documentElement.lang = lang;
   root.replaceChildren();
 
-  const header = document.createElement('header');
-  const h1 = document.createElement('h1');
-  h1.textContent = t(lang, 'app.title');
-  const langBox = document.createElement('div');
-  langBox.className = 'lang';
-  const langLabel = document.createElement('label');
-  langLabel.htmlFor = 'lang-select';
-  langLabel.textContent = t(lang, 'lang.label');
-  const select = document.createElement('select');
-  select.id = 'lang-select';
+  const select = el('select', { id: 'lang-select' });
   for (const code of LANGS) {
     const opt = document.createElement('option');
     opt.value = code;
@@ -48,28 +152,18 @@ function render(): void {
     select.append(opt);
   }
   select.addEventListener('change', () => {
-    lang = select.value as Lang;
+    lang = (select as HTMLSelectElement).value as Lang;
     persistLang(lang);
     render();
   });
-  langBox.append(langLabel, select);
-  header.append(h1, langBox);
 
-  const tagline = document.createElement('p');
-  tagline.className = 'tagline';
-  tagline.textContent = t(lang, 'app.tagline');
-
-  const dropzone = document.createElement('div');
-  dropzone.className = 'dropzone';
-  dropzone.tabIndex = 0;
-  dropzone.setAttribute('role', 'button');
-  const cta = document.createElement('div');
-  cta.className = 'cta';
-  cta.textContent = t(lang, 'drop.cta');
-  const hint = document.createElement('div');
-  hint.className = 'hint';
-  hint.textContent = t(lang, 'drop.hint');
-  dropzone.append(cta, hint);
+  const header = el('header', {}, [
+    el('h1', {}, [t(lang, 'app.title')]),
+    el('div', { class: 'lang' }, [
+      el('label', { for: 'lang-select' }, [t(lang, 'lang.label')]),
+      select,
+    ]),
+  ]);
 
   const input = document.createElement('input');
   input.type = 'file';
@@ -77,11 +171,13 @@ function render(): void {
   input.hidden = true;
   input.addEventListener('change', () => {
     const file = input.files?.[0];
-    if (file) {
-      void ingest(file);
-    }
+    if (file) void ingest(file);
   });
 
+  const dropzone = el('div', { class: 'dropzone', tabindex: '0', role: 'button' }, [
+    el('div', { class: 'cta' }, [t(lang, 'drop.cta')]),
+    el('div', { class: 'hint' }, [t(lang, 'drop.hint')]),
+  ]);
   dropzone.addEventListener('click', () => {
     input.click();
   });
@@ -102,37 +198,20 @@ function render(): void {
     event.preventDefault();
     dropzone.classList.remove('is-dragover');
     const file = event.dataTransfer?.files?.[0];
-    if (file) {
-      void ingest(file);
-    }
+    if (file) void ingest(file);
   });
 
-  root.append(header, tagline, dropzone, input);
+  root.append(header, el('p', { class: 'tagline' }, [t(lang, 'app.tagline')]), dropzone, input);
 
   if (error !== null) {
-    const status = document.createElement('p');
-    status.className = 'status err';
-    status.setAttribute('aria-live', 'polite');
-    status.textContent = t(lang, 'loaded.error', { reason: error });
-    root.append(status);
+    root.append(
+      el('p', { class: 'status err', 'aria-live': 'polite' }, [
+        t(lang, 'loaded.error', { reason: error }),
+      ]),
+    );
   } else if (loaded !== null) {
-    const status = document.createElement('p');
-    status.className = 'status';
-    status.setAttribute('aria-live', 'polite');
-    status.textContent = t(lang, 'loaded.ok', {
-      subject: loaded.subjectId,
-      grid: loaded.gridId,
-    });
-    const dump = document.createElement('pre');
-    dump.className = 'dump';
-    dump.textContent = JSON.stringify(loaded, null, 2);
-    root.append(status, dump);
+    root.append(results(buildViewModel(loaded, lang)));
   }
-
-  const notice = document.createElement('p');
-  notice.className = 'notice';
-  notice.textContent = t(lang, 'scaffold.notice');
-  root.append(notice);
 }
 
 async function ingest(file: File): Promise<void> {

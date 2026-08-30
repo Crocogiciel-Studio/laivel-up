@@ -8,15 +8,11 @@ describe('t', () => {
   });
 
   it('substitutes named placeholders', () => {
-    expect(t('en', 'loaded.ok', { subject: 'arthur', grid: 'aidd' })).toBe(
-      'Loaded evaluation for arthur (grid aidd).',
-    );
+    expect(t('en', 'verdict.for', { subject: 'arthur', grid: 'aidd' })).toBe('arthur · grid aidd');
   });
 
   it('leaves an unfilled placeholder visible rather than dropping it', () => {
-    expect(t('en', 'loaded.ok', { subject: 'arthur' })).toBe(
-      'Loaded evaluation for arthur (grid {grid}).',
-    );
+    expect(t('en', 'verdict.for', { subject: 'arthur' })).toBe('arthur · grid {grid}');
   });
 
   it('falls back to the key itself when it exists in no catalogue', () => {
