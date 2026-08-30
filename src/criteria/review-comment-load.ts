@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import { BAND_LABEL, bandMargin, rankForBand } from './shared/intervention-bands.js';
@@ -82,7 +83,10 @@ export const reviewCommentLoad: CriterionEvaluator = {
   },
 };
 
-function describe(comments: number, band: number): string {
-  const unit = comments === 1 ? 'comment' : 'comments';
-  return `review comment load: median ${String(comments)} review ${unit} per PR => ${BAND_LABEL[band] ?? String(band)}`;
+function describe(comments: number, band: number): Message {
+  return msg('criterion.review-comment-load', {
+    comments,
+    unit: comments === 1 ? 'unit.comment' : 'unit.comments',
+    band: `band.${BAND_LABEL[band] ?? String(band)}`,
+  });
 }

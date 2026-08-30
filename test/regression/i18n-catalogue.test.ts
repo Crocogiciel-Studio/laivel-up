@@ -27,12 +27,16 @@ if (!gridResult.ok) throw new Error(gridResult.error.message);
 const grid = gridResult.value;
 const catalogue = inMemoryCatalogue(builtInEvaluators);
 
-/** Every Message the engine emits for a profile: the global note and each action. */
+/** Every Message the engine emits for a profile: the note, the actions, every reading's evidence. */
 function messagesFor(name: string): Message[] {
   const profileResult = readProfileFromDirectory(resolve(FIXTURES, name));
   if (!profileResult.ok) throw new Error(profileResult.error.message);
   const ev = evaluate(profileResult.value, grid, catalogue, { now: () => new Date('2026-01-01') });
-  return [ev.global.note, ...ev.progression.actions];
+  return [
+    ev.global.note,
+    ...ev.progression.actions,
+    ...ev.axes.flatMap((a) => a.readings.map((r) => r.evidence)),
+  ];
 }
 
 describe('i18n catalogue', () => {

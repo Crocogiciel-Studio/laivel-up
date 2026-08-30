@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import type { GridLevel } from '../core/model/grid.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
@@ -118,7 +119,12 @@ export const bugsFloor: CriterionEvaluator = {
         sufficiency: 1,
         singleSource: true,
       },
-      evidence: `bugs floor: ${String(sa.bugs)} bugs over ${String(sa.ncloc)} ncloc = ${String(rounded)} bugs/kloc => ${BAND_LABEL[band] ?? String(band)}`,
+      evidence: msg('criterion.bugs-floor', {
+        bugs: sa.bugs,
+        ncloc: sa.ncloc,
+        rate: rounded,
+        band: `band.${BAND_LABEL[band] ?? String(band)}`,
+      }),
     });
   },
 };

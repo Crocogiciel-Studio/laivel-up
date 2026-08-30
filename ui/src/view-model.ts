@@ -3,10 +3,9 @@
  * view model the DOM layer renders. All display strings are resolved here so the
  * rendering stays mechanical and this stays unit-testable without a DOM.
  *
- * `note` and progression `actions` are `{ key, params }` descriptors resolved
- * against the bundled core catalogue. `evidence` is still a plain sentence and
- * stays English until the criteria emit descriptors too (#42). Everything the UI
- * itself labels goes through `t`.
+ * `evidence`, `note` and progression `actions` are `{ key, params }` descriptors
+ * resolved against the bundled core catalogue. Everything the UI itself labels
+ * goes through `t`.
  */
 import type { Evaluation } from './evaluation';
 import { type Grid, resolveGrid, levelLabel, axisLabel, orderedLevelIds } from './grid';
@@ -82,7 +81,7 @@ export function buildViewModel(evaluation: Evaluation, lang: Lang): ViewModel {
       level: levelLabel(grid, r.levelId),
       raw: has(r.rawValue) ? String(r.rawValue) : '—',
       confidencePct: pct(r.confidence),
-      evidence: r.evidence,
+      evidence: resolveMessage(r.evidence, lang),
     })),
   }));
 

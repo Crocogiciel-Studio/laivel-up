@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import { BAND_LABEL, bandMargin, rankForBand } from './shared/intervention-bands.js';
@@ -131,7 +132,7 @@ function describe(
   bandA: number | undefined,
   bandB: number | undefined,
   band: number,
-): string {
+): Message {
   const parts: string[] = [];
   if (correctionCommits !== undefined) {
     const unit = correctionCommits === 1 ? 'commit' : 'commits';
@@ -143,5 +144,5 @@ function describe(
   const famA = bandA === undefined ? '—' : (BAND_LABEL[bandA] ?? String(bandA));
   const famB = bandB === undefined ? '—' : (BAND_LABEL[bandB] ?? String(bandB));
   parts.push(`correction ${famA}, autonomy ${famB} => ${BAND_LABEL[band] ?? String(band)}`);
-  return `correction load: ${parts.join('; ')}`;
+  return msg('criterion.pr-correction-load', { detail: parts.join('; ') });
 }

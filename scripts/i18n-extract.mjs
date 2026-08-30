@@ -12,11 +12,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// The first argument of a `msg(...)` call.
 const KEY_CALL = /\bmsg\(\s*(['"])((?:(?!\1).)+)\1/g;
+// Any `'a.b'` / `'a.b.c'` string literal — catches keys passed as param values
+// (`factor.margin`, `band.no-cap`, `unit.comment`) or built as
+// `` `band.${…}` `` fragments the call-site scan cannot see.
+const KEY_LITERAL = /(['"`])([a-z][\w-]*(?:\.[\w-]+)+)\1/g;
 
-// Keys built dynamically (`factor.${limitingFactor}` in progression.ts) so the
-// static scan cannot see them. LimitingFactor is a closed enum; keep in step.
-const DYNAMIC_KEYS = ['factor.agreement', 'factor.margin', 'factor.sufficiency', 'factor.none'];
+// Prefixes whose full key set is a closed enum built dynamically at a call site.
+const DYNAMIC_PREFIXES = ['factor.', 'band.', 'tier.', 'unit.', 'flag.'];
 
 function walk(dir) {
   const out = [];
@@ -30,21 +34,27 @@ function walk(dir) {
 
 /** @returns {{ keys: string[], missingEn: string[], missingFr: string[], orphanEn: string[], orphanFr: string[] }} */
 export function checkCatalogues(root = ROOT) {
-  const keys = new Set(DYNAMIC_KEYS);
+  const called = new Set(); // first arg of a `msg(...)` call
+  const seen = new Set(); // any 'a.b' string literal (param values, fragments)
   for (const file of walk(join(root, 'src'))) {
     const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(KEY_CALL)) keys.add(match[2]);
+    for (const m of text.matchAll(KEY_CALL)) called.add(m[2]);
+    for (const m of text.matchAll(KEY_LITERAL)) seen.add(m[2]);
   }
   const load = (lang) => new Set(Object.keys(JSON.parse(readFileSync(join(root, 'i18n', `${lang}.json`), 'utf8'))));
   const en = load('en');
   const fr = load('fr');
-  const diff = (a, b) => [...a].filter((k) => !b.has(k)).sort();
+
+  const referenced = (k) =>
+    called.has(k) || seen.has(k) || DYNAMIC_PREFIXES.some((p) => k.startsWith(p));
+  const notIn = (set) => (k) => !set.has(k);
+
   return {
-    keys: [...keys].sort(),
-    missingEn: diff(keys, en),
-    missingFr: diff(keys, fr),
-    orphanEn: diff(en, keys),
-    orphanFr: diff(fr, keys),
+    keys: [...called].sort(),
+    missingEn: [...called].filter(notIn(en)).sort(),
+    missingFr: [...called].filter(notIn(fr)).sort(),
+    orphanEn: [...en].filter((k) => !referenced(k)).sort(),
+    orphanFr: [...fr].filter((k) => !referenced(k)).sort(),
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assistantIntegration } from './assistant-integration.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeGrid, makeProfile } from '../../test/support/factories.js';
 import type { ToolingContext } from '../core/model/profile.js';
 
@@ -65,7 +66,7 @@ describe('assistantIntegration', () => {
       expect(out.value.levelId).toBe('l2');
       expect(out.value.rawValue).toBe('memory');
       expect(out.value.confidence.margin).toBeCloseTo(0.25, 5);
-      expect(out.value.evidence).toContain('score 1/4');
+      expect(evidenceText(out.value.evidence)).toContain('score 1/4');
     }
   });
 
@@ -133,7 +134,7 @@ describe('assistantIntegration', () => {
     // editor + 2 tools = score 2, the two usage signals abstain
     if (out.ok) {
       expect(out.value.rawValue).toBe('memory');
-      expect(out.value.evidence).toContain('? tokens/wk');
+      expect(evidenceText(out.value.evidence)).toContain('? tokens/wk');
     }
   });
 

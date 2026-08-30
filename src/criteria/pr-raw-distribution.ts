@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { RawPullRequest } from '../core/model/profile.js';
@@ -97,12 +98,15 @@ export const prRawDistribution: CriterionEvaluator = {
 function describe(
   sized: readonly { readonly lines: number; readonly tier: Tier }[],
   medianTier: Tier,
-): string {
+): Message {
   const counts: Record<Tier, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
   for (const s of sized) counts[s.tier] += 1;
-  return (
-    `raw PR sizes S${String(counts[TIER.s])}/M${String(counts[TIER.m])}/` +
-    `L${String(counts[TIER.l])}/XL${String(counts[TIER.xl])} over ${String(sized.length)} PRs ` +
-    `=> median tier ${TIER_LABEL[medianTier]}`
-  );
+  return msg('criterion.pr-raw-distribution', {
+    s: counts[TIER.s],
+    m: counts[TIER.m],
+    l: counts[TIER.l],
+    xl: counts[TIER.xl],
+    count: sized.length,
+    tier: TIER_LABEL[medianTier],
+  });
 }

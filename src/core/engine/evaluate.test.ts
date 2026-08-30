@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluate } from './evaluate.js';
+import { evidenceText } from '../../../test/support/evidence.js';
 import { inMemoryCatalogue } from '../../adapters/catalogue/in-memory-catalogue.js';
 import {
   fixedEvaluator,
@@ -54,7 +55,7 @@ describe('evaluate', () => {
     const evaluation = evaluate(makeProfile(), grid, inMemoryCatalogue([]), { now: clock });
     const axisA = evaluation.axes[0];
     expect(axisA?.levelId).toBeUndefined();
-    expect(axisA?.readings[0]?.evidence).toContain('no evaluator registered');
+    expect(evidenceText(axisA!.readings[0]!.evidence)).toContain('no evaluator registered');
     expect(evaluation.global.levelId).toBeUndefined();
   });
 
@@ -99,6 +100,6 @@ describe('evaluate', () => {
     });
     const needy = { ...fixedEvaluator('needy', { levelId: 'l1' }), needs: ['vcsActivity'] as const };
     const evaluation = evaluate(makeProfile(), grid, inMemoryCatalogue([needy]), { now: clock });
-    expect(evaluation.axes[0]?.readings[0]?.evidence).toContain('vcsActivity');
+    expect(evidenceText(evaluation.axes[0]!.readings[0]!.evidence)).toContain('vcsActivity');
   });
 });

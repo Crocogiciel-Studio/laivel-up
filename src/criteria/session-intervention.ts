@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { WorkSession } from '../core/model/profile.js';
@@ -135,7 +136,7 @@ export const sessionIntervention: CriterionEvaluator = {
   },
 };
 
-function describe(ws: WorkSession, interventions: number, band: number): string {
+function describe(ws: WorkSession, interventions: number, band: number): Message {
   const parts: string[] = [];
   if (ws.promptToCommitSteps !== undefined) {
     parts.push(`${String(ws.promptToCommitSteps)} prompt→commit turns`);
@@ -144,5 +145,5 @@ function describe(ws: WorkSession, interventions: number, band: number): string 
   parts.push(`${String(interventions)} mid-task ${unit}`);
   if (ws.framingOnly === true) parts.push('framing only');
   parts.push(`=> ${BAND_LABEL[band] ?? String(band)}`);
-  return `session pattern: ${parts.join('; ')}`;
+  return msg('criterion.session-intervention', { detail: parts.join('; ') });
 }

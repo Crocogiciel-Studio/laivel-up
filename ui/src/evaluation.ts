@@ -2,9 +2,8 @@
  * Shape of the JSON emitted by `src/adapters/outbound/json-evaluation.ts` in the
  * core repo, kept in step with `docs/evaluation.schema.json` (#21).
  *
- * TODO(#42): `evidence` is still a plain sentence and stays English until the
- * criteria emit descriptors too. `note` and `actions[]` are already
- * `{ key, params }` and resolved in view-model.ts against the bundled catalogue.
+ * `evidence`, `note` and `actions[]` are all `{ key, params }` descriptors
+ * resolved in view-model.ts against the bundled `i18n/` catalogue (#42).
  */
 
 // `JSON.stringify` drops `undefined` properties, so a field the model types as
@@ -13,10 +12,11 @@
 type Absent<T> = T | null | undefined;
 type Factor = 'agreement' | 'margin' | 'sufficiency' | 'none';
 
-/** A translatable sentence emitted by the core: a catalogue key plus its fill values. */
+/** A translatable sentence emitted by the core: a catalogue key plus its fill
+ *  values. A param may itself be a nested `Message` (resolved recursively). */
 export interface Message {
   readonly key: string;
-  readonly params?: Readonly<Record<string, string | number>>;
+  readonly params?: Readonly<Record<string, string | number | Message>>;
 }
 
 export interface CriterionReading {
@@ -29,7 +29,7 @@ export interface CriterionReading {
   readonly rawValue?: Absent<number | string>;
   readonly confidence: number;
   readonly limitingFactor: Factor;
-  readonly evidence: string;
+  readonly evidence: Message;
 }
 
 export interface AxisVerdict {

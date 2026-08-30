@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelById, levelByRank } from '../core/model/grid.js';
 
@@ -83,9 +84,7 @@ export const declaratifContradiction: CriterionEvaluator = {
       levelId,
       rawValue: selfAssessed,
       confidence: { ...DECLARED_CONFIDENCE },
-      evidence:
-        `self-assessment: subject places themselves at "${label}" — ` +
-        'shown against the measured level, never raises it',
+      evidence: msg('criterion.declaratif-contradiction', { label }),
     });
   },
 };

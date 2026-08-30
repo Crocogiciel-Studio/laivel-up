@@ -7,18 +7,22 @@ import type { Message } from '../../core/model/evaluation.js';
  */
 export type MessageCatalogue = Readonly<Record<string, string>>;
 
+const isMessage = (v: unknown): v is Message =>
+  typeof v === 'object' && v !== null && typeof (v as { key?: unknown }).key === 'string';
+
 /**
  * Fill a `Message`'s template from a catalogue. An unknown key falls back to the
- * key itself; an unfilled `{param}` is left visible rather than dropped, so a
- * mismatch is obvious instead of silent. A param value that is itself a
- * namespaced catalogue key (e.g. `factor.margin`) resolves through the catalogue
- * too, so an enum reads in the target language.
+ * key itself; an unfilled `{param}` is left visible rather than dropped. A param
+ * value that is a nested `Message` is resolved recursively; a plain string that
+ * is itself a namespaced catalogue key (e.g. `band.cap-poor`) is looked up too,
+ * so an enum reads in the target language.
  */
 export function resolveMessage(message: Message, catalogue: MessageCatalogue): string {
   const template = catalogue[message.key] ?? message.key;
   return template.replace(/\{(\w+)\}/g, (_, name: string) => {
     const value = message.params?.[name];
     if (value === undefined) return `{${name}}`;
+    if (isMessage(value)) return resolveMessage(value, catalogue);
     const text = String(value);
     return text.includes('.') && catalogue[text] !== undefined ? catalogue[text] : text;
   });

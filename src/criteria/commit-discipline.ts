@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import type { GridLevel } from '../core/model/grid.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
@@ -123,7 +124,9 @@ export const commitDiscipline: CriterionEvaluator = {
   },
 };
 
-function describe(ratio: number, band: number): string {
-  const pct = Math.round(ratio * 1000) / 10;
-  return `commit discipline: ${String(pct)}% of commits AI-co-signed => ${BAND_LABEL[band] ?? String(band)}`;
+function describe(ratio: number, band: number): Message {
+  return msg('criterion.commit-discipline', {
+    pct: Math.round(ratio * 1000) / 10,
+    band: `band.${BAND_LABEL[band] ?? String(band)}`,
+  });
 }

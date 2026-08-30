@@ -9,14 +9,18 @@
  * template. The core emits these and names no language; a consumer (an outbound
  * adapter, the viewer) resolves them against a catalogue it owns.
  */
+export type MessageParam = string | number | Message;
+
 export interface Message {
   readonly key: string;
-  readonly params?: Readonly<Record<string, string | number>>;
+  /** A nested `Message` value is resolved recursively; a `string` that is itself
+   *  a namespaced key (`band.cap-poor`) is looked up too. */
+  readonly params?: Readonly<Record<string, MessageParam>>;
 }
 
 export function msg(
   key: string,
-  params?: Readonly<Record<string, string | number>>,
+  params?: Readonly<Record<string, MessageParam>>,
 ): Message {
   return params === undefined ? { key } : { key, params };
 }
@@ -35,7 +39,7 @@ export interface CriterionReading {
   readonly rawValue: number | string | undefined;
   readonly confidence: number;
   readonly limitingFactor: LimitingFactor;
-  readonly evidence: string;
+  readonly evidence: Message;
 }
 
 export interface AxisVerdict {

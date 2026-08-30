@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import type { GridLevel } from '../core/model/grid.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
@@ -131,7 +132,7 @@ export const loopConvergence: CriterionEvaluator = {
         levelId: level.id,
         rawValue: BAND_LABEL[NO_LOOP] ?? String(NO_LOOP),
         confidence: { agreement: 1, margin: 1, sufficiency: 1, singleSource: true },
-        evidence: 'loop convergence: no auto-retry loop claimed => convergence not assessed',
+        evidence: msg('criterion.loop-convergence.no-loop'),
       });
     }
 
@@ -164,12 +165,11 @@ export const loopConvergence: CriterionEvaluator = {
   },
 };
 
-function describe(ci: CiFacts, band: number): string {
-  const runs =
-    ci.medianRunsToGreen === undefined ? '?' : String(ci.medianRunsToGreen);
-  const fail =
-    ci.failureRate === undefined
-      ? '?'
-      : `${String(Math.round(ci.failureRate * 1000) / 10)}%`;
-  return `loop convergence: auto-retry loop present, CI median ${runs} runs to green, failure rate ${fail} => ${BAND_LABEL[band] ?? String(band)}`;
+function describe(ci: CiFacts, band: number): Message {
+  return msg('criterion.loop-convergence', {
+    runs: ci.medianRunsToGreen === undefined ? '?' : String(ci.medianRunsToGreen),
+    failRate:
+      ci.failureRate === undefined ? '?' : `${String(Math.round(ci.failureRate * 1000) / 10)}%`,
+    band: `band.${BAND_LABEL[band] ?? String(band)}`,
+  });
 }

@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 
@@ -81,14 +82,16 @@ function describe(
   coverageEnd: number,
   coverageDelta: number,
   tier: Tier,
-): string {
-  const pct = (n: number): string => `${String(Math.round(n * 100))}%`;
-  const signed =
-    coverageDelta >= 0 ? `+${pct(coverageDelta)}` : `-${pct(Math.abs(coverageDelta))}`;
-  return (
-    `test enforcement: ${pct(ratio)} of PRs ship tests, coverage ` +
-    `${pct(coverageStart)} => ${pct(coverageEnd)} (${signed}) => ${tier.label}`
-  );
+): Message {
+  const p = (n: number): number => Math.round(n * 100);
+  const signed = coverageDelta >= 0 ? `+${String(p(coverageDelta))}%` : `-${String(p(Math.abs(coverageDelta)))}%`;
+  return msg('criterion.test-enforcement', {
+    ratio: p(ratio),
+    start: p(coverageStart),
+    end: p(coverageEnd),
+    signed,
+    tier: `tier.${tier.label}`,
+  });
 }
 
 export const testEnforcement: CriterionEvaluator = {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { behaviorArtifactDensity } from './behavior-artifact-density.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeProfile, makeGrid } from '../../test/support/factories.js';
 import type { ToolingContext } from '../core/model/profile.js';
 
@@ -50,7 +51,7 @@ describe('behaviorArtifactDensity', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l4');
       expect(out.value.rawValue).toBe('behavior');
-      expect(out.value.evidence).toContain('= 9 (>= 4)');
+      expect(evidenceText(out.value.evidence)).toContain('= 9 (>= 4)');
     }
   });
 

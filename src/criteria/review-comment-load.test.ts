@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { reviewCommentLoad } from './review-comment-load.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeProfile, makeGrid, makePrProfile } from '../../test/support/factories.js';
 import type { PullRequestFacts } from '../core/model/profile.js';
 
@@ -56,7 +57,7 @@ describe('reviewCommentLoad', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l4');
       expect(out.value.rawValue).toBe('key-stages');
-      expect(out.value.evidence).toContain('1 review comment per PR');
+      expect(evidenceText(out.value.evidence)).toContain('1 review comment per PR');
     }
   });
 

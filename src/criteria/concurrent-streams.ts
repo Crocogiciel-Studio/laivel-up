@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ParallelismFacts } from '../core/model/profile.js';
@@ -85,11 +86,11 @@ export const concurrentStreams: CriterionEvaluator = {
   },
 };
 
-function describe(parallelism: ParallelismFacts, band: number, threshold: number): string {
+function describe(parallelism: ParallelismFacts, band: number, threshold: number): Message {
   const parts = [`median ${String(parallelism.medianConcurrentBranches)} concurrent branches`];
   if (parallelism.maxConcurrentBranches !== undefined) {
     parts.push(`peak ${String(parallelism.maxConcurrentBranches)}`);
   }
   parts.push(`threshold ${String(threshold)} => ${BAND_LABEL[band] ?? String(band)}`);
-  return `concurrent streams: ${parts.join('; ')}`;
+  return msg('criterion.concurrent-streams', { detail: parts.join('; ') });
 }

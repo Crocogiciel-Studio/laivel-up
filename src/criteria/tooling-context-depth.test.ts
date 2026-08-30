@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toolingContextDepth } from './tooling-context-depth.js';
+import { evidenceText } from '../../test/support/evidence.js';
 import { makeProfile, makeGrid } from '../../test/support/factories.js';
 import type { ToolingContext } from '../core/model/profile.js';
 
@@ -33,7 +34,7 @@ describe('toolingContextDepth', () => {
     if (out.ok) {
       expect(out.value.levelId).toBe('l4');
       expect(out.value.confidence.singleSource).toBe(true);
-      expect(out.value.evidence).toContain('3 rules');
+      expect(evidenceText(out.value.evidence)).toContain('3 rules');
     }
   });
 

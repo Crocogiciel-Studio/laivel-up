@@ -1,5 +1,6 @@
 import type { Profile, ProfileSection } from '../model/profile.js';
 import type { Grid } from '../model/grid.js';
+import type { Message } from '../model/evaluation.js';
 import type { Result } from '../model/result.js';
 
 /**
@@ -31,7 +32,8 @@ export interface CriterionOutput {
   readonly levelId: string;
   readonly rawValue: number | string;
   readonly confidence: ConfidenceBreakdown;
-  readonly evidence: string;
+  /** One evidence sentence, as a translatable descriptor (`i18n/` catalogues). */
+  readonly evidence: Message;
 }
 
 export interface MissingPiece {

@@ -6,6 +6,7 @@ import type {
 } from '../core/ports/criterion-evaluator.js';
 import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
+import { msg, type Message } from '../core/model/evaluation.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ToolingContext } from '../core/model/profile.js';
@@ -71,7 +72,7 @@ function marginFor(density: number, p: Params): number {
   return Math.min(1, distance / Math.max(p.densityStrong, 1e-9));
 }
 
-function describe(tc: ToolingContext, density: number, tier: number, p: Params): string {
+function describe(tc: ToolingContext, density: number, tier: number, p: Params): Message {
   const parts: string[] = [];
   if (tc.rulesCount > 0) parts.push(`${String(tc.rulesCount)} rules`);
   if (tc.agentsCount > 0) parts.push(`${String(tc.agentsCount)} agents`);
@@ -81,7 +82,8 @@ function describe(tc: ToolingContext, density: number, tier: number, p: Params):
   const comparison =
     density >= p.densityStrong ? `>= ${String(p.densityStrong)}` : `< ${String(p.densityStrong)}`;
   const memory = tc.projectMemoryPresent ? ', project memory present' : '';
-  return `behavior-artifact density: ${artifacts} = ${String(density)} (${comparison})${memory} => ${TIER_LABEL[tier] ?? String(tier)} tier`;
+  const detail = `${artifacts} = ${String(density)} (${comparison})${memory} => ${TIER_LABEL[tier] ?? String(tier)} tier`;
+  return msg('criterion.behavior-artifact-density', { detail });
 }
 
 export const behaviorArtifactDensity: CriterionEvaluator = {
