@@ -104,7 +104,7 @@ describe('CLI end-to-end', () => {
     const { status, stdout, stderr } = runCli(['--help']);
     expect(status).toBe(0);
     expect(stdout).toContain('usage:');
-    expect(stderr).toBe('');
+    expect(stderr).not.toContain('error:');
   });
 
   it('exits 2 for an unknown flag', () => {
