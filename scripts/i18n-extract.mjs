@@ -22,7 +22,7 @@ const KEY_LITERAL = /(['"])([a-z][\w-]*(?:\.[\w-]+)+)\1/g;
 // Keys built at a call site as `` `<prefix>.${LABEL_MAP[x]}` `` and so invisible
 // to the literal scan. Keep in step with the label maps they come from:
 //   band.*  — BAND_LABEL in bugs-floor / commit-discipline / revert-rate /
-//             code-quality-floor / shared/intervention-bands / loop-convergence
+//             code-quality-floor / intervention/intervention-bands / loop-convergence
 //   tier.*  — memory-maintenance.Tier, test-enforcement.Tier, assistant-integration.Tier
 //   unit.*  — review-comment-load; flag.* — assistant-integration
 //   factor.* — progression.ts (LimitingFactor)
