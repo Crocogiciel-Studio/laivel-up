@@ -5,13 +5,19 @@
 //   pnpm viz arthur                # just that fixture
 //   pnpm viz -p <dir> -g <preset.json>
 //
-// Builds the core if needed, evaluates the profile(s), drops the JSON where the
-// viewer's dev server picks it up, then opens the browser.
+// Rebuilds the core, evaluates the profile(s), drops the JSON where the viewer's
+// dev server picks it up, then opens the browser.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const USAGE = 'usage: pnpm viz [<profile-name-or-dir>] [-p <dir>] [-g <preset.json>]';
+const die = (msg) => {
+  process.stderr.write(`${msg}\n${USAGE}\n`);
+  process.exit(1);
+};
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -19,10 +25,10 @@ const consumed = new Set();
 const flag = (...names) => {
   for (const name of names) {
     const i = argv.indexOf(name);
-    if (i !== -1 && argv[i + 1] !== undefined) {
-      consumed.add(i).add(i + 1);
-      return argv[i + 1];
-    }
+    if (i === -1) continue;
+    if (argv[i + 1] === undefined || argv[i + 1].startsWith('-')) die(`${name} needs a value`);
+    consumed.add(i).add(i + 1);
+    return argv[i + 1];
   }
   return undefined;
 };
@@ -42,10 +48,10 @@ const resolveProfile = (v) => {
   return v;
 };
 
-if (!existsSync(resolve(root, 'dist/cli/main.js'))) {
-  process.stderr.write('building core (one-time)…\n');
-  execFileSync('pnpm', ['build'], { cwd: root, stdio: 'inherit' });
-}
+// Always rebuild — skipping when dist/ merely exists would render a stale
+// engine's output after any src/ edit, with nothing saying so.
+process.stderr.write('building core…\n');
+execFileSync('pnpm', ['build'], { cwd: root, stdio: 'inherit' });
 
 const evaluate = (profileDir) =>
   execFileSync('node', ['dist/cli/main.js', '--profile', profileDir, '--grid', grid], {
