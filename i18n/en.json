@@ -1,5 +1,6 @@
 {
   "aggregate.evidence-bar-not-met": "evidence bar not met: {ruled}/{total} axes could be ruled on, {required} required",
+  "aggregate.confidence-below-floor": "evidence bar not met: global confidence {confidence} is below the floor {floor}",
   "aggregate.no-axis-ruled": "no axis could be ruled on",
   "aggregate.binding-partial-coverage": "ruled on {ruled}/{total} axes; {axis} is binding",
   "aggregate.binding": "{axis} is binding",

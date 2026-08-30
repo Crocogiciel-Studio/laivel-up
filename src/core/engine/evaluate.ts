@@ -13,6 +13,11 @@ import { planProgression } from './progression.js';
 export interface EvaluateOptions {
   /** Minimum axes that must be ruled on before a global level is emitted. */
   readonly minRuledAxes?: number;
+  /**
+   * Minimum global confidence `[0,1]` to emit a level. `grid.evidenceFloor` wins
+   * when both are set; absent on both means no confidence gate.
+   */
+  readonly evidenceFloor?: number;
   /** Injected clock, for deterministic output. */
   readonly now?: () => Date;
 }
@@ -24,13 +29,14 @@ export function evaluate(
   options: EvaluateOptions = {},
 ): Evaluation {
   const minRuledAxes = options.minRuledAxes ?? 1;
+  const evidenceFloor = grid.evidenceFloor ?? options.evidenceFloor ?? 0;
   const now = options.now ?? ((): Date => new Date());
 
   const axisVerdicts: AxisVerdict[] = grid.axes.map((axis) =>
     evaluateAxis(profile, grid, axis, catalogue),
   );
 
-  const global = aggregate(grid, axisVerdicts, minRuledAxes);
+  const global = aggregate(grid, axisVerdicts, minRuledAxes, evidenceFloor);
   const progression = planProgression(grid, global, axisVerdicts);
 
   return {

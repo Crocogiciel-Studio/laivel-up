@@ -1,5 +1,6 @@
 {
   "aggregate.evidence-bar-not-met": "barre d'évidence non atteinte : {ruled}/{total} axes ont pu être statués, {required} requis",
+  "aggregate.confidence-below-floor": "barre d'évidence non atteinte : la confiance globale {confidence} est sous le seuil {floor}",
   "aggregate.no-axis-ruled": "aucun axe n'a pu être statué",
   "aggregate.binding-partial-coverage": "statué sur {ruled}/{total} axes ; {axis} est l'axe contraignant",
   "aggregate.binding": "{axis} est l'axe contraignant",

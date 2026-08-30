@@ -40,6 +40,12 @@ export interface Grid {
   readonly axes: readonly GridAxis[];
   readonly axisAggregation: AxisAggregationMethod;
   readonly globalAggregation: GlobalAggregationMethod;
+  /**
+   * Minimum global confidence `[0,1]` to emit a level at all. Below it the
+   * engine returns no level (the evidence is too thin to place one), keeping the
+   * binding axis for diagnosis. Absent or `0` disables the gate.
+   */
+  readonly evidenceFloor: number | undefined;
 }
 
 export function levelById(grid: Grid, id: string): GridLevel | undefined {

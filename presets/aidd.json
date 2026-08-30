@@ -1,6 +1,7 @@
 {
   "id": "aidd",
   "label": "AIDD reference grid",
+  "evidenceFloor": 0.25,
   "levels": [
     { "id": "white", "label": "❖ White", "rank": 0 },
     { "id": "red", "label": "🔺 Red", "rank": 1 },

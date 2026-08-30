@@ -7,12 +7,15 @@ import { msg } from '../model/evaluation.js';
  * Global level = the lowest axis level — a level is reached only if every axis
  * reaches it. The binding axis is the one holding the subject back. Global
  * confidence is the weakest link between the binding axis's own confidence and
- * how many axes could be ruled on at all (coverage).
+ * how many axes could be ruled on at all (coverage). Two gates can withhold a
+ * level: too few axes ruled (`minRuledAxes`), or global confidence below
+ * `evidenceFloor` — each keeps the binding axis for diagnosis and says which.
  */
 export function aggregate(
   grid: Grid,
   axes: readonly AxisVerdict[],
   minRuledAxes: number,
+  evidenceFloor = 0,
 ): GlobalVerdict {
   const ruled = axes.filter(
     (axis): axis is AxisVerdict & { levelRank: number } => axis.levelRank !== undefined,
@@ -47,6 +50,19 @@ export function aggregate(
 
   const level = levelById(grid, binding.levelId ?? '');
   const confidence = Math.min(binding.confidence, coverage);
+
+  if (confidence < evidenceFloor) {
+    return {
+      levelId: undefined,
+      levelRank: undefined,
+      confidence,
+      bindingAxisId: binding.axisId,
+      note: msg('aggregate.confidence-below-floor', {
+        confidence: Math.round(confidence * 100) / 100,
+        floor: evidenceFloor,
+      }),
+    };
+  }
 
   return {
     levelId: level?.id ?? binding.levelId,
