@@ -33,6 +33,7 @@ const gridSchema = z
     axes: z.array(axisSchema).min(1),
     axisAggregation: z.literal('confidence-weighted-vote').default('confidence-weighted-vote'),
     globalAggregation: z.literal('min-across-axes').default('min-across-axes'),
+    evidenceFloor: z.number().min(0).max(1).optional(),
   })
   .superRefine((value, ctx) => {
     const ranks = new Set(value.levels.map((level) => level.rank));
@@ -82,6 +83,7 @@ export function parseGrid(input: unknown): Result<Grid, SourceError> {
     })),
     axisAggregation: value.axisAggregation,
     globalAggregation: value.globalAggregation,
+    evidenceFloor: value.evidenceFloor,
   };
   return ok(grid);
 }

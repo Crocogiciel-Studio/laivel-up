@@ -58,6 +58,31 @@ describe('evaluate', () => {
     expect(evaluation.global.levelId).toBeUndefined();
   });
 
+  it('applies grid.evidenceFloor, and the grid wins over EvaluateOptions', () => {
+    const bundle = [{ criterionId: 'fx', weight: 1, role: 'level' as const, params: {} }];
+    const catalogue = inMemoryCatalogue([
+      fixedEvaluator('fx', {
+        levelId: 'l2',
+        confidence: { agreement: 0.4, margin: 0.4, sufficiency: 0.4, singleSource: true },
+      }),
+    ]);
+    const withFloor = makeGrid({ evidenceFloor: 0.6, axes: [{ id: 'a', label: 'A', bundle }] });
+
+    // grid floor 0.6 > folded confidence 0.4 -> no level
+    const gated = evaluate(makeProfile(), withFloor, catalogue, { now: clock });
+    expect(gated.global.levelId).toBeUndefined();
+    expect(gated.global.note.key).toBe('aggregate.confidence-below-floor');
+
+    // option would allow it, but the grid still wins
+    const stillGated = evaluate(makeProfile(), withFloor, catalogue, { now: clock, evidenceFloor: 0 });
+    expect(stillGated.global.levelId).toBeUndefined();
+
+    // no grid floor -> the option applies
+    const noGridFloor = makeGrid({ axes: [{ id: 'a', label: 'A', bundle }] });
+    expect(evaluate(makeProfile(), noGridFloor, catalogue, { now: clock, evidenceFloor: 0.6 }).global.levelId).toBeUndefined();
+    expect(evaluate(makeProfile(), noGridFloor, catalogue, { now: clock }).global.levelId).toBe('l2');
+  });
+
   it('reports unknown when a criterion needs a profile section that is absent', () => {
     const grid = makeGrid({
       axes: [

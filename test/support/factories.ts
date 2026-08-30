@@ -23,6 +23,7 @@ export function makeGrid(overrides: Partial<Grid> = {}): Grid {
     axes: [{ id: 'a', label: 'Axis A', bundle: [] }],
     axisAggregation: 'confidence-weighted-vote',
     globalAggregation: 'min-across-axes',
+    evidenceFloor: undefined,
     ...overrides,
   };
 }
