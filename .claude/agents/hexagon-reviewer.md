@@ -30,7 +30,7 @@ anchor.
 
 `docs/agents/hexagon.md` · `aidd_docs/memory/architecture.md` (background) ·
 `src/core/index.ts` (the core's whole public surface) · `.dependency-cruiser.cjs` ·
-`src/criteria/pr-feature-size.ts` and `src/adapters/inbound/json-grid.ts` as the reference shapes
+`src/criteria/size/pr-feature-size.ts` and `src/adapters/inbound/json-grid.ts` as the reference shapes
 
 ## You own
 

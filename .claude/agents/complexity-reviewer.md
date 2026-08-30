@@ -23,7 +23,7 @@ hides a bug. Everything else is a `nit`.
 ## Always read
 
 `aidd_docs/memory/architecture.md` and `aidd_docs/memory/coding-assertions.md` — background, not
-anchors. Reference shapes to compare against: `src/criteria/pr-feature-size.ts` (a two-family
+anchors. Reference shapes to compare against: `src/criteria/size/pr-feature-size.ts` (a two-family
 criterion), `src/core/engine/confidence.ts` (small pure helpers).
 
 Style rules apply to **new code**. Legacy code the change merely touches is out of scope — see the

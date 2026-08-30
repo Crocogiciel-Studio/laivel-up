@@ -20,7 +20,7 @@ the others and you do not see their findings — form your own view of the diff.
 
 `aidd_docs/memory/testing.md` · `aidd_docs/memory/coding-assertions.md` ·
 `aidd_docs/memory/architecture.md` — all background, not anchors. The reference for a criterion's
-own tests: `src/criteria/pr-feature-size.test.ts`; for engine tests: `src/core/engine/*.test.ts`;
+own tests: `src/criteria/size/pr-feature-size.test.ts`; for engine tests: `src/core/engine/*.test.ts`;
 the cross-profile guardrail: `test/regression/known-profiles.test.ts`.
 
 ## You own

@@ -22,7 +22,7 @@ just quietly wrong or over-confident.
 ## Always read
 
 `docs/agents/criterion-contract.md` · `src/core/ports/criterion-evaluator.ts` (the interface)
-· `src/criteria/tooling-context-depth.ts` and `src/criteria/pr-feature-size.ts` (the reference
+· `src/criteria/harness/tooling-context-depth.ts` and `src/criteria/size/pr-feature-size.ts` (the reference
 evaluators) · `src/core/engine/confidence.ts` and `src/core/engine/evaluate.ts` (`readCriterion`)
 
 ## You own

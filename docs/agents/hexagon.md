@@ -38,7 +38,7 @@ they live in `presets/*.json` under a bundle entry's `params` and reach a criter
 `context.params`. An evaluator carries only in-code defaults for those knobs and reads the rest
 from the grid — the same evaluator under a different preset must be able to yield a different
 verdict. A magic number that decides a level and cannot be overridden from the preset is a finding.
-Reference: `src/criteria/pr-feature-size.ts` (`PARAM_DEFAULTS` merged with `context.params`).
+Reference: `src/criteria/size/pr-feature-size.ts` (`PARAM_DEFAULTS` merged with `context.params`).
 
 ## The core names no grid, axis or "AIDD" {#no-domain-vocab-in-core}
 

@@ -8,7 +8,7 @@ read_when: reviewing a new or changed criterion evaluator, or engine code that r
 
 A criterion is a pluggable evaluator behind one generic interface. Every evaluator honours the same
 contract so the engine can run, skip or fold it without special-casing. Reference implementations:
-`src/criteria/tooling-context-depth.ts` (single-source) and `src/criteria/pr-feature-size.ts`
+`src/criteria/harness/tooling-context-depth.ts` (single-source) and `src/criteria/size/pr-feature-size.ts`
 (two families). The interface itself: `src/core/ports/criterion-evaluator.ts`.
 
 ## evaluate() returns a Result and never throws {#returns-result-never-throws}
