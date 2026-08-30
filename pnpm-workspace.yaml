@@ -1,3 +1,6 @@
 # esbuild (pulled in by vitest) runs a postinstall to place its platform binary.
 allowBuilds:
   esbuild: true
+
+packages:
+  - "ui"
