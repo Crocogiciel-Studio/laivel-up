@@ -38,6 +38,7 @@ declare
   alice uuid := '11111111-1111-1111-1111-111111111111';
   bob   uuid := '22222222-2222-2222-2222-222222222222';
   alice_grid uuid;
+  alice_run  uuid;
   visible int;
 begin
   -- Alice writes a grid of her own.
@@ -88,6 +89,51 @@ begin
   exception when insufficient_privilege then
     null; -- expected
   end;
+
+  -- Bob cannot delete Alice's grid (0 rows match the USING clause).
+  delete from public.grid where id = alice_grid;
+  get diagnostics visible = row_count;
+  if visible <> 0 then
+    raise exception 'bob deleted % of alice grid rows, expected 0', visible;
+  end if;
+
+  -- profile: same owner isolation as grid.
+  perform pg_temp.become(alice);
+  insert into public.profile (owner_id, name, body)
+    values (alice, 'alice profile', '{"subject":{"id":"p1"}}'::jsonb);
+  perform pg_temp.become(bob);
+  select count(*) into visible from public.profile;
+  if visible <> 0 then
+    raise exception 'bob should see none of alice profiles, saw %', visible;
+  end if;
+
+  -- run: owner-only, no template concept -- bob sees nothing.
+  perform pg_temp.become(alice);
+  insert into public.run
+    (owner_id, subject_id, grid_snapshot, profile_snapshot, evaluation)
+    values (alice, 'dev-x', '{}'::jsonb, '{}'::jsonb, '{}'::jsonb)
+    returning id into alice_run;
+  select count(*) into visible from public.run;
+  if visible <> 1 then
+    raise exception 'alice should see her run, saw %', visible;
+  end if;
+
+  perform pg_temp.become(bob);
+  select count(*) into visible from public.run;
+  if visible <> 0 then
+    raise exception 'bob should see none of alice runs, saw %', visible;
+  end if;
+
+  select count(*) into visible from public.run where id = alice_run;
+  if visible <> 0 then
+    raise exception 'bob must not see alice run %', alice_run;
+  end if;
+
+  update public.run set subject_id = 'hijacked' where id = alice_run;
+  get diagnostics visible = row_count;
+  if visible <> 0 then
+    raise exception 'bob updated % of alice run rows, expected 0', visible;
+  end if;
 
   raise notice 'rls_smoke: all checks passed';
 end;

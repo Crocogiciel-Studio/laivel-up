@@ -36,7 +36,7 @@
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
     "db:new": "supabase migration new",
-    "db:test": "supabase db reset && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql",
+    "db:test": "supabase db reset && psql \"${SUPABASE_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql",
     "db:test:bare": "scripts/rls-test-bare.sh"
   },
   "dependencies": {
