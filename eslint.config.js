@@ -13,7 +13,9 @@ export default [
       '.github/scripts/**',
       'tools/review-kit/**',
       '.claude/**',
-      // Satellite viewer — standalone package with its own toolchain (ui/tsconfig.json).
+      // Plain Node helper scripts, not part of the TS project.
+      'scripts/**',
+      // Satellite viewer — pnpm workspace package with its own toolchain (ui/tsconfig.json).
       'ui/**',
     ],
   },

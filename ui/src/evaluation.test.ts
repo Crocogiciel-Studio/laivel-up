@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEvaluation } from './evaluation';
+import { parseEvaluation, evaluationSource } from './evaluation';
 
 const valid = {
   subjectId: 'dev-sample',
@@ -51,5 +51,16 @@ describe('parseEvaluation', () => {
   it('rejects a non-array "axes"', () => {
     const result = parseEvaluation(JSON.stringify({ ...valid, axes: {} }));
     expect(result).toEqual({ ok: false, error: '"axes" must be an array' });
+  });
+});
+
+describe('evaluationSource', () => {
+  it('defaults to a co-located evaluation.json', () => {
+    expect(evaluationSource('')).toBe('evaluation.json');
+    expect(evaluationSource('?lang=fr')).toBe('evaluation.json');
+  });
+
+  it('honours an explicit ?src=', () => {
+    expect(evaluationSource('?src=/runs/arthur.json')).toBe('/runs/arthur.json');
   });
 });

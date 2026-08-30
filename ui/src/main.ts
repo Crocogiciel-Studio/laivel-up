@@ -1,5 +1,5 @@
 import './styles.css';
-import { parseEvaluation, type Evaluation } from './evaluation';
+import { parseEvaluation, evaluationSource, type Evaluation } from './evaluation';
 import { buildViewModel, type AxisCard, type ViewModel } from './view-model';
 import { detectLang, persistLang, t, LANGS, type Lang } from './i18n';
 
@@ -214,16 +214,7 @@ function render(): void {
   }
 }
 
-async function ingest(file: File): Promise<void> {
-  let text: string;
-  try {
-    text = await file.text();
-  } catch (cause) {
-    loaded = null;
-    error = (cause as Error).message;
-    render();
-    return;
-  }
+function accept(text: string): void {
   const result = parseEvaluation(text);
   if (result.ok) {
     loaded = result.value;
@@ -235,4 +226,25 @@ async function ingest(file: File): Promise<void> {
   render();
 }
 
+async function ingest(file: File): Promise<void> {
+  try {
+    accept(await file.text());
+  } catch (cause) {
+    loaded = null;
+    error = (cause as Error).message;
+    render();
+  }
+}
+
+/** Startup: pull an evaluation from `?src=` or `evaluation.json`; stay quiet if there is none. */
+async function autoload(): Promise<void> {
+  try {
+    const res = await fetch(evaluationSource(window.location.search));
+    if (res.ok) accept(await res.text());
+  } catch {
+    // no co-located evaluation (e.g. opened from file://) — the drop zone stands.
+  }
+}
+
 render();
+void autoload();

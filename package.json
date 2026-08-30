@@ -28,7 +28,8 @@
     "depcruise": "depcruise src --config .dependency-cruiser.cjs",
     "build": "tsc --project tsconfig.build.json",
     "dev": "tsx src/cli/main.ts",
-    "dev:watch": "tsx watch src/cli/main.ts"
+    "dev:watch": "tsx watch src/cli/main.ts",
+    "viz": "node scripts/viz.mjs"
   },
   "dependencies": {
     "zod": "^3.24.1"

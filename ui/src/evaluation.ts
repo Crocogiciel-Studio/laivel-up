@@ -63,6 +63,16 @@ export type ParseResult =
   | { readonly ok: false; readonly error: string };
 
 /**
+ * Where the viewer tries to auto-load an evaluation from on startup: `?src=<url>`
+ * when given, else `evaluation.json` next to the page (what `pnpm viz` writes to
+ * the dev server's public dir). On a bare `file://` open the fetch just fails and
+ * the drop zone stays — that path is drag-and-drop only.
+ */
+export function evaluationSource(search: string): string {
+  return new URLSearchParams(search).get('src') ?? 'evaluation.json';
+}
+
+/**
  * Minimal structural guard for the scaffold — enough to reject a file that is not
  * an evaluation at all. Full JSON-Schema validation is #41 viewer work (needs #21).
  */
