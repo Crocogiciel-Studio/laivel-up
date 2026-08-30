@@ -9,7 +9,8 @@
     "laivel-up": "./dist/cli/main.js"
   },
   "exports": {
-    ".": "./dist/core/index.js"
+    ".": "./dist/core/index.js",
+    "./compose": "./dist/compose.js"
   },
   "files": [
     "dist",
