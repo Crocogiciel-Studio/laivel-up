@@ -18,7 +18,16 @@ if (app === null) {
 }
 const root = app;
 
+// A file dropped anywhere but the dropzone would otherwise make the browser
+// navigate away to the raw file, losing the app.
+for (const type of ['dragover', 'drop'] as const) {
+  window.addEventListener(type, (event) => {
+    event.preventDefault();
+  });
+}
+
 function render(): void {
+  document.documentElement.lang = lang;
   root.replaceChildren();
 
   const header = document.createElement('header');
@@ -103,11 +112,13 @@ function render(): void {
   if (error !== null) {
     const status = document.createElement('p');
     status.className = 'status err';
+    status.setAttribute('aria-live', 'polite');
     status.textContent = t(lang, 'loaded.error', { reason: error });
     root.append(status);
   } else if (loaded !== null) {
     const status = document.createElement('p');
     status.className = 'status';
+    status.setAttribute('aria-live', 'polite');
     status.textContent = t(lang, 'loaded.ok', {
       subject: loaded.subjectId,
       grid: loaded.gridId,
@@ -125,7 +136,15 @@ function render(): void {
 }
 
 async function ingest(file: File): Promise<void> {
-  const text = await file.text();
+  let text: string;
+  try {
+    text = await file.text();
+  } catch (cause) {
+    loaded = null;
+    error = (cause as Error).message;
+    render();
+    return;
+  }
   const result = parseEvaluation(text);
   if (result.ok) {
     loaded = result.value;
