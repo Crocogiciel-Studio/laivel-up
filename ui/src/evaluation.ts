@@ -89,9 +89,13 @@ export function parseNameList(text: string | null): string[] | null {
   }
 }
 
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
 /**
- * Minimal structural guard for the scaffold — enough to reject a file that is not
- * an evaluation at all. Full JSON-Schema validation is #41 viewer work (needs #21).
+ * Structural guard — enough that the render path can dereference `global.*`,
+ * `axes[].readings[]` and `progression.actions` without a `TypeError`. It is not
+ * full validation against `docs/evaluation.schema.json`; that is still not done.
  */
 export function parseEvaluation(text: string): ParseResult {
   let raw: unknown;
@@ -100,17 +104,27 @@ export function parseEvaluation(text: string): ParseResult {
   } catch (cause) {
     return { ok: false, error: `not valid JSON: ${(cause as Error).message}` };
   }
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isObject(raw)) {
     return { ok: false, error: 'expected a JSON object' };
   }
-  const obj = raw as Record<string, unknown>;
   for (const key of ['subjectId', 'gridId', 'global', 'axes', 'progression'] as const) {
-    if (!(key in obj)) {
+    if (!(key in raw)) {
       return { ok: false, error: `missing "${key}" — is this a laivel-up evaluation?` };
     }
   }
-  if (!Array.isArray(obj['axes'])) {
+  if (!isObject(raw['global'])) {
+    return { ok: false, error: '"global" must be an object' };
+  }
+  if (!Array.isArray(raw['axes'])) {
     return { ok: false, error: '"axes" must be an array' };
   }
-  return { ok: true, value: raw as Evaluation };
+  for (const [i, axis] of raw['axes'].entries()) {
+    if (!isObject(axis) || !Array.isArray(axis['readings'])) {
+      return { ok: false, error: `"axes[${String(i)}].readings" must be an array` };
+    }
+  }
+  if (!isObject(raw['progression']) || !Array.isArray(raw['progression']['actions'])) {
+    return { ok: false, error: '"progression.actions" must be an array' };
+  }
+  return { ok: true, value: raw as unknown as Evaluation };
 }

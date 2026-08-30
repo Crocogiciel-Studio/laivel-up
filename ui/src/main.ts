@@ -1,6 +1,7 @@
 import './styles.css';
 import { parseEvaluation, evaluationSource, parseNameList, type Evaluation } from './evaluation';
 import { buildViewModel, type AxisCard, type ViewModel } from './view-model';
+import { resolveGrid, levelLabel } from './grid';
 import { detectLang, persistLang, t, LANGS, type Lang } from './i18n';
 
 /**
@@ -47,13 +48,16 @@ for (const type of ['dragover', 'drop'] as const) {
   });
 }
 
-// ← / → step through the loaded profiles, unless a form control has focus.
+// ← / → step through the loaded profiles, unless focus is on a form control or
+// inside something the arrows should scroll (the readings table, the raw JSON).
 document.addEventListener('keydown', (event) => {
   if (profiles === null || currentProfile === null) return;
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
   if (event.altKey || event.ctrlKey || event.metaKey) return;
-  const tag = document.activeElement?.tagName;
+  const active = document.activeElement;
+  const tag = active?.tagName;
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (active?.closest('.readings-wrap, details.raw') != null) return;
   event.preventDefault();
   const step = event.key === 'ArrowRight' ? 1 : -1;
   const i = profiles.indexOf(currentProfile);
@@ -84,8 +88,7 @@ function meter(pct: number): HTMLElement {
 function profileLevel(name: string): string {
   const ev = byProfile.get(name);
   if (ev === undefined) return '';
-  const v = buildViewModel(ev, lang).verdict;
-  return v.ruled ? v.level : '—';
+  return levelLabel(resolveGrid(ev.gridId), ev.global.levelId);
 }
 
 function tabs(): HTMLElement {
@@ -303,6 +306,10 @@ function render(): void {
 }
 
 function accept(text: string): void {
+  // A dropped file or an explicit ?src= replaces the catalogue view entirely —
+  // otherwise a tab would stay marked selected for a profile no longer shown.
+  profiles = null;
+  currentProfile = null;
   const result = parseEvaluation(text);
   if (result.ok) {
     loaded = result.value;
@@ -356,8 +363,15 @@ async function fetchText(url: string): Promise<string | null> {
 async function autoload(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   if (params.has('src')) {
-    const text = await fetchText(evaluationSource(window.location.search));
-    if (text !== null) accept(text);
+    const url = evaluationSource(window.location.search);
+    const text = await fetchText(url);
+    if (text !== null) {
+      accept(text);
+    } else {
+      loaded = null;
+      error = `${url} could not be loaded`;
+      render();
+    }
     return;
   }
 

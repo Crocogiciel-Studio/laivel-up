@@ -7,3 +7,6 @@ dist
 .review
 coverage
 *.tsbuildinfo
+
+# `pnpm viz` output — never ship a developer's local fixture evaluations
+ui/public

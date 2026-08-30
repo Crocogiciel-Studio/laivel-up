@@ -52,6 +52,25 @@ describe('parseEvaluation', () => {
     const result = parseEvaluation(JSON.stringify({ ...valid, axes: {} }));
     expect(result).toEqual({ ok: false, error: '"axes" must be an array' });
   });
+
+  it('rejects a non-object "global"', () => {
+    expect(parseEvaluation(JSON.stringify({ ...valid, global: 'x' }))).toEqual({
+      ok: false,
+      error: '"global" must be an object',
+    });
+  });
+
+  it('rejects a "progression" with no actions array', () => {
+    expect(parseEvaluation(JSON.stringify({ ...valid, progression: {} }))).toEqual({
+      ok: false,
+      error: '"progression.actions" must be an array',
+    });
+  });
+
+  it('rejects an axis whose readings are missing', () => {
+    const result = parseEvaluation(JSON.stringify({ ...valid, axes: [{ axisId: 'size' }] }));
+    expect(result).toEqual({ ok: false, error: '"axes[0].readings" must be an array' });
+  });
 });
 
 describe('evaluationSource', () => {
