@@ -1,30 +1,32 @@
 import './styles.css';
-import { parseEvaluation, evaluationSource, type Evaluation } from './evaluation';
+import { parseEvaluation, evaluationSource, parseNameList, type Evaluation } from './evaluation';
 import { buildViewModel, type AxisCard, type ViewModel } from './view-model';
 import { detectLang, persistLang, t, LANGS, type Lang } from './i18n';
 
 /**
- * Entry point. A no-server file drop parses an evaluation.json and renders the
- * verdict, the per-axis confidence and readings, and the progression plan.
+ * Entry point. Renders an evaluation — dropped in, fetched from `?src=`, or one
+ * of a `pnpm viz` catalogue you tab between — as the verdict, the per-axis
+ * confidence and readings, and the progression plan.
  * Engine sentences stay English until #42; everything the UI labels is FR/EN.
  */
 
 let lang: Lang = detectLang();
 let loaded: Evaluation | null = null;
 let error: string | null = null;
-/** Populated when `pnpm viz` (no arg) has written an evaluations/ catalogue. */
+/** Non-null once a `pnpm viz` catalogue (evaluations/index.json) was found. */
 let profiles: string[] | null = null;
 let currentProfile: string | null = null;
+const byProfile = new Map<string, Evaluation>();
 
 const PROFILE_KEY = 'laivel-up.ui.profile';
-const readProfile = (): string | null => {
+const readStored = (): string | null => {
   try {
     return localStorage.getItem(PROFILE_KEY);
   } catch {
     return null;
   }
 };
-const writeProfile = (name: string): void => {
+const writeStored = (name: string): void => {
   try {
     localStorage.setItem(PROFILE_KEY, name);
   } catch {
@@ -45,6 +47,22 @@ for (const type of ['dragover', 'drop'] as const) {
   });
 }
 
+// ← / → step through the loaded profiles, unless a form control has focus.
+document.addEventListener('keydown', (event) => {
+  if (profiles === null || currentProfile === null) return;
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  event.preventDefault();
+  const step = event.key === 'ArrowRight' ? 1 : -1;
+  const i = profiles.indexOf(currentProfile);
+  const next = profiles[(i + step + profiles.length) % profiles.length];
+  if (next !== undefined) selectProfile(next, true);
+});
+
+const PANEL_ID = 'evaluation-panel';
+
 type Attrs = Record<string, string>;
 
 function el(tag: string, attrs: Attrs = {}, children: (Node | string)[] = []): HTMLElement {
@@ -62,15 +80,47 @@ function meter(pct: number): HTMLElement {
   return el('span', { class: 'meter', role: 'img', 'aria-label': `${String(pct)}%` }, [fill]);
 }
 
+/** The verdict level for a catalogue profile, for its tab label. */
+function profileLevel(name: string): string {
+  const ev = byProfile.get(name);
+  if (ev === undefined) return '';
+  const v = buildViewModel(ev, lang).verdict;
+  return v.ruled ? v.level : '—';
+}
+
+function tabs(): HTMLElement {
+  const list = el('div', { class: 'tabs', role: 'tablist', 'aria-label': t(lang, 'profile.label') });
+  for (const name of profiles ?? []) {
+    const selected = name === currentProfile;
+    const tab = el(
+      'button',
+      {
+        class: 'tab',
+        type: 'button',
+        role: 'tab',
+        'aria-selected': String(selected),
+        'aria-controls': PANEL_ID,
+        tabindex: selected ? '0' : '-1',
+      },
+      [el('span', { class: 'tab-name' }, [name]), el('span', { class: 'tab-level' }, [profileLevel(name)])],
+    );
+    tab.addEventListener('click', () => {
+      selectProfile(name, false);
+    });
+    list.append(tab);
+  }
+  return list;
+}
+
 function axisCard(card: AxisCard): HTMLElement {
-  const tags: HTMLElement[] = [];
-  if (card.binding) tags.push(el('span', { class: 'tag tag-binding' }, [t(lang, 'axis.binding')]));
-  if (!card.ruled) tags.push(el('span', { class: 'tag' }, [t(lang, 'axis.unknown')]));
+  const tagEls: HTMLElement[] = [];
+  if (card.binding) tagEls.push(el('span', { class: 'tag tag-binding' }, [t(lang, 'axis.binding')]));
+  if (!card.ruled) tagEls.push(el('span', { class: 'tag' }, [t(lang, 'axis.unknown')]));
 
   const head = el('div', { class: 'axis-head' }, [
     el('span', { class: 'axis-name' }, [card.name]),
     el('span', { class: 'axis-level' }, [card.level]),
-    ...tags,
+    ...tagEls,
   ]);
 
   const sub = el('div', { class: 'axis-sub' }, [
@@ -117,7 +167,9 @@ function axisCard(card: AxisCard): HTMLElement {
 function results(vm: ViewModel): HTMLElement {
   const verdict = el('section', { class: 'verdict' }, [
     el('div', { class: 'verdict-label' }, [t(lang, 'verdict.heading')]),
-    el('div', { class: 'verdict-level' }, [vm.verdict.ruled ? vm.verdict.level : t(lang, 'verdict.unranked')]),
+    el('div', { class: 'verdict-level' }, [
+      vm.verdict.ruled ? vm.verdict.level : t(lang, 'verdict.unranked'),
+    ]),
     el('div', { class: 'verdict-meta' }, [
       t(lang, 'verdict.for', { subject: vm.subjectId, grid: vm.gridId }),
     ]),
@@ -137,7 +189,9 @@ function results(vm: ViewModel): HTMLElement {
 
   const progression = el('section', { class: 'progression' }, [
     el('h2', {}, [t(lang, 'progression.heading')]),
-    el('p', { class: 'prog-target' }, [t(lang, 'progression.target', { level: vm.progression.targetLevel })]),
+    el('p', { class: 'prog-target' }, [
+      t(lang, 'progression.target', { level: vm.progression.targetLevel }),
+    ]),
     el(
       'ul',
       {},
@@ -155,13 +209,12 @@ function results(vm: ViewModel): HTMLElement {
     el('pre', {}, [JSON.stringify(loaded, null, 2)]),
   ]);
 
-  return el('div', { class: 'results' }, [verdict, axes, progression, ...notes, raw]);
+  const attrs: Attrs =
+    profiles !== null ? { class: 'results', id: PANEL_ID, role: 'tabpanel', tabindex: '0' } : { class: 'results' };
+  return el('div', attrs, [verdict, axes, progression, ...notes, raw]);
 }
 
-function render(): void {
-  document.documentElement.lang = lang;
-  root.replaceChildren();
-
+function langSelect(): HTMLElement {
   const select = el('select', { id: 'lang-select' });
   for (const code of LANGS) {
     const opt = document.createElement('option');
@@ -175,41 +228,13 @@ function render(): void {
     persistLang(lang);
     render();
   });
-
-  const controls: HTMLElement[] = [];
-  if (profiles !== null && profiles.length > 0) {
-    const pick = el('select', { id: 'profile-select' });
-    for (const name of profiles) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      opt.selected = name === currentProfile;
-      pick.append(opt);
-    }
-    pick.addEventListener('change', () => {
-      currentProfile = (pick as HTMLSelectElement).value;
-      writeProfile(currentProfile);
-      void loadProfile(currentProfile);
-    });
-    controls.push(
-      el('div', { class: 'lang' }, [
-        el('label', { for: 'profile-select' }, [t(lang, 'profile.label')]),
-        pick,
-      ]),
-    );
-  }
-  controls.push(
-    el('div', { class: 'lang' }, [
-      el('label', { for: 'lang-select' }, [t(lang, 'lang.label')]),
-      select,
-    ]),
-  );
-
-  const header = el('header', {}, [
-    el('h1', {}, [t(lang, 'app.title')]),
-    el('div', { class: 'controls' }, controls),
+  return el('div', { class: 'lang' }, [
+    el('label', { for: 'lang-select' }, [t(lang, 'lang.label')]),
+    select,
   ]);
+}
 
+function dropZone(): HTMLElement {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'application/json,.json';
@@ -219,34 +244,52 @@ function render(): void {
     if (file) void ingest(file);
   });
 
-  const dropzone = el('div', { class: 'dropzone', tabindex: '0', role: 'button' }, [
+  const compact = profiles !== null;
+  const zone = el('div', { class: compact ? 'dropzone compact' : 'dropzone', tabindex: '0', role: 'button' }, [
     el('div', { class: 'cta' }, [t(lang, 'drop.cta')]),
-    el('div', { class: 'hint' }, [t(lang, 'drop.hint')]),
+    ...(compact ? [] : [el('div', { class: 'hint' }, [t(lang, 'drop.hint')])]),
+    input,
   ]);
-  dropzone.addEventListener('click', () => {
+  zone.addEventListener('click', () => {
     input.click();
   });
-  dropzone.addEventListener('keydown', (event) => {
+  zone.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       input.click();
     }
   });
-  dropzone.addEventListener('dragover', (event) => {
+  zone.addEventListener('dragover', (event) => {
     event.preventDefault();
-    dropzone.classList.add('is-dragover');
+    zone.classList.add('is-dragover');
   });
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('is-dragover');
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('is-dragover');
   });
-  dropzone.addEventListener('drop', (event) => {
+  zone.addEventListener('drop', (event) => {
     event.preventDefault();
-    dropzone.classList.remove('is-dragover');
+    zone.classList.remove('is-dragover');
     const file = event.dataTransfer?.files?.[0];
     if (file) void ingest(file);
   });
+  return zone;
+}
 
-  root.append(header, el('p', { class: 'tagline' }, [t(lang, 'app.tagline')]), dropzone, input);
+function render(): void {
+  document.documentElement.lang = lang;
+  root.replaceChildren();
+
+  root.append(
+    el('header', {}, [el('h1', {}, [t(lang, 'app.title')]), el('div', { class: 'controls' }, [langSelect()])]),
+  );
+
+  if (profiles !== null && profiles.length > 0) {
+    root.append(tabs());
+  } else {
+    root.append(el('p', { class: 'tagline' }, [t(lang, 'app.tagline')]));
+  }
+
+  root.append(dropZone());
 
   if (error !== null) {
     root.append(
@@ -271,6 +314,21 @@ function accept(text: string): void {
   render();
 }
 
+function selectProfile(name: string, focusTab: boolean): void {
+  if (profiles === null || !profiles.includes(name)) return;
+  currentProfile = name;
+  writeStored(name);
+  const ev = byProfile.get(name);
+  loaded = ev ?? null;
+  error = ev === undefined ? `evaluations/${name}.json failed to load` : null;
+  render();
+  if (focusTab) {
+    document.querySelector<HTMLElement>('.tab[aria-selected="true"]')?.focus();
+  } else {
+    root.scrollIntoView({ block: 'start' });
+  }
+}
+
 async function ingest(file: File): Promise<void> {
   try {
     accept(await file.text());
@@ -290,26 +348,10 @@ async function fetchText(url: string): Promise<string | null> {
   }
 }
 
-async function loadProfile(name: string): Promise<void> {
-  const text = await fetchText(`evaluations/${encodeURIComponent(name)}.json`);
-  if (text !== null) accept(text);
-}
-
-/** A JSON array of strings, or null — the dev server answers a missing file with the HTML shell. */
-function parseNameList(text: string | null): string[] | null {
-  if (text === null) return null;
-  try {
-    const value: unknown = JSON.parse(text);
-    return Array.isArray(value) && value.every((n) => typeof n === 'string') ? (value as string[]) : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Startup. `?src=<url>` wins. Then a `pnpm viz` catalogue
- * (`evaluations/index.json` + a per-profile picker). Then a single co-located
- * `evaluation.json`. Otherwise the drop zone stands (e.g. opened from file://).
+ * Startup. `?src=<url>` wins. Then a `pnpm viz` catalogue — prefetch every
+ * profile so tabbing is instant. Then a single co-located `evaluation.json`.
+ * Otherwise the drop zone stands (e.g. opened from file://).
  */
 async function autoload(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
@@ -321,11 +363,22 @@ async function autoload(): Promise<void> {
 
   const names = parseNameList(await fetchText('evaluations/index.json'));
   if (names !== null && names.length > 0) {
-    profiles = names;
-    const remembered = readProfile();
-    currentProfile = remembered !== null && names.includes(remembered) ? remembered : names[0]!;
-    await loadProfile(currentProfile);
-    return;
+    await Promise.all(
+      names.map(async (name) => {
+        const text = await fetchText(`evaluations/${encodeURIComponent(name)}.json`);
+        const parsed = text === null ? null : parseEvaluation(text);
+        if (parsed?.ok === true) byProfile.set(name, parsed.value);
+      }),
+    );
+    const ready = names.filter((n) => byProfile.has(n));
+    if (ready.length > 0) {
+      profiles = ready;
+      const remembered = readStored();
+      currentProfile = remembered !== null && ready.includes(remembered) ? remembered : ready[0]!;
+      loaded = byProfile.get(currentProfile) ?? null;
+      render();
+      return;
+    }
   }
 
   // A dev server with nothing written yet answers this with its HTML shell —

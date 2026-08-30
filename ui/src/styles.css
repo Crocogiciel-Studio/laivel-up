@@ -65,6 +65,44 @@ h1 {
   margin-right: 0.4rem;
 }
 
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 1.25rem 0 1rem;
+}
+
+.tab {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.tab:hover {
+  border-color: var(--accent);
+}
+
+.tab[aria-selected='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-weight: 600;
+}
+
+.tab-level {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
 .dropzone {
   border: 1.5px dashed var(--line);
   border-radius: 0.75rem;
@@ -72,6 +110,16 @@ h1 {
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone.compact {
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+}
+
+.dropzone.compact .cta {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .dropzone:hover,

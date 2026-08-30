@@ -28,8 +28,8 @@ pnpm viz -p <dir> -g <preset.json>
 
 `pnpm viz` builds the core if needed, evaluates the profile(s), writes the JSON
 where the dev server serves it, and opens the browser on the rendered result —
-no drag-and-drop. With no argument it evaluates all four fixture profiles and
-the viewer shows a profile picker.
+no drag-and-drop. With no argument it evaluates all four fixture profiles; the
+viewer shows a tab per profile (with its level) — click, or `←` / `→`.
 
 ## Develop
 

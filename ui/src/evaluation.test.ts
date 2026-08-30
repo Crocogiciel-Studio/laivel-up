@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEvaluation, evaluationSource } from './evaluation';
+import { parseEvaluation, evaluationSource, parseNameList } from './evaluation';
 
 const valid = {
   subjectId: 'dev-sample',
@@ -62,5 +62,18 @@ describe('evaluationSource', () => {
 
   it('honours an explicit ?src=', () => {
     expect(evaluationSource('?src=/runs/arthur.json')).toBe('/runs/arthur.json');
+  });
+});
+
+describe('parseNameList', () => {
+  it('reads a JSON string array', () => {
+    expect(parseNameList('["arthur","bohort"]')).toEqual(['arthur', 'bohort']);
+  });
+
+  it('returns null for null, non-JSON (the HTML shell), a non-array, or a mixed array', () => {
+    expect(parseNameList(null)).toBeNull();
+    expect(parseNameList('<!doctype html><html></html>')).toBeNull();
+    expect(parseNameList('{"a":1}')).toBeNull();
+    expect(parseNameList('["arthur",2]')).toBeNull();
   });
 });
