@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { spawnSync } from 'node:child_process';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { parseArgs } from './main.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '../..');
 const TSX_BIN = resolve(ROOT, 'node_modules/.bin/tsx');
 const CLI_ENTRY = resolve(ROOT, 'src/cli/main.ts');
+const DIST_ENTRY = resolve(ROOT, 'dist/cli/main.js');
 const PROFILE_DIR = resolve(ROOT, 'examples/dev-sample');
 const GRID_PATH = resolve(ROOT, 'presets/aidd.json');
 
@@ -78,6 +81,14 @@ describe('parseArgs', () => {
       expect(result.error).toContain('missing required flag: --profile');
     }
   });
+
+  it('lets --help win over an otherwise-invalid flag, anywhere in argv', () => {
+    const result = parseArgs(['--help', '--bogus']);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({ help: true });
+    }
+  });
 });
 
 describe('CLI end-to-end', () => {
@@ -104,5 +115,32 @@ describe('CLI end-to-end', () => {
   it('exits 2 for --format yaml', () => {
     const { status } = runCli(['-p', PROFILE_DIR, '-g', GRID_PATH, '--format', 'yaml']);
     expect(status).toBe(2);
+  });
+});
+
+describe('CLI entrypoint guard (built bin, invoked through a symlink)', () => {
+  // package.json's `bin` field is exposed by package managers through a symlink
+  // (e.g. `node_modules/.bin/laivel-up`), so `process.argv[1]` is the symlink path while
+  // `import.meta.url` resolves to the target's realpath. Spawning `tsx` directly on the
+  // source file (as the other e2e tests do) never exercises that indirection, since there's
+  // no symlink involved — only the actual built file, invoked through a symlink, reproduces it.
+  let binDir: string;
+  let symlinkPath: string;
+
+  beforeAll(() => {
+    execFileSync('pnpm', ['build'], { cwd: ROOT });
+    binDir = mkdtempSync(join(tmpdir(), 'laivel-up-bin-'));
+    symlinkPath = join(binDir, 'laivel-up');
+    symlinkSync(DIST_ENTRY, symlinkPath);
+  }, 60_000);
+
+  afterAll(() => {
+    rmSync(binDir, { recursive: true, force: true });
+  });
+
+  it('runs main() when invoked through a symlinked path', () => {
+    const result = spawnSync('node', [symlinkPath, '--help'], { encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('usage:');
   });
 });

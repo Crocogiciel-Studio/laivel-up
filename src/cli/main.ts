@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { realpathSync } from 'node:fs';
 import { evaluate } from '../core/index.js';
 import { type Result, ok, err } from '../core/model/result.js';
 import { inMemoryCatalogue } from '../adapters/catalogue/in-memory-catalogue.js';
@@ -8,34 +9,34 @@ import { jsonGridSource } from '../adapters/inbound/json-grid.js';
 import { jsonStreamSink } from '../adapters/outbound/json-evaluation.js';
 import { builtInEvaluators } from '../criteria/index.js';
 
-export interface Options {
-  readonly profileDir: string | undefined;
-  readonly gridPath: string;
-  readonly minAxes: number | undefined;
-  readonly format: 'json';
-  readonly help: boolean;
-}
+export type Options =
+  | { readonly help: true }
+  | {
+      readonly help: false;
+      readonly profileDir: string;
+      readonly gridPath: string;
+      readonly minAxes: number | undefined;
+      readonly format: 'json';
+    };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_GRID = resolve(HERE, '../../presets/aidd.json');
 
 export const USAGE =
-  'usage: laivel-up --profile <dir> [--grid <preset.json>] [--min-axes <n>] [--format json]\n';
+  'usage: laivel-up --profile|-p <dir> [--grid|-g <preset.json>] [--min-axes <n>] [--format json] [--help|-h]\n';
 
 export function parseArgs(argv: readonly string[]): Result<Options, string> {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    return ok({ help: true });
+  }
+
   let profileDir: string | undefined;
   let gridPath = DEFAULT_GRID;
   let minAxes: number | undefined;
-  let format = 'json' as const;
-  let help = false;
+  const format = 'json';
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--help' || arg === '-h') {
-      help = true;
-      continue;
-    }
-
     const next = argv[i + 1];
     if (arg === '--profile' || arg === '-p') {
       if (next === undefined) {
@@ -62,18 +63,17 @@ export function parseArgs(argv: readonly string[]): Result<Options, string> {
       if (next !== 'json') {
         return err(`invalid --format value: ${next} (expected: json)`);
       }
-      format = 'json';
       i += 1;
     } else {
       return err(`unknown flag: ${String(arg)}`);
     }
   }
 
-  if (!help && profileDir === undefined) {
+  if (profileDir === undefined) {
     return err('missing required flag: --profile');
   }
 
-  return ok({ profileDir, gridPath, minAxes, format, help });
+  return ok({ help: false, profileDir, gridPath, minAxes, format });
 }
 
 function fail(message: string, issues: readonly string[] = []): never {
@@ -102,13 +102,7 @@ export function main(): void {
     process.exit(0);
   }
 
-  const { profileDir } = options;
-  if (profileDir === undefined) {
-    // Unreachable: parseArgs rejects a missing --profile outside the help path.
-    argError('missing required flag: --profile');
-  }
-
-  const profileResult = readProfileFromDirectory(profileDir);
+  const profileResult = readProfileFromDirectory(options.profileDir);
   if (!profileResult.ok) {
     fail(profileResult.error.message, profileResult.error.issues);
   }
@@ -128,6 +122,24 @@ export function main(): void {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+/**
+ * `process.argv[1]` is whatever path the process was launched with — for a package's
+ * `bin` entry, package managers expose it through a symlink (e.g. `node_modules/.bin/laivel-up`),
+ * while `import.meta.url` always resolves to the target file's realpath. Comparing the
+ * two directly never matches through that indirection, so resolve `argv[1]` first.
+ */
+function isDirectInvocation(): boolean {
+  const entry = process.argv[1];
+  if (entry === undefined) {
+    return false;
+  }
+  try {
+    return realpathSync(entry) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectInvocation()) {
   main();
 }
