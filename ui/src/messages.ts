@@ -6,6 +6,7 @@
  */
 import type { Message } from './evaluation';
 import type { Lang } from './i18n';
+import { fillTemplate } from './interpolate';
 import en from '../../i18n/en.json';
 import fr from '../../i18n/fr.json';
 
@@ -13,21 +14,35 @@ type Catalogue = Readonly<Record<string, string>>;
 
 const CATALOGUES: Readonly<Record<Lang, Catalogue>> = { en, fr };
 
+/** The catalogue key a descriptor (or a bare pre-#42 string) carries, or `''` if it is neither. */
+function keyOf(message: unknown): string {
+  if (typeof message === 'string') return message;
+  if (typeof message === 'object' && message !== null && 'key' in message) {
+    const { key } = message as { key: unknown };
+    return typeof key === 'string' ? key : '';
+  }
+  return '';
+}
+
 /**
- * Fill a descriptor's template. Unknown key -> the key itself; an unfilled
- * `{param}` stays visible; a param value that is itself a namespaced catalogue
- * key (e.g. `factor.margin`) is resolved too. Tolerates a plain string, so an
- * evaluation.json produced before #42 still renders.
+ * Fill a descriptor's template. Unknown key -> the key itself; a key missing in
+ * the requested language falls back to English (like `i18n.ts`); an unfilled
+ * `{param}` stays visible; a namespaced param value (e.g. `factor.margin`) is
+ * resolved too. A malformed value (missing `note`, a non-object action) yields
+ * `''` rather than throwing out of `render()`.
  */
 export function resolveMessage(message: Message | string, lang: Lang): string {
-  const catalogue = CATALOGUES[lang];
-  if (typeof message === 'string') return catalogue[message] ?? message;
+  const key = keyOf(message);
+  if (key === '') return '';
 
-  const template = catalogue[message.key] ?? message.key;
-  return template.replace(/\{(\w+)\}/g, (_, name: string) => {
-    const value = message.params?.[name];
-    if (value === undefined) return `{${name}}`;
+  const inLang = CATALOGUES[lang];
+  const lookupCatalogue = (k: string): string | undefined => inLang[k] ?? CATALOGUES.en[k];
+  const params = typeof message === 'string' ? undefined : message.params;
+
+  return fillTemplate(lookupCatalogue(key) ?? key, (name) => {
+    const value = params?.[name];
+    if (value === undefined) return undefined;
     const text = String(value);
-    return text.includes('.') && catalogue[text] !== undefined ? catalogue[text] : text;
+    return text.includes('.') ? (lookupCatalogue(text) ?? text) : text;
   });
 }

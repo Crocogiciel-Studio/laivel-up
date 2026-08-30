@@ -1,8 +1,10 @@
 /**
- * UI chrome strings only. Flat `key -> template` maps, same shape the core
- * catalogue will use (#42). The engine's own sentences (evidence / note /
- * actions) are NOT translated here — that is #42 + #41 viewer work.
+ * UI chrome strings only — the words the viewer itself writes. The engine's own
+ * sentences (`note`, `actions`) resolve in `messages.ts` against the core's
+ * `i18n/` catalogues; `evidence` is still English (#42).
  */
+
+import { fillTemplate } from './interpolate';
 
 export type Lang = 'fr' | 'en';
 
@@ -124,5 +126,5 @@ export function persistLang(lang: Lang): void {
 
 export function t(lang: Lang, key: string, params: Readonly<Record<string, string>> = {}): string {
   const template = CATALOGUES[lang][key] ?? CATALOGUES.en[key] ?? key;
-  return template.replace(/\{(\w+)\}/g, (_, name: string) => params[name] ?? `{${name}}`);
+  return fillTemplate(template, (name) => params[name]);
 }
