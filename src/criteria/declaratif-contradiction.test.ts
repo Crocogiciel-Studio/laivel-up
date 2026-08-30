@@ -79,9 +79,29 @@ describe('declaratifContradiction', () => {
     if (!out.ok) expect(out.error.needed).toContain('declared');
   });
 
-  it('reads no grid calibration of its own — the slope lives on the engine side', () => {
+  it('does not read the contradiction slope — that lives on the engine side', () => {
     const out = run({ selfAssessedLevel: 'l3' }, { contradictionSlope: 0.9 });
     expect(out.ok && out.value.levelId).toBe('l3');
     expect(out.ok && out.value.confidence.margin).toBe(1);
+  });
+
+  it('resolves a grid-neutral band token through the preset rank params', () => {
+    const out = run({ selfAssessedLevel: 'advanced' }, { rankSelfAdvanced: 3 });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.value.levelId).toBe('l3');
+      // the raw self-report token is kept for the evidence trail
+      expect(out.value.rawValue).toBe('advanced');
+      expect(out.value.evidence).toContain('L3');
+    }
+  });
+
+  it('abstains when the grid does not calibrate the declared band token', () => {
+    const out = run({ selfAssessedLevel: 'advanced' });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.error.kind).toBe('missing-piece');
+      expect(out.error.detail).toContain('advanced');
+    }
   });
 });

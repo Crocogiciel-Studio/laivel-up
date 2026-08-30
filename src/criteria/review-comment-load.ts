@@ -8,6 +8,7 @@ import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
+import { BAND_LABEL, bandMargin, rankForBand } from './shared/intervention-bands.js';
 
 /**
  * Places the subject on the Intervention axis from a signal family independent
@@ -33,52 +34,15 @@ const PARAM_DEFAULTS = {
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
 
-/** Band index, low → high: 0 after-the-fact on most, 2 at key stages only. */
-const BAND_LABEL: Record<number, string> = { 0: 'after-most', 1: 'after-some', 2: 'key-stages' };
-
-/** A reading sitting anywhere inside its band still carries some confidence. */
-const MIN_MARGIN = 0.15;
-
 function bandFromComments(value: number, p: Params): number {
   if (value >= p.commentsAfterMost) return 0;
   if (value >= p.commentsAfterSome) return 1;
   return 2;
 }
 
-function rankForBand(band: number, p: Params): number {
-  switch (band) {
-    case 0:
-      return p.rankAfterMost;
-    case 1:
-      return p.rankAfterSome;
-    default:
-      return p.rankKeyStages;
-  }
-}
-
-/**
- * Distance-to-boundary, normalized to `[MIN_MARGIN, 1]`. `span` is what a full
- * unit of confidence is worth; a reading on the boundary is floored rather than
- * zeroed, so a whole-number median sitting on a band edge still carries some
- * evidence.
- */
-function clampMargin(distance: number, span: number): number {
-  return Math.max(MIN_MARGIN, Math.min(1, Math.max(0, distance) / Math.max(span, 1e-9)));
-}
-
-/**
- * How far the median sits from the threshold its band was read against. Bands 0
- * and 2 are open-ended — distance from their single threshold. Band 1 is bounded
- * both sides — distance from the *nearer* threshold over half the band's width,
- * so the margin peaks at the band's centre, not at either edge.
- */
-function bandMargin(value: number, band: number, p: Params): number {
-  const lo = p.commentsAfterSome;
-  const hi = p.commentsAfterMost;
-  if (band === 0) return clampMargin(value - hi, hi);
-  if (band === 2) return clampMargin(lo - value, lo);
-  return clampMargin(Math.min(value - lo, hi - value), (hi - lo) / 2);
-}
+/** More review comments means more after-the-fact intervention, so band 0 is the high side. */
+const marginFromComments = (value: number, band: number, p: Params): number =>
+  bandMargin(value, band, p.commentsAfterSome, p.commentsAfterMost, true);
 
 export const reviewCommentLoad: CriterionEvaluator = {
   id: 'review-comment-load',
@@ -109,7 +73,7 @@ export const reviewCommentLoad: CriterionEvaluator = {
       rawValue: BAND_LABEL[band] ?? String(band),
       confidence: {
         agreement: 1,
-        margin: bandMargin(comments, band, p),
+        margin: marginFromComments(comments, band, p),
         sufficiency: 1,
         singleSource: true,
       },

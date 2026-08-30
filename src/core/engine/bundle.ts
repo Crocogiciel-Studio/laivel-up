@@ -154,12 +154,14 @@ function applyContradictions(
 }
 
 /**
- * How hard a contradicting `confidence` reading pulls the axis confidence down.
- * By default it is the reading's own folded confidence — how sure that criterion
- * is of the tier it read. A bundle entry may instead opt into a rank-gap model
- * by declaring a `contradictionSlope` param: the strength then falls off
- * linearly with the distance between the level the reading points at and the one
- * the axis elected, `max(0, 1 - slope * |readingRank - electedRank|)`.
+ * The confidence ceiling a contradicting `confidence` reading imposes on the
+ * axis. `weakestOf` folds it in as a minimum, so a *lower* return bites harder.
+ * By default it is `1 - reading.confidence`: the surer that criterion is of the
+ * tier it read, the harder its disagreement pulls the axis confidence down. A
+ * bundle entry may instead opt into a rank-gap model by declaring a
+ * `contradictionSlope` param: the ceiling then falls off linearly with the
+ * distance between the level the reading points at and the one the axis elected,
+ * `max(0, 1 - slope * |readingRank - electedRank|)`.
  */
 function contradictionStrength(
   axis: GridAxis,
@@ -169,7 +171,7 @@ function contradictionStrength(
   const slope = axis.bundle.find((entry) => entry.criterionId === reading.criterionId)?.params
     .contradictionSlope;
   if (slope === undefined || reading.levelRank === undefined || electedRank === undefined) {
-    return reading.confidence;
+    return 1 - reading.confidence;
   }
   const gap = Math.abs(reading.levelRank - electedRank);
   return Math.max(0, 1 - slope * gap);

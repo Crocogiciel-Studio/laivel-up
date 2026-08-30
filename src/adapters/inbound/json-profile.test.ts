@@ -1,11 +1,31 @@
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { dirname, resolve, join } from 'node:path';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { afterEach, describe, expect, it } from 'vitest';
 import { readProfileFromDirectory } from './json-profile.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EXAMPLE = resolve(HERE, '../../../examples/dev-sample');
 const FIXTURES = resolve(HERE, '../../../test/fixtures/profiles');
+
+const tmpDirs: string[] = [];
+afterEach(() => {
+  while (tmpDirs.length > 0) {
+    const dir = tmpDirs.pop();
+    if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/** A throwaway profile directory holding just the given files. */
+function tmpProfileDir(files: Record<string, string>): string {
+  const dir = mkdtempSync(join(tmpdir(), 'laivel-profile-'));
+  tmpDirs.push(dir);
+  for (const [name, body] of Object.entries(files)) {
+    writeFileSync(join(dir, name), body);
+  }
+  return dir;
+}
 
 describe('readProfileFromDirectory', () => {
   it('parses the shipped example profile directory', () => {
@@ -119,20 +139,79 @@ describe('readProfileFromDirectory', () => {
       return result.value.declared?.selfAssessedLevel;
     };
 
-    it('perceval — "plutôt avancé" / "haut du panier" maps to green', () => {
-      expect(levelOf('perceval')).toBe('green');
+    it('perceval — "plutôt avancé" / "haut du panier" maps to the advanced band', () => {
+      expect(levelOf('perceval')).toBe('advanced');
     });
 
-    it('bohort — "milieu de tableau" maps to blue', () => {
-      expect(levelOf('bohort')).toBe('blue');
+    it('bohort — "milieu de tableau" maps to the intermediate band', () => {
+      expect(levelOf('bohort')).toBe('intermediate');
     });
 
-    it('leodagan — "façon par défaut de travailler" maps to green', () => {
-      expect(levelOf('leodagan')).toBe('green');
+    it('leodagan — "façon par défaut de travailler" maps to the advanced band', () => {
+      expect(levelOf('leodagan')).toBe('advanced');
     });
 
     it('arthur — no declaratif.md at all leaves the self-assessed level unknown', () => {
       expect(levelOf('arthur')).toBeUndefined();
+    });
+
+    it('emits only grid-neutral band tokens, never a grid level id', () => {
+      const bands = ['perceval', 'bohort', 'leodagan'].map(levelOf);
+      for (const band of bands) {
+        expect(['beginner', 'intermediate', 'advanced']).toContain(band);
+      }
+    });
+  });
+
+  describe('explicit self_assessed_level in profile.json', () => {
+    const levelOf = (dir: string): string | undefined => {
+      const result = readProfileFromDirectory(dir);
+      if (!result.ok) throw new Error('tmp profile failed to parse');
+      return result.value.declared?.selfAssessedLevel;
+    };
+
+    it('passes an explicit value through verbatim when it is not a mapped phrase', () => {
+      const dir = tmpProfileDir({
+        'profile.json': JSON.stringify({ profile_id: 'x', self_assessed_level: 'green' }),
+      });
+      expect(levelOf(dir)).toBe('green');
+    });
+
+    it('still maps an explicit value that is itself a known phrase', () => {
+      const dir = tmpProfileDir({
+        'profile.json': JSON.stringify({
+          profile_id: 'x',
+          self_assessed_level: 'plutôt avancé, haut du panier',
+        }),
+      });
+      expect(levelOf(dir)).toBe('advanced');
+    });
+
+    it('an explicit value wins over a contradicting declaratif.md', () => {
+      const dir = tmpProfileDir({
+        'profile.json': JSON.stringify({ profile_id: 'x', self_assessed_level: 'green' }),
+        'declaratif.md': 'Mon niveau ? Je débute, je commence tout juste.',
+      });
+      expect(levelOf(dir)).toBe('green');
+    });
+  });
+
+  describe('raw pull requests without git-activity.json', () => {
+    it('gains vcsActivity but not toolingContext', () => {
+      const dir = tmpProfileDir({
+        'profile.json': JSON.stringify({ profile_id: 'x' }),
+        'pull-requests.json': JSON.stringify([
+          { changed_files: 3, additions: 40, deletions: 12 },
+          { changed_files: 1, additions: 8, deletions: 2 },
+        ]),
+      });
+      const result = readProfileFromDirectory(dir);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.available).toContain('vcsActivity');
+      expect(result.value.available).not.toContain('toolingContext');
+      expect(result.value.vcsActivity?.rawPullRequests).toHaveLength(2);
+      expect(result.value.vcsActivity?.pullRequests).toBeUndefined();
     });
   });
 });

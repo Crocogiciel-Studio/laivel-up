@@ -9,6 +9,8 @@ import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { PrSizeDistribution, PullRequestFacts } from '../core/model/profile.js';
+import { TIER, rankForTier } from './shared/size-tiers.js';
+import type { Tier } from './shared/size-tiers.js';
 
 /**
  * Places the subject on the Size axis: the *usual* size of the features they
@@ -44,10 +46,6 @@ const PARAM_DEFAULTS = {
 } as const;
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
-
-/** Ordinal size tiers, shared by both families. `0` means "no features shipped". */
-const TIER = { none: 0, s: 1, m: 2, l: 3, xl: 4 } as const;
-type Tier = (typeof TIER)[keyof typeof TIER];
 
 /** Label of a single family's raw reading. */
 const FAMILY_LABEL: Record<number, string> = { 0: 'none', 1: 'S', 2: 'M', 3: 'L', 4: 'XL' };
@@ -111,21 +109,6 @@ function tierShare(d: PrSizeDistribution, tier: number): number {
         ? d.m
         : d.l + d.xl; // L and L-XL both look at the upper tail
   return inTier / total;
-}
-
-function rankForTier(tier: number, p: Params): number {
-  switch (tier) {
-    case TIER.none:
-      return p.rankNone;
-    case TIER.s:
-      return p.rankS;
-    case TIER.m:
-      return p.rankM;
-    case TIER.l:
-      return p.rankL;
-    default:
-      return p.rankLxl;
-  }
 }
 
 export const prFeatureSize: CriterionEvaluator = {

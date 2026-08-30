@@ -94,6 +94,17 @@ describe('concurrentStreams', () => {
     }
   });
 
+  it('floors the margin when the median lands exactly on the threshold', () => {
+    const out = run({ medianConcurrentBranches: 3, maxConcurrentBranches: 4 });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.value.levelId).toBe('l6');
+      expect(out.value.rawValue).toBe('multi-stream');
+      // |3 - 3| / 3 = 0, floored to MIN_MARGIN so the vote keeps some mass.
+      expect(out.value.confidence.margin).toBeCloseTo(0.15, 5);
+    }
+  });
+
   it('does not dampen the margin when there is no recorded peak', () => {
     const out = run({ medianConcurrentBranches: 1 });
     expect(out.ok && out.value.confidence.margin).toBeCloseTo(2 / 3, 5);
