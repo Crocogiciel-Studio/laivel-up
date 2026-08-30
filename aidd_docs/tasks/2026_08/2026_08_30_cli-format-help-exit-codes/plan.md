@@ -1,6 +1,6 @@
 ---
 objective: "`src/cli/main.ts` supports `--format json`, `--help`/`-h`, and distinguishes exit codes 0/1/2, with `parseArgs` testable in isolation."
-status: implemented
+status: reviewed
 ---
 
 <!-- Fill or omit these sections; never add, rename, or reorder one. -->
