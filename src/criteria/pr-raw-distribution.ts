@@ -9,6 +9,8 @@ import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { RawPullRequest } from '../core/model/profile.js';
+import { TIER, rankForTier } from './shared/size-tiers.js';
+import type { Tier } from './shared/size-tiers.js';
 
 /**
  * Size-axis cross-check with role `confidence`. Where `pr-feature-size` trusts
@@ -39,10 +41,6 @@ const PARAM_DEFAULTS = {
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
 
-/** Ordinal size tiers, same scale as `pr-feature-size`. */
-const TIER = { none: 0, s: 1, m: 2, l: 3, xl: 4 } as const;
-type Tier = (typeof TIER)[keyof typeof TIER];
-
 const TIER_LABEL: Record<Tier, string> = { 0: 'none', 1: 'S', 2: 'M', 3: 'L', 4: 'XL' };
 
 /** Bucket one PR by its total churn against the grid's line thresholds. */
@@ -52,21 +50,6 @@ function bucketOf(pr: RawPullRequest, p: Params): Tier {
   if (lines <= p.linesM) return TIER.m;
   if (lines <= p.linesL) return TIER.l;
   return TIER.xl;
-}
-
-function rankForTier(tier: Tier, p: Params): number {
-  switch (tier) {
-    case TIER.none:
-      return p.rankNone;
-    case TIER.s:
-      return p.rankS;
-    case TIER.m:
-      return p.rankM;
-    case TIER.l:
-      return p.rankL;
-    default:
-      return p.rankLxl;
-  }
 }
 
 export const prRawDistribution: CriterionEvaluator = {

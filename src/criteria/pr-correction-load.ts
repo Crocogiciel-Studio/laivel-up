@@ -8,6 +8,7 @@ import { missingPiece } from '../core/ports/criterion-evaluator.js';
 import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
+import { BAND_LABEL, bandMargin, rankForBand } from './shared/intervention-bands.js';
 
 /**
  * Places the subject on the Intervention axis: how much correction the human
@@ -44,12 +45,6 @@ const PARAM_DEFAULTS = {
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
 
-/** Band index, low → high: 0 after-the-fact on most, 2 at key stages only. */
-const BAND_LABEL: Record<number, string> = { 0: 'after-most', 1: 'after-some', 2: 'key-stages' };
-
-/** A reading sitting anywhere inside its band still carries some confidence. */
-const MIN_MARGIN = 0.15;
-
 function bandFromCorrections(value: number, p: Params): number {
   if (value >= p.correctionsAfterMost) return 0;
   if (value >= p.correctionsAfterSome) return 1;
@@ -60,41 +55,6 @@ function bandFromRatio(value: number, p: Params): number {
   if (value < p.ratioAfterSome) return 0;
   if (value < p.ratioKeyStages) return 1;
   return 2;
-}
-
-function rankForBand(band: number, p: Params): number {
-  switch (band) {
-    case 0:
-      return p.rankAfterMost;
-    case 1:
-      return p.rankAfterSome;
-    default:
-      return p.rankKeyStages;
-  }
-}
-
-/**
- * Distance-to-boundary, normalized to `[MIN_MARGIN, 1]`. `span` is what a full
- * unit of confidence is worth; a reading on the boundary is floored rather than
- * zeroed, so an achievable integer median sitting on a band edge still carries
- * some evidence.
- */
-function clampMargin(distance: number, span: number): number {
-  return Math.max(MIN_MARGIN, Math.min(1, Math.max(0, distance) / Math.max(span, 1e-9)));
-}
-
-/**
- * How far `value` sits from the boundary its band was read against. Bands 0 and
- * 2 are open-ended — distance from their single boundary. Band 1 is bounded both
- * sides — distance from the *nearer* boundary over half the band's width, so the
- * margin peaks at the band's centre, not at either edge. `lo < hi` are the two
- * thresholds; `band0IsHigh` says which side band 0 lies on (true for the
- * corrections family, where more commits means more after-the-fact rework).
- */
-function bandMargin(value: number, band: number, lo: number, hi: number, band0IsHigh: boolean): number {
-  if (band === 0) return band0IsHigh ? clampMargin(value - hi, hi) : clampMargin(lo - value, lo);
-  if (band === 2) return band0IsHigh ? clampMargin(lo - value, lo) : clampMargin(value - hi, 1 - hi);
-  return clampMargin(Math.min(value - lo, hi - value), (hi - lo) / 2);
 }
 
 const marginFromCorrections = (value: number, band: number, p: Params): number =>

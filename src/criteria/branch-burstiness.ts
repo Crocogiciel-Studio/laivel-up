@@ -9,6 +9,7 @@ import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ParallelismFacts } from '../core/model/profile.js';
+import { BAND_LABEL, bandFromMedian, rankForBand } from './shared/parallelism-bands.js';
 
 /**
  * Corroborating reading for the Parallelism axis (role `confidence`, never
@@ -41,30 +42,6 @@ const PARAM_DEFAULTS = {
 } as const;
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
-
-/** Band index, low → high — the same ladder `concurrent-streams` reads. */
-const BAND_LABEL: Record<number, string> = {
-  0: 'none',
-  1: 'single-stream',
-  2: 'multi-stream',
-};
-
-function bandFromMedian(median: number, p: Params): number {
-  if (median <= 0) return 0;
-  if (median < p.multiStreamThreshold) return 1;
-  return 2;
-}
-
-function rankForBand(band: number, p: Params): number {
-  switch (band) {
-    case 0:
-      return p.rankNone;
-    case 1:
-      return p.rankSingleStream;
-    default:
-      return p.rankMultiStream;
-  }
-}
 
 export const branchBurstiness: CriterionEvaluator = {
   id: 'branch-burstiness',

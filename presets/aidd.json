@@ -56,7 +56,10 @@
           "weight": 1,
           "role": "confidence",
           "params": {
-            "contradictionSlope": 0.35
+            "contradictionSlope": 0.35,
+            "rankSelfBeginner": 1,
+            "rankSelfIntermediate": 2,
+            "rankSelfAdvanced": 3
           }
         }
       ]
@@ -172,7 +175,10 @@
           "weight": 1,
           "role": "confidence",
           "params": {
-            "contradictionSlope": 0.35
+            "contradictionSlope": 0.35,
+            "rankSelfBeginner": 1,
+            "rankSelfIntermediate": 2,
+            "rankSelfAdvanced": 3
           }
         }
       ]
@@ -250,7 +256,10 @@
           "weight": 1,
           "role": "confidence",
           "params": {
-            "contradictionSlope": 0.35
+            "contradictionSlope": 0.35,
+            "rankSelfBeginner": 1,
+            "rankSelfIntermediate": 2,
+            "rankSelfAdvanced": 3
           }
         }
       ]
@@ -287,7 +296,10 @@
           "weight": 1,
           "role": "confidence",
           "params": {
-            "contradictionSlope": 0.35
+            "contradictionSlope": 0.35,
+            "rankSelfBeginner": 1,
+            "rankSelfIntermediate": 2,
+            "rankSelfAdvanced": 3
           }
         }
       ]

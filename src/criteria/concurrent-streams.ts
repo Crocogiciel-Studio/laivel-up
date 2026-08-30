@@ -9,6 +9,7 @@ import type { Result } from '../core/model/result.js';
 import { ok, err } from '../core/model/result.js';
 import { levelByRank, orderedLevels } from '../core/model/grid.js';
 import type { ParallelismFacts } from '../core/model/profile.js';
+import { BAND_LABEL, MIN_MARGIN, bandFromMedian, rankForBand } from './shared/parallelism-bands.js';
 
 /**
  * Places the subject on the Parallelism axis: how many streams of work usually
@@ -36,32 +37,8 @@ const PARAM_DEFAULTS = {
 
 type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
 
-/** Band index, low → high. */
-const BAND_LABEL: Record<number, string> = {
-  0: 'none',
-  1: 'single-stream',
-  2: 'multi-stream',
-};
-
 /** A peak clearing the threshold while the median does not: the median may understate the habit. */
 const SPIKE_ATTENUATION = 0.5;
-
-function bandFromMedian(median: number, p: Params): number {
-  if (median <= 0) return 0;
-  if (median < p.multiStreamThreshold) return 1;
-  return 2;
-}
-
-function rankForBand(band: number, p: Params): number {
-  switch (band) {
-    case 0:
-      return p.rankNone;
-    case 1:
-      return p.rankSingleStream;
-    default:
-      return p.rankMultiStream;
-  }
-}
 
 export const concurrentStreams: CriterionEvaluator = {
   id: 'concurrent-streams',
@@ -94,6 +71,10 @@ export const concurrentStreams: CriterionEvaluator = {
     if (median < threshold && max !== undefined && max >= threshold) {
       margin *= SPIKE_ATTENUATION;
     }
+    // A whole-number median landing exactly on the threshold is still a clean
+    // band read — floor its margin rather than zero it (and with it the vote
+    // mass), as the sibling `level` criteria do.
+    margin = Math.max(MIN_MARGIN, margin);
 
     return ok({
       levelId: level.id,

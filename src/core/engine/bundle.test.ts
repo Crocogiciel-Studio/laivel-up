@@ -49,17 +49,27 @@ describe('runBundle', () => {
     expect(verdict.levelRank).toBe(1);
   });
 
-  it('drops axis confidence when a confidence-role reading contradicts the winner', () => {
+  it('drops axis confidence in proportion to how sure the contradicting reading is', () => {
     const a = axis([
       { criterionId: 'x', weight: 1, role: 'level', params: {} },
       { criterionId: 'contra', weight: 1, role: 'confidence', params: {} },
     ]);
-    const verdict = runBundle(grid, a, [
+
+    // A sure contradiction (confidence 1) drives the axis confidence to ~0.
+    const sure = runBundle(grid, a, [
+      makeReading({ criterionId: 'x', levelId: 'l2', levelRank: 2, confidence: 1 }),
+      makeReading({ criterionId: 'contra', role: 'confidence', levelId: 'l0', levelRank: 0, confidence: 1 }),
+    ]);
+    expect(sure.levelId).toBe('l2');
+    expect(sure.confidence).toBeCloseTo(0, 5);
+
+    // An unsure one (confidence 0.3) barely dents it — ceiling 1 - 0.3 = 0.7.
+    const unsure = runBundle(grid, a, [
       makeReading({ criterionId: 'x', levelId: 'l2', levelRank: 2, confidence: 1 }),
       makeReading({ criterionId: 'contra', role: 'confidence', levelId: 'l0', levelRank: 0, confidence: 0.3 }),
     ]);
-    expect(verdict.levelId).toBe('l2');
-    expect(verdict.confidence).toBeLessThanOrEqual(0.3);
+    expect(unsure.levelId).toBe('l2');
+    expect(unsure.confidence).toBeCloseTo(0.7, 5);
   });
 
   it('scores a contradiction by the rank gap when the bundle entry declares a contradictionSlope', () => {

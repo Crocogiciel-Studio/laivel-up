@@ -142,29 +142,33 @@ function toNumber(value: string): number | undefined {
 }
 
 /**
- * Obvious self-assessment phrasings from `declaratif.md`, each mapped to an AIDD
- * grid level id. Deliberately small and literal: a self-report is unverified
- * input that can only ever lower confidence, so a missed match (→ `undefined`,
- * the criterion abstains) is safer than a wrong one.
+ * Obvious self-assessment phrasings from `declaratif.md`, each mapped to a
+ * grid-neutral experience band. The adapter never names a grid level id — the
+ * band → level mapping is grid calibration and lives in the preset, read by
+ * `declaratif-contradiction`. Deliberately small and literal: a self-report is
+ * unverified input that can only ever lower confidence, so a missed match
+ * (→ `undefined`, the criterion abstains) is safer than a wrong one.
  */
 const SELF_ASSESSMENT_PHRASES: readonly (readonly [RegExp, string])[] = [
-  [/milieu de tableau|milieu du tableau|dans la moyenne|niveau moyen/i, 'blue'],
-  [/haut du panier|plut[oô]t avanc[ée]|assez avanc[ée]|niveau avanc[ée]/i, 'green'],
-  [/fa[cç]on par d[ée]faut de travailler|par d[ée]faut de travailler/i, 'green'],
-  [/d[ée]butant|je d[ée]bute|novice|je commence tout juste/i, 'red'],
+  [/milieu de tableau|milieu du tableau|dans la moyenne|niveau moyen/i, 'intermediate'],
+  [/haut du panier|plut[oô]t avanc[ée]|assez avanc[ée]|niveau avanc[ée]/i, 'advanced'],
+  [/fa[cç]on par d[ée]faut de travailler|par d[ée]faut de travailler/i, 'advanced'],
+  [/d[ée]butant|je d[ée]bute|novice|je commence tout juste/i, 'beginner'],
 ];
 
 function mapSelfAssessmentPhrase(text: string): string | undefined {
-  for (const [pattern, levelId] of SELF_ASSESSMENT_PHRASES) {
-    if (pattern.test(text)) return levelId;
+  for (const [pattern, band] of SELF_ASSESSMENT_PHRASES) {
+    if (pattern.test(text)) return band;
   }
   return undefined;
 }
 
 /**
- * An explicit `self_assessed_level` in `profile.json` wins (used verbatim when
- * it is not itself one of the mapped phrases); otherwise scan the free-text
- * self-report for an obvious phrasing.
+ * The self-assessment carried into the `declared` section: a grid-neutral band
+ * token (`beginner` / `intermediate` / `advanced`) when a phrase matched, or an
+ * explicit `self_assessed_level` from `profile.json` passed through verbatim
+ * (a grid level id, or a phrase the map above recognises). Free text is only
+ * scanned when there is no explicit value.
  */
 function extractSelfAssessedLevel(
   explicit: string | undefined,
