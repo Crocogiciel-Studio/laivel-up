@@ -1,0 +1,22 @@
+{
+  "name": "@laivel-up/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static viewer for a laivel-up evaluation (satellite module — never imported by the core)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^8.2.2",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}
