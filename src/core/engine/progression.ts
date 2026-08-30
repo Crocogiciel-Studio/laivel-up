@@ -1,6 +1,7 @@
 import type { Grid } from '../model/grid.js';
 import { axisById, levelById, nextLevelUp } from '../model/grid.js';
-import type { AxisVerdict, GlobalVerdict, ProgressionPlan } from '../model/evaluation.js';
+import type { AxisVerdict, GlobalVerdict, Message, ProgressionPlan } from '../model/evaluation.js';
+import { msg } from '../model/evaluation.js';
 
 /**
  * The plan points at the one move that raises the global level: close the gap on
@@ -17,9 +18,7 @@ export function planProgression(
     return {
       targetLevelId: undefined,
       bindingAxisId: undefined,
-      actions: [
-        'Provide more of the profile: too few axes could be ruled on to place a level.',
-      ],
+      actions: [msg('progression.insufficient-axes')],
     };
   }
 
@@ -34,17 +33,23 @@ export function planProgression(
     return {
       targetLevelId: undefined,
       bindingAxisId: global.bindingAxisId,
-      actions: [`Top level reached on the binding axis ${axisLabel}.`],
+      actions: [msg('progression.top-level', { axis: axisLabel })],
     };
   }
 
-  const actions = [
-    `Raise ${axisLabel} from ${currentLabel} toward ${target.label ?? target.id}.`,
+  const actions: Message[] = [
+    msg('progression.raise-axis', {
+      axis: axisLabel,
+      from: currentLabel,
+      to: target.label ?? target.id,
+    }),
   ];
   if (bindingVerdict !== undefined && bindingVerdict.limitingFactor !== 'none') {
     actions.push(
-      `Confidence on ${axisLabel} is limited by ${bindingVerdict.limitingFactor}; ` +
-        `add evidence that addresses it.`,
+      msg('progression.confidence-limited', {
+        axis: axisLabel,
+        factor: bindingVerdict.limitingFactor,
+      }),
     );
   }
 

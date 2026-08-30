@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/Crocogiciel-Studio/laivel-up/docs/evaluation.schema.json",
   "title": "Evaluation",
-  "description": "Shape emitted by renderEvaluationJson (JSON.stringify(evaluation, null, 2)) for src/core/model/evaluation.ts#Evaluation. Fields typed `X | undefined` in the model are declared here but omitted from `required`: JSON.stringify drops undefined properties, it never serializes them as null. Inlined (no $ref/definitions): kept to the type/enum/required/properties/additionalProperties/items subset the project's structural test validator understands.",
+  "description": "Shape emitted by renderEvaluationJson (JSON.stringify(evaluation, null, 2)) for src/core/model/evaluation.ts#Evaluation. Fields typed `X | undefined` in the model are declared here but omitted from `required`: JSON.stringify drops undefined properties, it never serializes them as null. `note` and each `actions` entry are Message descriptors ({ key, params? }) resolved against an i18n catalogue by the consumer; `evidence` is still a plain sentence. Inlined (no $ref/definitions): kept to the type/enum/required/properties/additionalProperties/items subset the project's structural test validator understands.",
   "type": "object",
   "additionalProperties": false,
   "required": ["subjectId", "gridId", "global", "axes", "progression", "generatedAt"],
@@ -18,7 +18,15 @@
         "levelRank": { "type": "number" },
         "confidence": { "type": "number" },
         "bindingAxisId": { "type": "string" },
-        "note": { "type": "string" }
+        "note": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key"],
+          "properties": {
+            "key": { "type": "string" },
+            "params": { "type": "object" }
+          }
+        }
       }
     },
     "axes": {
@@ -79,7 +87,15 @@
         "bindingAxisId": { "type": "string" },
         "actions": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key"],
+            "properties": {
+              "key": { "type": "string" },
+              "params": { "type": "object" }
+            }
+          }
         }
       }
     },

@@ -42,6 +42,9 @@ describe('aggregate', () => {
   it('refuses to rule when too few axes could be evaluated', () => {
     const global = aggregate(grid, [verdict('a', 2), verdict('b', undefined)], 2);
     expect(global.levelId).toBeUndefined();
-    expect(global.note).toContain('evidence bar not met');
+    expect(global.note).toEqual({
+      key: 'aggregate.evidence-bar-not-met',
+      params: { ruled: 1, total: 3, required: 2 },
+    });
   });
 });

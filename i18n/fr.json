@@ -1,0 +1,10 @@
+{
+  "aggregate.evidence-bar-not-met": "barre d'évidence non atteinte : {ruled}/{total} axes ont pu être statués, {required} requis",
+  "aggregate.no-axis-ruled": "aucun axe n'a pu être statué",
+  "aggregate.binding-partial-coverage": "statué sur {ruled}/{total} axes ; {axis} est l'axe contraignant",
+  "aggregate.binding": "{axis} est l'axe contraignant",
+  "progression.insufficient-axes": "Complétez le profil : trop peu d'axes ont pu être statués pour situer un niveau.",
+  "progression.top-level": "Niveau maximum atteint sur l'axe contraignant {axis}.",
+  "progression.raise-axis": "Faites progresser {axis} de {from} vers {to}.",
+  "progression.confidence-limited": "La confiance sur {axis} est limitée par {factor} ; ajoutez des preuves qui l'adressent."
+}

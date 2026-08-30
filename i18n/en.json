@@ -1,0 +1,10 @@
+{
+  "aggregate.evidence-bar-not-met": "evidence bar not met: {ruled}/{total} axes could be ruled on, {required} required",
+  "aggregate.no-axis-ruled": "no axis could be ruled on",
+  "aggregate.binding-partial-coverage": "ruled on {ruled}/{total} axes; {axis} is binding",
+  "aggregate.binding": "{axis} is binding",
+  "progression.insufficient-axes": "Provide more of the profile: too few axes could be ruled on to place a level.",
+  "progression.top-level": "Top level reached on the binding axis {axis}.",
+  "progression.raise-axis": "Raise {axis} from {from} toward {to}.",
+  "progression.confidence-limited": "Confidence on {axis} is limited by {factor}; add evidence that addresses it."
+}
