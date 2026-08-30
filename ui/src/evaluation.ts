@@ -73,6 +73,23 @@ export function evaluationSource(search: string): string {
 }
 
 /**
+ * The `pnpm viz` catalogue index — a JSON array of profile names — or `null`.
+ * A dev server with no such file answers the probe with its HTML shell, which
+ * must not be mistaken for a catalogue.
+ */
+export function parseNameList(text: string | null): string[] | null {
+  if (text === null) return null;
+  try {
+    const value: unknown = JSON.parse(text);
+    return Array.isArray(value) && value.every((n) => typeof n === 'string')
+      ? (value as string[])
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Minimal structural guard for the scaffold — enough to reject a file that is not
  * an evaluation at all. Full JSON-Schema validation is #41 viewer work (needs #21).
  */
