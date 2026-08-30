@@ -58,7 +58,8 @@ export function aggregate(
       confidence,
       bindingAxisId: binding.axisId,
       note: msg('aggregate.confidence-below-floor', {
-        confidence: Math.round(confidence * 100) / 100,
+        // floor, not round: 0.249 must not print as "0.25 below the floor 0.25"
+        confidence: Math.floor(confidence * 100) / 100,
         floor: evidenceFloor,
       }),
     };

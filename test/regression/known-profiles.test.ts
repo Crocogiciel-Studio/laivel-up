@@ -56,6 +56,14 @@ describe('known profiles guardrail', () => {
         now: () => new Date('2026-08-29T00:00:00.000Z'),
       });
 
+      // The preset's evidenceFloor must stay below every public profile's global
+      // confidence — a criterion retune that pushes one under it would silently
+      // stop the CLI emitting a level.
+      expect(
+        evaluation.global.levelId,
+        `${name} fell under presets/aidd.json evidenceFloor (global confidence ${String(evaluation.global.confidence)})`,
+      ).toBeDefined();
+
       const ruledAxes = evaluation.axes.filter((axis) => axis.levelRank !== undefined);
       expect(ruledAxes.length).toBeGreaterThan(0);
       for (const axis of ruledAxes) {

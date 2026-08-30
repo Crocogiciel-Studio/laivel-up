@@ -14,7 +14,7 @@ export function planProgression(
   global: GlobalVerdict,
   axes: readonly AxisVerdict[],
 ): ProgressionPlan {
-  if (global.bindingAxisId === undefined || global.levelRank === undefined) {
+  if (global.bindingAxisId === undefined) {
     return {
       targetLevelId: undefined,
       bindingAxisId: undefined,
@@ -24,10 +24,26 @@ export function planProgression(
 
   const bindingAxis = axisById(grid, global.bindingAxisId);
   const bindingVerdict = axes.find((axis) => axis.axisId === global.bindingAxisId);
+  const axisLabel = bindingAxis?.label ?? global.bindingAxisId;
+
+  // A level was withheld by the evidence floor: the binding axis is known, only
+  // confidence fell short. Point at raising confidence, not "too few axes".
+  if (global.levelRank === undefined) {
+    return {
+      targetLevelId: undefined,
+      bindingAxisId: global.bindingAxisId,
+      actions: [
+        msg('progression.confidence-below-floor', {
+          axis: axisLabel,
+          factor: `factor.${bindingVerdict?.limitingFactor ?? 'none'}`,
+        }),
+      ],
+    };
+  }
+
   const target = nextLevelUp(grid, global.levelRank);
   const currentLabel =
     levelById(grid, global.levelId ?? '')?.label ?? global.levelId ?? 'current level';
-  const axisLabel = bindingAxis?.label ?? global.bindingAxisId;
 
   if (target === undefined) {
     return {
