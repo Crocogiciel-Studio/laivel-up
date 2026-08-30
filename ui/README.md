@@ -17,12 +17,27 @@ output shape, never the other way round. It is a `pnpm` workspace package with
 its **own** Vite / Vitest toolchain, and `dependency-cruiser` forbids any
 `src/ -> ui/` import — so the engine build cannot be destabilised from here.
 
+## One command
+
+```bash
+pnpm install     # from the repo root
+pnpm viz         # evaluates examples/dev-sample and opens the viewer
+pnpm viz -p test/fixtures/profiles/arthur      # any profile dir
+pnpm viz -p <dir> -g <preset.json>
+```
+
+`pnpm viz` builds the core if needed, evaluates the profile, writes the JSON
+where the dev server serves it, and opens the browser on the rendered result —
+no drag-and-drop.
+
 ## Develop
 
 ```bash
-pnpm install            # from the repo root, installs every workspace package
-pnpm -C ui run dev      # http://localhost:5173
+pnpm -C ui run dev      # viewer alone, http://localhost:5173 (drop a file in)
 ```
+
+The viewer auto-loads `evaluation.json` if the server has one (what `pnpm viz`
+writes) or `?src=<url>`; otherwise it waits for a dropped file.
 
 ## Build
 

@@ -9,6 +9,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# `pnpm viz` writes the evaluation the dev-server viewer auto-loads
+ui/public/
+
 # Test / coverage
 coverage/
 
