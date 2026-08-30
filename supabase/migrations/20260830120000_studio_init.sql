@@ -14,10 +14,11 @@
 -- forwards the caller's JWT to Postgres, so these policies -- not application
 -- code -- are what keeps one lead out of another's rows.
 
-create extension if not exists pgcrypto;
+-- `gen_random_uuid()` is a core function since Postgres 13, so no extension is
+-- needed.
 
--- Bump `updated_at` on every UPDATE. Runs as the table owner, so it is
--- unaffected by RLS.
+-- Bump `updated_at` on every UPDATE. Runs as the invoking role (the default
+-- SECURITY INVOKER); it only rewrites NEW, so RLS never bears on it.
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql

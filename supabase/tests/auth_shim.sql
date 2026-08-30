@@ -42,4 +42,5 @@ language sql stable as $$
 $$;
 
 grant usage on schema auth to anon, authenticated;
-grant select on auth.users to authenticated;
+-- No SELECT on auth.users: real Supabase does not grant it either, and the FK
+-- check on owner_id runs with the table owner's privileges.

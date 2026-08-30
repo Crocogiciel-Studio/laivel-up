@@ -8,6 +8,7 @@ Local Supabase stack (Postgres + Auth) for the grid & profile studio — see
 
 - Docker running.
 - `pnpm install` (pins the Supabase CLI as a dev dependency).
+- `psql` on `PATH` — used by `pnpm db:test`. `pnpm db:test:bare` needs only Docker.
 
 ## Commands
 

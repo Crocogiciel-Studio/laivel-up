@@ -51,16 +51,10 @@ jobs:
 
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
 
-      - name: Apply Supabase shim + migrations
-        run: |
-          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/auth_shim.sql
-          for f in supabase/migrations/*.sql; do
-            echo "-- $f"
-            psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"
-          done
-
-      - name: RLS smoke test
-        run: psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql
+      - name: Apply shim + migrations + RLS smoke test
+        env:
+          PSQL: psql "$PGURL" -v ON_ERROR_STOP=1
+        run: bash scripts/db-smoke.sh
 
   ui:
     # Satellite viewer (ui/). A pnpm workspace package with its own Vite/Vitest
