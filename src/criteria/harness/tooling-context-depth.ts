@@ -56,6 +56,7 @@ function describe(tc: ToolingContext): string {
 export const toolingContextDepth: CriterionEvaluator = {
   id: 'tooling-context-depth',
   needs: ['toolingContext'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const tc = context.profile.toolingContext;

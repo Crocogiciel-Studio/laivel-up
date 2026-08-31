@@ -127,6 +127,7 @@ function capLevel(context: CriterionContext, band: number, p: Params): GridLevel
 export const codeQualityFloor: CriterionEvaluator = {
   id: 'code-quality-floor',
   needs: ['staticAnalysis'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const sa = context.profile.staticAnalysis;

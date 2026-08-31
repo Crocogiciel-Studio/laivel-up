@@ -67,6 +67,7 @@ const marginFromRatio = (value: number, band: number, p: Params): number =>
 export const prCorrectionLoad: CriterionEvaluator = {
   id: 'pr-correction-load',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const pr = context.profile.vcsActivity?.pullRequests;

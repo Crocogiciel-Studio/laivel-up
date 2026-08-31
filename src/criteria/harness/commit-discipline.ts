@@ -92,6 +92,7 @@ function capLevel(context: CriterionContext, band: number, p: Params): GridLevel
 export const commitDiscipline: CriterionEvaluator = {
   id: 'commit-discipline',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const commits = context.profile.vcsActivity?.commits;

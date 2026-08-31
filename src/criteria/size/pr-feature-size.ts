@@ -115,6 +115,7 @@ function tierShare(d: PrSizeDistribution, tier: number): number {
 export const prFeatureSize: CriterionEvaluator = {
   id: 'pr-feature-size',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const pr = context.profile.vcsActivity?.pullRequests;

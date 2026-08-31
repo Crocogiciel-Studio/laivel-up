@@ -48,6 +48,7 @@ const marginFromComments = (value: number, band: number, p: Params): number =>
 export const reviewCommentLoad: CriterionEvaluator = {
   id: 'review-comment-load',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const pr = context.profile.vcsActivity?.pullRequests;

@@ -97,6 +97,7 @@ function describe(
 export const testEnforcement: CriterionEvaluator = {
   id: 'test-enforcement',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const facts = context.profile.vcsActivity?.tests;

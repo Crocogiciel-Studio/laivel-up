@@ -44,6 +44,22 @@ const BAND_RANK_PARAM: Readonly<Record<string, string>> = {
 };
 
 /**
+ * In-code defaults for this criterion's calibration knobs, surfaced through
+ * `paramDefaults` so a grid editor pre-fills a criterion card. Unlike the other
+ * criteria this set is *not* merged into `context.params` in `evaluate()`: the
+ * band → level mapping is deliberately opt-in per grid, so a band the preset
+ * does not calibrate makes the criterion abstain rather than fall back to a
+ * default rank. `contradictionSlope` is applied by the engine (`bundle.ts`
+ * `applyContradictions`), never read here.
+ */
+const PARAM_DEFAULTS = {
+  contradictionSlope: 0.35,
+  rankSelfBeginner: 1,
+  rankSelfIntermediate: 2,
+  rankSelfAdvanced: 3,
+} as const;
+
+/**
  * The reading is a faithful copy of what the subject stated: its decisiveness
  * is not in question, only whether it agrees with the facts — and that the
  * engine scores from the rank gap. Single-source, so `agreement` is inert here.
@@ -58,6 +74,7 @@ const DECLARED_CONFIDENCE = {
 export const declaratifContradiction: CriterionEvaluator = {
   id: 'declaratif-contradiction',
   needs: ['declared'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const selfAssessed = context.profile.declared?.selfAssessedLevel;

@@ -117,6 +117,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # preset.test.ts imports laivel-up/compose to check builder output parses
+      - run: pnpm build
       - run: pnpm -C ui/web run typecheck
       - run: pnpm -C ui/web test
       - run: pnpm -C ui/web run build

@@ -91,6 +91,7 @@ function capLevel(context: CriterionContext, band: number, p: Params): GridLevel
 export const revertRate: CriterionEvaluator = {
   id: 'revert-rate',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const pr = context.profile.vcsActivity?.pullRequests;

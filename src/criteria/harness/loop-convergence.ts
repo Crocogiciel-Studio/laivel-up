@@ -112,6 +112,7 @@ function bandLevel(context: CriterionContext, band: number, p: Params): GridLeve
 export const loopConvergence: CriterionEvaluator = {
   id: 'loop-convergence',
   needs: ['toolingContext', 'vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const tc = context.profile.toolingContext;

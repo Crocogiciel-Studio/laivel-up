@@ -71,6 +71,7 @@ function describe(tc: ToolingContext, tier: Tier): Message {
 export const memoryMaintenance: CriterionEvaluator = {
   id: 'memory-maintenance',
   needs: ['toolingContext'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const tc = context.profile.toolingContext;

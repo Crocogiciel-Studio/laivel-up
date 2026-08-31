@@ -250,7 +250,7 @@ function build(): ReturnType<typeof createApp> {
     db: fakeDb(),
     runEvaluation,
     validateArtifact,
-    catalogue: [{ id: 'demo-criterion', needs: ['declared'] }],
+    catalogue: [{ id: 'demo-criterion', needs: ['declared'], paramDefaults: { slope: 0.3 } }],
     siteUrls: ['http://127.0.0.1:5173', 'http://localhost:5173'],
   });
 }
@@ -287,7 +287,7 @@ describe('studio server', () => {
 
   it('exposes the catalogue', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/catalogue', headers: U1 });
-    expect(res.json()).toEqual([{ id: 'demo-criterion', needs: ['declared'] }]);
+    expect(res.json()).toEqual([{ id: 'demo-criterion', needs: ['declared'], paramDefaults: { slope: 0.3 } }]);
   });
 
   it('creates an org and scopes it to its members', async () => {

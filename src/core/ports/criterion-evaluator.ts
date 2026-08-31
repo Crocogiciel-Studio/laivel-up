@@ -45,6 +45,14 @@ export interface MissingPiece {
 export interface CriterionEvaluator {
   readonly id: string;
   readonly needs: readonly ProfileSection[];
+  /**
+   * In-code defaults for this criterion's calibration knobs — the ones a grid
+   * preset overrides through a bundle entry's `params` (`hexagon.md`
+   * #calibration-in-the-grid). Surfaced so a grid editor can pre-fill a
+   * criterion card with sensible values; `evaluate()` still merges
+   * `{ ...paramDefaults, ...context.params }` itself.
+   */
+  readonly paramDefaults: Readonly<Record<string, number>>;
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece>;
 }
 

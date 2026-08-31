@@ -32,19 +32,24 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 
 | Piece | Issue | State |
 | --- | --- | --- |
-| Schema + RLS, Supabase Cloud | #55 | this change (`supabase/`) |
-| Node backend: CRUD + run endpoint | #56 | this change (`ui/server/`) |
-| Web shell: routing + OAuth login | #57 | this change (`ui/web/`) |
-| Profile form editor | #58 | this change (`ui/web/src/profile/`) |
-| Drag-and-drop grid builder | #59 | — |
+| Schema + RLS, Supabase Cloud | #55 | done |
+| Node backend: CRUD + run endpoint | #56 | done |
+| Web shell: routing + OAuth login | #57 | done |
+| Profile form editor | #58 | done (`ui/web/src/profile/`) |
+| Drag-and-drop grid builder | #59 | this change (`ui/web/src/grid/`) |
 | Run + persisted history + comparison | #60 | — |
 | Seeded read-only templates | #61 | — |
 
-#55–#57 (plus the Cloud pivot and the org model) shipped together in one PR. The
-web app under `ui/web` — React + Vite + React Router, Supabase OAuth client-side,
-all data through the backend — carries the shell (`/login`, an org switcher,
-`/org` settings) and the profile form (`/profiles`). `/grids` and `/runs` are
-still placeholders.
+The web app under `ui/web` — React + Vite + React Router, Supabase OAuth
+client-side, all data through the backend — carries the shell (`/login`, an org
+switcher, `/org` settings), the profile form (`/profiles`), and the grid builder
+(`/grids`). `/runs` is still a placeholder.
+
+Each criterion now declares its `paramDefaults` (`src/core/ports/criterion-evaluator.ts`);
+`/api/catalogue` returns them so the builder pre-fills a criterion card. The
+builder's output is the `presets/*.json` shape — `ui/web/src/grid/preset.test.ts`
+round-trips the AIDD preset through it and checks the result still parses via
+`laivel-up/compose`.
 
 ## Data model
 

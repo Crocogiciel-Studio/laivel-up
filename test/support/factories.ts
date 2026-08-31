@@ -113,6 +113,7 @@ export function fixedEvaluator(
   return {
     id,
     needs: [],
+    paramDefaults: {},
     evaluate: () =>
       ok({
         levelId: output.levelId,
