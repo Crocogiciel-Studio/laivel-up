@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Generates supabase/migrations/<ts>_seed_templates.sql -- the five read-only
 // templates (#61): the AIDD reference grid and the four sample profiles, as
 // `is_template = true` rows with a fixed id each. Re-run after changing
