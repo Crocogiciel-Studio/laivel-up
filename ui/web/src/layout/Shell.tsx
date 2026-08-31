@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.js';
 import { useOrg } from '../org/OrgProvider.js';
-import { api } from '../api/client.js';
+import { api, ApiError } from '../api/client.js';
 
 const NAV = [
   { to: '/profiles', label: 'Profiles' },
@@ -58,7 +58,24 @@ function OrgSwitcher(): ReactNode {
 
 export function Shell(): ReactNode {
   const { session, signOut } = useAuth();
+  const navigate = useNavigate();
   const [health, setHealth] = useState<Health>('checking');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const onDeleteAccount = (): void => {
+    if (!window.confirm('Delete your account? Every org where you are the sole admin is checked first — this cannot be undone.')) {
+      return;
+    }
+    setDeleteError(null);
+    api('/api/me', { method: 'DELETE' })
+      .then(async () => {
+        await signOut();
+        navigate('/login', { replace: true });
+      })
+      .catch((e: unknown) => {
+        setDeleteError(e instanceof ApiError ? e.message : 'could not delete the account');
+      });
+  };
 
   useEffect(() => {
     let active = true;
@@ -93,8 +110,12 @@ export function Shell(): ReactNode {
           backend {health === 'ok' ? '●' : '○'}
         </span>
         <span className="muted small">{email}</span>
+        {deleteError !== null && <span className="error small">{deleteError}</span>}
         <button type="button" className="secondary" onClick={() => void signOut()}>
           Sign out
+        </button>
+        <button type="button" className="secondary small danger" onClick={onDeleteAccount}>
+          Delete account
         </button>
       </header>
       <main>

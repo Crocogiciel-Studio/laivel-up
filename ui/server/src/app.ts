@@ -291,6 +291,19 @@ export function createApp(deps: AppDeps): FastifyInstance {
     }
   });
 
+  app.delete('/api/me', async (request, reply) => {
+    try {
+      await store(request).deleteAccount();
+      return reply.code(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/promote another admin/i.test(message)) {
+        return reply.code(409).send({ error: message });
+      }
+      throw error;
+    }
+  });
+
   registerArtifactRoutes(app, 'grid', 'grids', deps, store);
   registerArtifactRoutes(app, 'profile', 'profiles', deps, store);
   registerRunRoutes(app, deps, store);

@@ -35,7 +35,11 @@ a broken policy or migration fails the build before it can reach Cloud.
 - `migrations/` — ordered schema changes. `20260830120000_studio_init.sql`
   creates the whole schema: `org` / `org_member` / `org_invite`, the
   `is_org_*` / `create_org` / `accept_invite` / `org_members` functions, and
-  `grid` / `profile` / `run` with their RLS.
+  `grid` / `profile` / `run` with their RLS. `20260831150000_delete_account.sql`
+  fixes `org_keep_an_admin()` to only block when *other* members are left
+  admin-less (not when the org's last member is leaving), adds
+  `org_cleanup_if_empty` to drop an org once it has no members, and adds
+  `delete_account()` — the actual "delete my account" entry point.
 - `seed.sql` — data for a fresh local DB. Templates land here in
   [#61](https://github.com/Crocogiciel-Studio/laivel-up/issues/61).
 - `tests/rls_smoke.sql` — proves one user cannot read or write another's rows,
@@ -62,6 +66,9 @@ RLS, keyed on `auth.uid()` via `is_org_member()` / `is_org_admin()`:
   the creator may delete.
 - **template** (`is_template`, no org) — readable by any signed-in user, writable
   by none.
+- **org_member** — a delete or a role change off `admin` is refused when it
+  would leave *other* members with no admin; it is allowed when it empties the
+  org (the org is then dropped by a cleanup trigger, not left orphaned).
 
 The backend forwards the caller's JWT to Postgres, so these policies are the
 enforcement boundary — not application code.
