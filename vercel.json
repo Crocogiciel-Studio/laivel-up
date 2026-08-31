@@ -3,6 +3,6 @@
   "buildCommand": "pnpm build && pnpm -C packages/studio-web run build",
   "outputDirectory": "packages/studio-web/dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
