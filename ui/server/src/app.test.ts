@@ -238,6 +238,37 @@ function fakeDb(): Db {
           runs.set(row.id, row);
           return Promise.resolve(row);
         },
+
+        deleteAccount: () => {
+          // Mirrors delete_account(): refuse (naming the orgs) when the caller
+          // is the sole admin of a shared org; otherwise drop every membership
+          // and clean up any org left with no members.
+          const mine = [...roleOf.entries()].filter(([k]) => k.endsWith(`:${user.id}`));
+          const blocking: string[] = [];
+          for (const [k, role] of mine) {
+            if (role !== 'admin') continue;
+            const orgId = k.split(':')[0] as string;
+            const others = [...roleOf.entries()].filter(
+              ([k2]) => k2.startsWith(`${orgId}:`) && k2 !== k,
+            );
+            if (others.length > 0 && !others.some(([, r]) => r === 'admin')) {
+              blocking.push(orgs.get(orgId)?.name ?? orgId);
+            }
+          }
+          if (blocking.length > 0) {
+            return Promise.reject(
+              new Error(
+                `promote another admin (or leave) in ${blocking.join(', ')} before deleting your account`,
+              ),
+            );
+          }
+          for (const [k] of mine) roleOf.delete(k);
+          for (const orgId of orgs.keys()) {
+            const stillHasMembers = [...roleOf.keys()].some((k2) => k2.startsWith(`${orgId}:`));
+            if (!stillHasMembers) orgs.delete(orgId);
+          }
+          return Promise.resolve();
+        },
       };
       return store;
     },
@@ -562,5 +593,31 @@ describe('studio server', () => {
   it('400s an unknown invite token', async () => {
     const res = await app.inject({ method: 'POST', url: '/api/invites/nope/accept', headers: U1 });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('lets a solo admin delete their account', async () => {
+    await makeOrg(app, U1);
+    const res = await app.inject({ method: 'DELETE', url: '/api/me', headers: U1 });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('409s deleting an account that would strand a shared org, naming it', async () => {
+    const orgId = await makeOrg(app, U1); // creates "Acme", U1 = its only admin
+    const invite = await app.inject({
+      method: 'POST',
+      url: `/api/orgs/${orgId}/invites`,
+      headers: U1,
+      payload: { role: 'member' },
+    });
+    const { token } = invite.json() as { token: string };
+    await app.inject({ method: 'POST', url: `/api/invites/${token}/accept`, headers: U2 });
+
+    const res = await app.inject({ method: 'DELETE', url: '/api/me', headers: U1 });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toContain('Acme');
+
+    // Refused means unchanged: U1 can still act on the org afterwards.
+    const stillMine = await app.inject({ method: 'GET', url: '/api/orgs', headers: U1 });
+    expect((stillMine.json() as unknown[]).length).toBe(1);
   });
 });

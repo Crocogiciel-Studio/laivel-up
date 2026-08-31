@@ -89,6 +89,7 @@ export interface Database {
       create_org: { Args: { p_name: string }; Returns: OrgRow };
       accept_invite: { Args: { p_token: string }; Returns: OrgMemberRow };
       org_members: { Args: { p_org: string }; Returns: OrgMemberDetail[] };
+      delete_account: { Args: Record<string, never>; Returns: undefined };
     };
     Enums: Empty;
     CompositeTypes: Empty;

@@ -13,6 +13,10 @@
 --     cannot create one
 --   * run: any member may create and read; nobody updates; admin or creator deletes
 --   * templates: world-readable, never writable
+--   * an org keeps at least one admin -- unless it has no other members left,
+--     in which case it is cleaned up entirely (org_cleanup_if_empty)
+--   * delete_account() refuses to strand a shared org, otherwise removes every
+--     membership and the auth.users row
 
 begin;
 
@@ -191,11 +195,47 @@ begin
     if left_ok then raise exception 'the last admin was allowed to leave'; end if;
   end;
 
+  -- delete_account() refuses for the same reason (Team still has Bob and no
+  -- other admin), and changes nothing when it does.
+  begin
+    perform public.delete_account();
+    raise exception 'delete_account allowed stranding the team';
+  exception when raise_exception then null; -- expected
+  end;
+  select count(*) into n from public.org_member where org_id = team and user_id = alice;
+  if n <> 1 then raise exception 'alice membership changed despite the refusal'; end if;
+  -- authenticated has no SELECT on auth.users; bypass RLS/grants to check it
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from auth.users where id = alice;
+  if n <> 1 then raise exception 'alice account changed despite the refusal'; end if;
+
   -- Bob leaves Team and loses access to its grid.
   perform pg_temp.become(bob);
   delete from public.org_member where org_id = team and user_id = bob;
   select count(*) into n from public.grid where id = team_grid;
   if n <> 0 then raise exception 'ex-member still sees the team grid'; end if;
+
+  -- Carol has no shared org, only her personal one: delete_account succeeds
+  -- outright, and the emptied org is cleaned up, not left orphaned.
+  perform pg_temp.become(carol);
+  declare
+    carol_org uuid;
+    remaining int;
+  begin
+    select org_id into carol_org from public.org_member where user_id = carol limit 1;
+    perform public.delete_account();
+
+    select count(*) into remaining from public.org_member where user_id = carol;
+    if remaining <> 0 then raise exception 'carol membership survived delete_account'; end if;
+
+    -- switch back to the superuser role to see past RLS and confirm the org
+    -- row itself is gone, not merely inaccessible to the now-deleted user
+    perform set_config('role', 'postgres', true);
+    select count(*) into remaining from public.org where id = carol_org;
+    if remaining <> 0 then raise exception 'carol''s emptied org was not cleaned up'; end if;
+    select count(*) into remaining from auth.users where id = carol;
+    if remaining <> 0 then raise exception 'carol''s auth.users row survived delete_account'; end if;
+  end;
 
   raise notice 'rls_smoke: all checks passed';
 end;

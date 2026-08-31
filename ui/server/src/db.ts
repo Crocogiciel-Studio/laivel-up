@@ -104,6 +104,13 @@ export interface Store {
   deleteInvite(orgId: string, inviteId: string): Promise<boolean>;
   acceptInvite(token: string): Promise<OrgMemberRow>;
 
+  /**
+   * Delete the caller's account: every org membership, then the auth.users row
+   * itself. Refuses (with a message naming the orgs) rather than stranding a
+   * shared org the caller is the sole admin of.
+   */
+  deleteAccount(): Promise<void>;
+
   list(kind: ArtifactKind, orgId?: string): Promise<ArtifactRow[]>;
   get(kind: ArtifactKind, id: string): Promise<ArtifactRow | null>;
   create(kind: ArtifactKind, input: NewArtifact): Promise<ArtifactRow>;
@@ -235,6 +242,10 @@ class SupabaseStore implements Store {
 
   async acceptInvite(token: string): Promise<OrgMemberRow> {
     return unwrapOne(await this.supabase.rpc("accept_invite", { p_token: token }));
+  }
+
+  async deleteAccount(): Promise<void> {
+    unwrap(await this.supabase.rpc('delete_account'));
   }
 
   async list(kind: ArtifactKind, orgId?: string): Promise<ArtifactRow[]> {
