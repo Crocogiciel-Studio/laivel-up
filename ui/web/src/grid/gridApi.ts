@@ -11,6 +11,8 @@ export interface GridSummary {
   readonly updatedAt: string;
 }
 
+// Mirrors ui/server's CatalogueEntry — a DTO across the HTTP boundary, kept
+// separate on purpose so the web app carries no dependency on the server package.
 export interface CatalogueEntry {
   readonly id: string;
   readonly needs: readonly string[];

@@ -18,12 +18,13 @@ vi.mock('../api/client.js', () => ({ ApiError: MockApiError }));
 
 const listGrids = vi.fn();
 const createGrid = vi.fn();
+const updateGrid = vi.fn();
 const deleteGrid = vi.fn();
 const getCatalogue = vi.fn();
 vi.mock('../grid/gridApi.js', () => ({
   listGrids: (...a: unknown[]) => listGrids(...a),
   createGrid: (...a: unknown[]) => createGrid(...a),
-  updateGrid: vi.fn(),
+  updateGrid: (...a: unknown[]) => updateGrid(...a),
   deleteGrid: (...a: unknown[]) => deleteGrid(...a),
   getCatalogue: (...a: unknown[]) => getCatalogue(...a),
 }));
@@ -37,6 +38,7 @@ const CATALOGUE = [
 afterEach(() => {
   listGrids.mockReset();
   createGrid.mockReset();
+  updateGrid.mockReset();
   deleteGrid.mockReset();
   getCatalogue.mockReset();
 });
@@ -76,6 +78,39 @@ describe('GridsPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Grids' })).toBeTruthy());
   });
 
+  it('edits an existing grid through updateGrid and returns to the list', async () => {
+    getCatalogue.mockResolvedValue(CATALOGUE);
+    listGrids.mockResolvedValue([
+      {
+        id: 'g1',
+        orgId: 'o1',
+        createdBy: 'u1',
+        name: 'my grid',
+        body: {
+          id: 'my-grid',
+          levels: [{ id: 'low', rank: 0 }, { id: 'high', rank: 1 }],
+          axes: [{ id: 'a', bundle: [] }],
+        },
+        isTemplate: false,
+        updatedAt: '',
+      },
+    ]);
+    updateGrid.mockResolvedValue({});
+    render(<GridsPage />);
+    await waitFor(() => expect(screen.getByText('my grid')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit' }));
+    fireEvent.change(screen.getByLabelText('Grid id'), { target: { value: 'my-grid-v2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save grid' }));
+
+    await waitFor(() => expect(updateGrid).toHaveBeenCalled());
+    const [id, patch] = updateGrid.mock.calls[0] as [string, { name: string; body: { id: string } }];
+    expect(id).toBe('g1');
+    expect(patch.name).toBe('my-grid-v2');
+    expect(patch.body.id).toBe('my-grid-v2');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Grids' })).toBeTruthy());
+  });
+
   it('surfaces server 422 issues and clears them on cancel', async () => {
     getCatalogue.mockResolvedValue(CATALOGUE);
     listGrids.mockResolvedValue([]);
@@ -112,7 +147,8 @@ describe('GridsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'clone to edit' }));
     expect(screen.getByRole('heading', { name: 'New grid' })).toBeTruthy();
-    expect((screen.getByLabelText('Grid id') as HTMLInputElement).value).toBe('aidd');
+    // a clone gets its own id, not the template's
+    expect((screen.getByLabelText('Grid id') as HTMLInputElement).value).toBe('AIDD-copy');
     expect((screen.getByLabelText('level 0 id') as HTMLInputElement).value).toBe('white');
   });
 

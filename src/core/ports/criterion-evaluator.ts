@@ -49,8 +49,11 @@ export interface CriterionEvaluator {
    * In-code defaults for this criterion's calibration knobs — the ones a grid
    * preset overrides through a bundle entry's `params` (`hexagon.md`
    * #calibration-in-the-grid). Surfaced so a grid editor can pre-fill a
-   * criterion card with sensible values; `evaluate()` still merges
-   * `{ ...paramDefaults, ...context.params }` itself.
+   * criterion card with sensible values. Most evaluators also merge
+   * `{ ...paramDefaults, ...context.params }` in `evaluate()`;
+   * `declaratif-contradiction` is the exception — it reads `context.params`
+   * raw, so a band the preset does not calibrate makes it abstain rather than
+   * fall back to a default rank.
    */
   readonly paramDefaults: Readonly<Record<string, number>>;
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece>;

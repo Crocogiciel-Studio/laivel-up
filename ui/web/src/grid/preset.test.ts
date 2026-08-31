@@ -52,12 +52,51 @@ describe('grid preset transform', () => {
     expect(toPreset(state).issues).toContain('evidence floor must be between 0 and 1');
   });
 
-  it('round-trips the AIDD preset: fromPreset -> toPreset is byte-equal', () => {
+  it('round-trips the AIDD preset: fromPreset -> toPreset is structurally equal', () => {
     const state = fromPreset('aidd', aiddBody);
     const { preset, issues } = toPreset(state);
     expect(issues).toEqual([]);
     // key order differs, so compare parsed structures
     expect(JSON.parse(JSON.stringify(preset))).toEqual(aiddBody);
+  });
+
+  it('remaps rank-valued params when a loaded grid has non-contiguous ranks', () => {
+    const body = {
+      id: 'sparse',
+      levels: [
+        { id: 'a', rank: 0 },
+        { id: 'b', rank: 5 },
+        { id: 'c', rank: 9 },
+      ],
+      axes: [
+        {
+          id: 'x',
+          bundle: [
+            {
+              criterionId: 'declaratif-contradiction',
+              role: 'confidence',
+              weight: 1,
+              params: {
+                contradictionSlope: 0.35,
+                rankSelfBeginner: 0,
+                rankSelfIntermediate: 5,
+                rankSelfAdvanced: 9,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const { preset, issues } = toPreset(fromPreset('sparse', body));
+    expect(issues).toEqual([]);
+    expect(preset.levels.map((l) => l.rank)).toEqual([0, 1, 2]);
+    // 0 -> 0, 5 -> 1, 9 -> 2; contradictionSlope is not a rank, so it is left alone
+    expect(preset.axes[0]?.bundle[0]?.params).toEqual({
+      contradictionSlope: 0.35,
+      rankSelfBeginner: 0,
+      rankSelfIntermediate: 1,
+      rankSelfAdvanced: 2,
+    });
   });
 
   it('the AIDD round-trip still parses through the engine', () => {
