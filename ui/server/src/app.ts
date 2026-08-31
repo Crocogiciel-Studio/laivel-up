@@ -4,7 +4,16 @@ import cors from '@fastify/cors';
 import { z } from 'zod';
 import type { Authenticator, AuthedUser } from './auth.js';
 import { bearer } from './auth.js';
-import type { ArtifactKind, ArtifactRow, Db, OrgRow, RunRow, Store } from './db.js';
+import type {
+  ArtifactKind,
+  ArtifactRow,
+  Db,
+  OrgInviteRow,
+  OrgMemberDetail,
+  OrgRow,
+  RunRow,
+  Store,
+} from './db.js';
 import type { RunEvaluation } from './engine.js';
 import type { CatalogueEntry } from './catalogue.js';
 import type { ValidateArtifact } from './validation.js';
@@ -21,8 +30,16 @@ export interface AppDeps {
 }
 
 const idParam = z.object({ id: z.string().uuid() });
+const memberParams = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
+const inviteParams = z.object({ id: z.string().uuid(), inviteId: z.string().uuid() });
+const tokenParam = z.object({ token: z.string().min(1).max(200) });
 
 const orgCreate = z.object({ name: z.string().min(1).max(200) });
+const roleBody = z.object({ role: z.enum(['admin', 'member']) });
+const inviteCreate = z.object({
+  email: z.string().email().optional(),
+  role: z.enum(['admin', 'member']).default('member'),
+});
 
 const artifactList = z.object({ orgId: z.string().uuid().optional() });
 
@@ -62,6 +79,22 @@ const runCreate = z
 
 function orgView(row: OrgRow): unknown {
   return { id: row.id, name: row.name, createdAt: row.created_at };
+}
+
+function memberView(row: OrgMemberDetail): unknown {
+  return { userId: row.user_id, email: row.email, role: row.role, joinedAt: row.created_at };
+}
+
+function inviteView(row: OrgInviteRow): unknown {
+  return {
+    id: row.id,
+    token: row.token,
+    email: row.email,
+    role: row.role,
+    expiresAt: row.expires_at,
+    acceptedAt: row.accepted_at,
+    createdAt: row.created_at,
+  };
 }
 
 function artifactView(row: ArtifactRow): unknown {
@@ -153,6 +186,76 @@ export function createApp(deps: AppDeps): FastifyInstance {
     }
     const row = await store(request).createOrg(parsed.data.name);
     return reply.code(201).send(orgView(row));
+  });
+
+  app.get('/api/orgs/:id/members', async (request) => {
+    const { id } = idParam.parse(request.params);
+    const rows = await store(request).listMembers(id);
+    return rows.map(memberView);
+  });
+
+  app.patch('/api/orgs/:id/members/:userId', async (request, reply) => {
+    const { id, userId } = memberParams.parse(request.params);
+    const parsed = roleBody.safeParse(request.body);
+    if (!parsed.success) {
+      return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
+    }
+    const row = await store(request).updateMemberRole(id, userId, parsed.data.role);
+    if (row === null) {
+      return reply.code(404).send({ error: 'member not found' });
+    }
+    return reply.send({ ok: true });
+  });
+
+  app.delete('/api/orgs/:id/members/:userId', async (request, reply) => {
+    const { id, userId } = memberParams.parse(request.params);
+    const removed = await store(request).removeMember(id, userId);
+    if (!removed) {
+      return reply.code(404).send({ error: 'member not found' });
+    }
+    return reply.code(204).send();
+  });
+
+  app.get('/api/orgs/:id/invites', async (request) => {
+    const { id } = idParam.parse(request.params);
+    const rows = await store(request).listInvites(id);
+    return rows.map(inviteView);
+  });
+
+  app.post('/api/orgs/:id/invites', async (request, reply) => {
+    const { id } = idParam.parse(request.params);
+    const parsed = inviteCreate.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
+    }
+    const row = await store(request).createInvite(id, {
+      role: parsed.data.role,
+      ...(parsed.data.email === undefined ? {} : { email: parsed.data.email }),
+    });
+    return reply.code(201).send(inviteView(row));
+  });
+
+  app.delete('/api/orgs/:id/invites/:inviteId', async (request, reply) => {
+    const { id, inviteId } = inviteParams.parse(request.params);
+    const removed = await store(request).deleteInvite(id, inviteId);
+    if (!removed) {
+      return reply.code(404).send({ error: 'invite not found' });
+    }
+    return reply.code(204).send();
+  });
+
+  app.post('/api/invites/:token/accept', async (request, reply) => {
+    const { token } = tokenParam.parse(request.params);
+    try {
+      const member = await store(request).acceptInvite(token);
+      return reply.code(201).send({ orgId: member.org_id, role: member.role });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/invite (not found|already used|expired|is for)/i.test(message)) {
+        return reply.code(400).send({ error: message });
+      }
+      throw error;
+    }
   });
 
   registerArtifactRoutes(app, 'grid', 'grids', deps, store);

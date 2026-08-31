@@ -19,6 +19,32 @@ export type OrgMemberRow = {
   readonly created_at: string;
 };
 
+/** A roster entry with the member's email (from the `org_members` function). */
+export type OrgMemberDetail = {
+  readonly user_id: string;
+  readonly email: string | null;
+  readonly role: 'admin' | 'member';
+  readonly created_at: string;
+};
+
+export type OrgInviteRow = {
+  readonly id: string;
+  readonly org_id: string;
+  readonly token: string;
+  readonly email: string | null;
+  readonly role: 'admin' | 'member';
+  readonly created_by: string | null;
+  readonly expires_at: string;
+  readonly accepted_by: string | null;
+  readonly accepted_at: string | null;
+  readonly created_at: string;
+};
+
+export interface NewInvite {
+  readonly email?: string;
+  readonly role: 'admin' | 'member';
+}
+
 export type ArtifactRow = {
   readonly id: string;
   readonly org_id: string | null;
@@ -65,6 +91,19 @@ export interface Store {
   listOrgs(): Promise<OrgRow[]>;
   createOrg(name: string): Promise<OrgRow>;
 
+  listMembers(orgId: string): Promise<OrgMemberDetail[]>;
+  updateMemberRole(
+    orgId: string,
+    userId: string,
+    role: 'admin' | 'member',
+  ): Promise<OrgMemberRow | null>;
+  removeMember(orgId: string, userId: string): Promise<boolean>;
+
+  listInvites(orgId: string): Promise<OrgInviteRow[]>;
+  createInvite(orgId: string, input: NewInvite): Promise<OrgInviteRow>;
+  deleteInvite(orgId: string, inviteId: string): Promise<boolean>;
+  acceptInvite(token: string): Promise<OrgMemberRow>;
+
   list(kind: ArtifactKind, orgId?: string): Promise<ArtifactRow[]>;
   get(kind: ArtifactKind, id: string): Promise<ArtifactRow | null>;
   create(kind: ArtifactKind, input: NewArtifact): Promise<ArtifactRow>;
@@ -110,6 +149,81 @@ class SupabaseStore implements Store {
     const { data, error } = await this.client().rpc('create_org', { p_name: name });
     if (error !== null) throw new Error(error.message);
     return data as OrgRow;
+  }
+
+  async listMembers(orgId: string): Promise<OrgMemberDetail[]> {
+    const { data, error } = await this.client().rpc('org_members', { p_org: orgId });
+    if (error !== null) throw new Error(error.message);
+    return (data ?? []) as OrgMemberDetail[];
+  }
+
+  async updateMemberRole(
+    orgId: string,
+    userId: string,
+    role: 'admin' | 'member',
+  ): Promise<OrgMemberRow | null> {
+    const { data, error } = await this.client()
+      .from('org_member')
+      .update({ role })
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .select('*')
+      .maybeSingle();
+    if (error !== null) throw new Error(error.message);
+    return (data as OrgMemberRow | null) ?? null;
+  }
+
+  async removeMember(orgId: string, userId: string): Promise<boolean> {
+    const { data, error } = await this.client()
+      .from('org_member')
+      .delete()
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .select('org_id');
+    if (error !== null) throw new Error(error.message);
+    return (data ?? []).length > 0;
+  }
+
+  async listInvites(orgId: string): Promise<OrgInviteRow[]> {
+    const { data, error } = await this.client()
+      .from('org_invite')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false });
+    if (error !== null) throw new Error(error.message);
+    return (data ?? []) as OrgInviteRow[];
+  }
+
+  async createInvite(orgId: string, input: NewInvite): Promise<OrgInviteRow> {
+    const { data, error } = await this.client()
+      .from('org_invite')
+      .insert({
+        org_id: orgId,
+        created_by: this.user.id,
+        role: input.role,
+        ...(input.email === undefined ? {} : { email: input.email }),
+      })
+      .select('*')
+      .single();
+    if (error !== null) throw new Error(error.message);
+    return data as OrgInviteRow;
+  }
+
+  async deleteInvite(orgId: string, inviteId: string): Promise<boolean> {
+    const { data, error } = await this.client()
+      .from('org_invite')
+      .delete()
+      .eq('id', inviteId)
+      .eq('org_id', orgId)
+      .select('id');
+    if (error !== null) throw new Error(error.message);
+    return (data ?? []).length > 0;
+  }
+
+  async acceptInvite(token: string): Promise<OrgMemberRow> {
+    const { data, error } = await this.client().rpc('accept_invite', { p_token: token });
+    if (error !== null) throw new Error(error.message);
+    return data as OrgMemberRow;
   }
 
   async list(kind: ArtifactKind, orgId?: string): Promise<ArtifactRow[]> {

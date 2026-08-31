@@ -46,6 +46,9 @@ function OrgSwitcher(): ReactNode {
       <button type="button" className="secondary small" onClick={onNew}>
         + org
       </button>
+      <NavLink to="/org" className="org-settings" title="Organisation settings">
+        ⚙
+      </NavLink>
     </span>
   );
 }
