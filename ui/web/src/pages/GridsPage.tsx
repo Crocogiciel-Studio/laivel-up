@@ -13,10 +13,8 @@ type Editing =
   | { mode: 'new' }
   | { mode: 'edit'; id: string; initial: GridBuilderState };
 
-const listForOrg = (orgId: string): Promise<GridSummary[]> => gridApi.listGrids(orgId);
-
 export function GridsPage(): ReactNode {
-  const { orgId, data: rows, error, setError, reload } = useOrgScopedLoad(listForOrg, []);
+  const { orgId, data: rows, error, setError, reload } = useOrgScopedLoad(gridApi.listGrids, []);
 
   const [catalogue, setCatalogue] = useState<CatalogueEntry[]>([]);
   const [editing, setEditing] = useState<Editing>({ mode: 'list' });
@@ -72,7 +70,9 @@ export function GridsPage(): ReactNode {
   };
 
   const cloneTemplate = (row: GridSummary): void => {
-    setSeed(fromPreset(`${row.name}-copy`, row.body));
+    const seeded = fromPreset(row.name, row.body);
+    seeded.gridId = `${row.name}-copy`; // fromPreset keeps the template's own id; a clone gets its own
+    setSeed(seeded);
     setEditing({ mode: 'new' });
   };
 

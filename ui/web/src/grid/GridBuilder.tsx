@@ -81,7 +81,11 @@ export function GridBuilder({
     }));
 
   const addAxis = (): void =>
-    patch((g) => ({ ...g, axes: [...g.axes, { id: `axis-${g.axes.length + 1}`, label: '', bundle: [] }] }));
+    patch((g) => {
+      let n = g.axes.length + 1;
+      while (g.axes.some((a) => a.id === `axis-${n}`)) n += 1;
+      return { ...g, axes: [...g.axes, { id: `axis-${n}`, label: '', bundle: [] }] };
+    });
   const removeAxis = (axisIdx: number): void =>
     patch((g) => ({ ...g, axes: g.axes.filter((_, i) => i !== axisIdx) }));
 

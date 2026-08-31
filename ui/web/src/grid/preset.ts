@@ -134,6 +134,20 @@ export function toPreset(state: GridBuilderState): ToPresetResult {
 export function fromPreset(name: string, body: unknown): GridBuilderState {
   const g = (typeof body === 'object' && body !== null ? body : {}) as Partial<PresetGrid>;
   const levels = Array.isArray(g.levels) ? [...g.levels].sort((a, b) => a.rank - b.rank) : [];
+
+  // The builder's model is "rank = row order", so `toPreset` renumbers levels
+  // to 0..n-1 on save. Every criterion indexes the grid by rank (`rank*` params,
+  // resolved through `levelByRank`), so renumbering a grid whose stored ranks
+  // are not already 0..n-1 would silently point those params at the wrong
+  // level. Remap each rank-valued param through the same old-rank -> row-index
+  // mapping here; identity for an already-contiguous grid, so a round-trip
+  // stays structurally equal.
+  const rankRemap = new Map(levels.map((l, i) => [l.rank, i]));
+  const remapParam = (key: string, value: number | string): string =>
+    /^rank/i.test(key) && typeof value === 'number' && rankRemap.has(value)
+      ? String(rankRemap.get(value))
+      : String(value);
+
   return {
     gridId: typeof g.id === 'string' ? g.id : name,
     label: typeof g.label === 'string' ? g.label : '',
@@ -152,7 +166,7 @@ export function fromPreset(name: string, body: unknown): GridBuilderState {
               role: c.role,
               weight: String(c.weight),
               params: Object.fromEntries(
-                Object.entries(c.params ?? {}).map(([k, v]) => [k, String(v)]),
+                Object.entries(c.params ?? {}).map(([k, v]) => [k, remapParam(k, v)]),
               ),
             })),
           }))
