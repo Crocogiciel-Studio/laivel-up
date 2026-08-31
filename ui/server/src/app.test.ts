@@ -119,7 +119,7 @@ function build(): ReturnType<typeof createApp> {
     runEvaluation,
     validateArtifact,
     catalogue: [{ id: 'demo-criterion', needs: ['declared'] }],
-    siteUrl: 'http://127.0.0.1:5173',
+    siteUrls: ['http://127.0.0.1:5173', 'http://localhost:5173'],
   });
 }
 
