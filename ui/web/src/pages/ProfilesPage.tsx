@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { useOrg } from '../org/OrgProvider.js';
+import { useOrgScopedLoad } from '../org/useOrgScopedLoad.js';
 import { ApiError } from '../api/client.js';
 import { ProfileForm } from '../profile/ProfileForm.js';
 import { emptyForm, fromBody } from '../profile/form.js';
@@ -10,34 +10,26 @@ import type { ProfileSummary } from '../profile/profileApi.js';
 
 type Editing = { mode: 'list' } | { mode: 'new' } | { mode: 'edit'; id: string; initial: ProfileFormState };
 
-export function ProfilesPage(): ReactNode {
-  const { currentOrg } = useOrg();
-  const orgId = currentOrg?.id;
+const listForOrg = (orgId: string): Promise<ProfileSummary[]> => profileApi.listProfiles(orgId);
 
-  const [rows, setRows] = useState<ProfileSummary[]>([]);
+export function ProfilesPage(): ReactNode {
+  const { orgId, data: rows, error, setError, reload } = useOrgScopedLoad(listForOrg, []);
+
   const [editing, setEditing] = useState<Editing>({ mode: 'list' });
   const [seed, setSeed] = useState<ProfileFormState | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<readonly string[] | undefined>(undefined);
   const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    if (orgId === undefined) return;
-    setError(null);
-    try {
-      setRows(await profileApi.listProfiles(orgId));
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'failed to load profiles');
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   if (orgId === undefined) {
     return <section className="page"><p className="muted">No organisation selected.</p></section>;
   }
+
+  const closeForm = (): void => {
+    setSeed(undefined);
+    setError(null);
+    setIssues(undefined);
+    setEditing({ mode: 'list' });
+  };
 
   const save = (name: string, body: unknown): void => {
     setSaving(true);
@@ -49,7 +41,7 @@ export function ProfilesPage(): ReactNode {
         : profileApi.createProfile(orgId, name, body);
     op.then(() => {
       setEditing({ mode: 'list' });
-      return load();
+      return reload();
     })
       .catch((e: unknown) => {
         if (e instanceof ApiError) {
@@ -63,7 +55,10 @@ export function ProfilesPage(): ReactNode {
   };
 
   const remove = (id: string): void => {
-    profileApi.deleteProfile(id).then(load).catch(() => setError('delete failed'));
+    profileApi
+      .deleteProfile(id)
+      .then(reload)
+      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'delete failed'));
   };
 
   const cloneTemplate = (row: ProfileSummary): void => {
@@ -81,10 +76,7 @@ export function ProfilesPage(): ReactNode {
           error={error}
           issues={issues}
           onSave={save}
-          onCancel={() => {
-            setSeed(undefined);
-            setEditing({ mode: 'list' });
-          }}
+          onCancel={closeForm}
         />
       </section>
     );

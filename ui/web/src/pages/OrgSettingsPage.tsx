@@ -1,40 +1,39 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { useAuth } from '../auth/AuthProvider.js';
 import { useOrg } from '../org/OrgProvider.js';
+import { useOrgScopedLoad } from '../org/useOrgScopedLoad.js';
 import { ApiError } from '../api/client.js';
 import * as orgApi from '../org/orgApi.js';
 import type { Invite, Member, Role } from '../org/orgApi.js';
 
+interface Roster {
+  readonly members: readonly Member[];
+  readonly invites: readonly Invite[];
+}
+
+const EMPTY_ROSTER: Roster = { members: [], invites: [] };
+
+async function loadRoster(orgId: string): Promise<Roster> {
+  const [members, invites] = await Promise.all([
+    orgApi.listMembers(orgId),
+    orgApi.listInvites(orgId),
+  ]);
+  return { members, invites: invites.filter((i) => i.acceptedAt === null) };
+}
+
 export function OrgSettingsPage(): ReactNode {
   const { session } = useAuth();
   const { currentOrg } = useOrg();
-  const orgId = currentOrg?.id;
   const myId = session?.user.id;
 
-  const [members, setMembers] = useState<Member[]>([]);
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const { orgId, data: roster, error, setError, reload } = useOrgScopedLoad(loadRoster, EMPTY_ROSTER);
+  const { members, invites } = roster;
+
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('member');
 
   const iAmAdmin = members.find((m) => m.userId === myId)?.role === 'admin';
-
-  const load = useCallback(async () => {
-    if (orgId === undefined) return;
-    setError(null);
-    try {
-      const [m, i] = await Promise.all([orgApi.listMembers(orgId), orgApi.listInvites(orgId)]);
-      setMembers(m);
-      setInvites(i.filter((x) => x.acceptedAt === null));
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'failed to load');
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   if (orgId === undefined) {
     return <section className="page"><p className="muted">No organisation selected.</p></section>;
@@ -42,7 +41,7 @@ export function OrgSettingsPage(): ReactNode {
 
   const guard = (fn: () => Promise<unknown>) => () => {
     fn()
-      .then(load)
+      .then(reload)
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'request failed'));
   };
 

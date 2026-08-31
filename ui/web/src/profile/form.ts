@@ -59,8 +59,17 @@ function pruneEmpty(obj: Record<string, unknown>): Record<string, unknown> | und
   return entries.length === 0 ? undefined : Object.fromEntries(entries);
 }
 
-export function toBody(form: ProfileFormState): Record<string, unknown> {
+const SD_KEYS = ['sd_xs', 'sd_s', 'sd_m', 'sd_l', 'sd_xl'] as const;
+
+export interface ToBodyResult {
+  readonly body: Record<string, unknown>;
+  /** Client-side validation issues; non-empty means `body` should not be saved. */
+  readonly issues: readonly string[];
+}
+
+export function toBody(form: ProfileFormState): ToBodyResult {
   const body: Record<string, unknown> = {};
+  const issues: string[] = [];
 
   const subject: Record<string, unknown> = {};
   for (const f of SUBJECT_FIELDS) {
@@ -98,10 +107,15 @@ export function toBody(form: ProfileFormState): Record<string, unknown> {
         if (v !== undefined) g[f.key] = v;
       }
       if (group.key === 'pullRequests') {
-        const sd = ['sd_xs', 'sd_s', 'sd_m', 'sd_l', 'sd_xl'].map((k) => g[k]);
-        for (const k of ['sd_xs', 'sd_s', 'sd_m', 'sd_l', 'sd_xl']) delete g[k];
-        if (sd.every((x) => typeof x === 'number')) {
+        const sd = SD_KEYS.map((k) => g[k]);
+        for (const k of SD_KEYS) delete g[k];
+        const filled = sd.filter((x) => typeof x === 'number').length;
+        if (filled === SD_KEYS.length) {
           g.sizeDistribution = { xs: sd[0], s: sd[1], m: sd[2], l: sd[3], xl: sd[4] };
+        } else if (filled > 0) {
+          issues.push(
+            'Pull requests → size distribution: fill all five buckets (xs–xl), or none.',
+          );
         }
       }
       const pruned = pruneEmpty(g);
@@ -123,7 +137,7 @@ export function toBody(form: ProfileFormState): Record<string, unknown> {
     body[section.key] = vcs;
   }
 
-  return body;
+  return { body, issues };
 }
 
 // --- body -> form ----------------------------------------------------------------
@@ -160,15 +174,18 @@ export function fromBody(name: string, body: unknown): ProfileFormState {
     for (const group of section.groups ?? []) {
       const g = (s[group.key] ?? {}) as Record<string, unknown>;
       const sd = (g.sizeDistribution ?? {}) as Record<string, unknown>;
+      const bucketOf: Record<(typeof SD_KEYS)[number], unknown> = {
+        sd_xs: sd.xs,
+        sd_s: sd.s,
+        sd_m: sd.m,
+        sd_l: sd.l,
+        sd_xl: sd.xl,
+      };
       for (const f of group.fields) {
-        const map: Record<string, unknown> = {
-          sd_xs: sd.xs,
-          sd_s: sd.s,
-          sd_m: sd.m,
-          sd_l: sd.l,
-          sd_xl: sd.xl,
-        };
-        form.values[`${section.key}.${group.key}.${f.key}`] = toStr(map[f.key] ?? g[f.key]);
+        const bucket = (SD_KEYS as readonly string[]).includes(f.key)
+          ? bucketOf[f.key as (typeof SD_KEYS)[number]]
+          : undefined;
+        form.values[`${section.key}.${group.key}.${f.key}`] = toStr(bucket ?? g[f.key]);
       }
     }
     if (Array.isArray(s.rawPullRequests)) {
