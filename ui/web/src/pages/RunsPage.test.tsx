@@ -212,9 +212,12 @@ describe('RunsPage', () => {
     await waitFor(() => expect(screen.getByText('grid edited since this run')).toBeTruthy());
   });
 
-  it('shows an empty state with a batch prompt when there are no runs', async () => {
+  it('shows an empty state pointing at the single New run button when there are no runs', async () => {
     seed([]);
     render(<RunsPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Run a batch' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Nothing scored yet/)).toBeTruthy());
+    // the rail's "+ New run" is the only entry point — no redundant button in the pane
+    expect(screen.getAllByRole('button', { name: '+ New run' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Run a batch' })).toBeNull();
   });
 });
