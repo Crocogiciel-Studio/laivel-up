@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../auth/AuthProvider.js';
-import { api } from '../api/client.js';
+import { api, ApiError } from '../api/client.js';
 
 export interface Org {
   readonly id: string;
@@ -13,6 +13,8 @@ interface OrgState {
   /** undefined while loading. */
   readonly orgs: readonly Org[] | undefined;
   readonly currentOrg: Org | undefined;
+  /** Non-null when the last orgs request failed. */
+  readonly error: string | null;
   select(orgId: string): void;
   create(name: string): Promise<Org>;
   reload(): Promise<void>;
@@ -32,6 +34,7 @@ function readStored(): string | null {
 export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
   const { session } = useAuth();
   const [orgs, setOrgs] = useState<readonly Org[] | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(readStored());
 
   const reload = useCallback(async () => {
@@ -39,7 +42,13 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
       setOrgs(undefined);
       return;
     }
-    setOrgs(await api<Org[]>('/api/orgs'));
+    try {
+      setOrgs(await api<Org[]>('/api/orgs'));
+      setError(null);
+    } catch (e) {
+      setOrgs([]);
+      setError(e instanceof ApiError ? e.message : 'could not load organisations');
+    }
   }, [session]);
 
   useEffect(() => {
@@ -64,19 +73,25 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
     () => ({
       orgs,
       currentOrg,
+      error,
       select,
       reload,
       create: async (name) => {
-        const org = await api<Org>('/api/orgs', {
-          method: 'POST',
-          body: JSON.stringify({ name }),
-        });
-        await reload();
-        select(org.id);
-        return org;
+        try {
+          const org = await api<Org>('/api/orgs', {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+          });
+          await reload();
+          select(org.id);
+          return org;
+        } catch (e) {
+          setError(e instanceof ApiError ? e.message : 'could not create the organisation');
+          throw e;
+        }
       },
     }),
-    [orgs, currentOrg, select, reload],
+    [orgs, currentOrg, error, select, reload],
   );
 
   return <OrgContext value={value}>{children}</OrgContext>;

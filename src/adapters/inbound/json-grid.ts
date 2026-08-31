@@ -5,6 +5,7 @@ import type { Result } from '../../core/model/result.js';
 import { ok, err } from '../../core/model/result.js';
 import type { GridSource, SourceError } from '../../core/ports/io.js';
 import { sourceError } from '../../core/ports/io.js';
+import { zodIssues } from './zod-issues.js';
 
 const levelSchema = z.object({
   id: z.string().min(1),
@@ -50,17 +51,10 @@ const gridSchema = z
     }
   });
 
-function issuesOf(error: z.ZodError): readonly string[] {
-  return error.issues.map((issue) => {
-    const path = issue.path.join('.');
-    return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
-  });
-}
-
 export function parseGrid(input: unknown): Result<Grid, SourceError> {
   const parsed = gridSchema.safeParse(input);
   if (!parsed.success) {
-    return err(sourceError('grid preset is invalid', issuesOf(parsed.error)));
+    return err(sourceError('grid preset is invalid', zodIssues(parsed.error)));
   }
   const value = parsed.data;
   const grid: Grid = {

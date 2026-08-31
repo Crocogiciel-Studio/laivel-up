@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthProvider.js';
 
 export function LoginPage(): ReactNode {
   const { session, signIn } = useAuth();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
 
   if (session === undefined) {
     return <div className="centered muted">Checking session…</div>;
   }
   if (session !== null) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   return (

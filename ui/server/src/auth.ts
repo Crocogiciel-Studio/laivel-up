@@ -28,11 +28,11 @@ export function supabaseAuthenticator(config: Config): Authenticator {
   };
 }
 
-/** Pull a bearer token out of an Authorization header value. */
+/** Pull a bearer token out of an Authorization header value (scheme is case-insensitive, RFC 7235). */
 export function bearer(header: string | undefined): string | null {
   if (header === undefined) {
     return null;
   }
-  const match = /^Bearer (.+)$/.exec(header);
+  const match = /^Bearer +(.+)$/i.exec(header);
   return match?.[1] ?? null;
 }

@@ -19,6 +19,7 @@ import type { Result } from '../../core/model/result.js';
 import { ok, err } from '../../core/model/result.js';
 import type { SourceError } from '../../core/ports/io.js';
 import { sourceError } from '../../core/ports/io.js';
+import { zodIssues } from './zod-issues.js';
 
 /**
  * Inbound adapter for a profile authored in the studio: the domain `Profile`
@@ -156,13 +157,6 @@ const profileSchema = z.object({
   toolingContext: toolingContextSchema.optional(),
   workSession: workSessionSchema.optional(),
 });
-
-function issuesOf(error: z.ZodError): readonly string[] {
-  return error.issues.map((issue) => {
-    const path = issue.path.join('.');
-    return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
-  });
-}
 
 function declaredOf(v: z.infer<typeof declaredSchema>): DeclaredProfile {
   return {
@@ -306,7 +300,7 @@ function workSessionOf(
 export function parseProfile(input: unknown): Result<Profile, SourceError> {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {
-    return err(sourceError('profile is invalid', issuesOf(parsed.error)));
+    return err(sourceError('profile is invalid', zodIssues(parsed.error)));
   }
   const v = parsed.data;
 

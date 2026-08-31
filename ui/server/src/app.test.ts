@@ -43,6 +43,8 @@ const EMAILS: Record<string, string> = {
   [U2_ID]: 'u2@studio.test',
 };
 
+const TEMPLATE_ID = '00000000-0000-0000-0000-0000000000f0';
+
 /**
  * In-memory Db that mimics the org RLS: a member reads an org's rows, an admin
  * or the row's creator writes, any member runs. Membership grows through
@@ -60,6 +62,18 @@ function fakeDb(): Db {
   let seq = 0;
   const nextId = (): string => `00000000-0000-0000-0000-${String((seq += 1)).padStart(12, '0')}`;
   const now = (): string => new Date().toISOString();
+
+  // A seeded template: visible to everyone, writable by no one.
+  tables.grid.set(TEMPLATE_ID, {
+    id: TEMPLATE_ID,
+    org_id: null,
+    created_by: null,
+    name: 'AIDD reference',
+    body: { valid: true },
+    is_template: true,
+    created_at: now(),
+    updated_at: now(),
+  });
 
   return {
     forUser(user) {
@@ -160,7 +174,7 @@ function fakeDb(): Db {
         list: (kind, orgId) =>
           Promise.resolve(
             [...tables[kind].values()].filter(
-              (r) => visible(r) && (orgId === undefined || r.org_id === orgId),
+              (r) => visible(r) && (orgId === undefined || r.org_id === orgId || r.is_template),
             ),
           ),
         get: (kind, id) => {
@@ -322,13 +336,54 @@ describe('studio server', () => {
     expect(row.orgId).toBe(orgId);
     expect(row.createdBy).toBe(U1_ID);
 
-    const asMember = await app.inject({ method: 'GET', url: `/api/grids?orgId=${orgId}`, headers: U1 });
-    expect((asMember.json() as unknown[]).length).toBe(1);
+    // The org-scoped list carries the org's grid plus the global template.
+    const asMember = (await app.inject({
+      method: 'GET',
+      url: `/api/grids?orgId=${orgId}`,
+      headers: U1,
+    })).json() as { id: string; isTemplate: boolean }[];
+    expect(asMember.map((g) => g.id).sort()).toEqual([row.id, TEMPLATE_ID].sort());
 
-    const asOther = await app.inject({ method: 'GET', url: '/api/grids', headers: U2 });
-    expect(asOther.json()).toEqual([]);
+    // U2 is in no org: only the template.
+    const asOther = (await app.inject({ method: 'GET', url: '/api/grids', headers: U2 })).json() as {
+      id: string;
+    }[];
+    expect(asOther.map((g) => g.id)).toEqual([TEMPLATE_ID]);
     const otherGet = await app.inject({ method: 'GET', url: `/api/grids/${row.id}`, headers: U2 });
     expect(otherGet.statusCode).toBe(404);
+  });
+
+  it('distinguishes 404 (absent) from 403 (visible but read-only) on a write', async () => {
+    // A random id -> 404.
+    const gone = await app.inject({
+      method: 'DELETE',
+      url: '/api/grids/00000000-0000-0000-0000-0000000000ee',
+      headers: U1,
+    });
+    expect(gone.statusCode).toBe(404);
+
+    // The template is visible to everyone but writable by no one -> 403.
+    const tmpl = await app.inject({
+      method: 'PATCH',
+      url: `/api/grids/${TEMPLATE_ID}`,
+      headers: U1,
+      payload: { name: 'hijack' },
+    });
+    expect(tmpl.statusCode).toBe(403);
+  });
+
+  it('400s a non-uuid path parameter instead of 500', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/grids/not-a-uuid', headers: U1 });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('accepts a lower-case bearer scheme', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/orgs',
+      headers: { authorization: 'bearer u1-token' },
+    });
+    expect(res.statusCode).toBe(200);
   });
 
   it('403s a write to an org the caller is not in', async () => {
