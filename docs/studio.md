@@ -47,13 +47,19 @@ Supabase OAuth client-side, all data through the backend — carries #57's shell
 
 ## Data model
 
-Three tables — `grid`, `profile`, `run` — in the project's Postgres. See
+A grid, profile, or run belongs to an **organisation**, not a person. Every
+member of the org sees its configs; an **admin or the config's creator** can
+change them; **any member can run** an evaluation, and runs are kept as history.
+A new user gets a personal org automatically, so solo use just works.
+
+Tables: `org`, `org_member`, `grid`, `profile`, `run` — see
 [`supabase/README.md`](../supabase/README.md). A `run` stores a full copy of the
 grid and profile it used, so editing an original never rewrites history.
 
-Auth is Supabase Auth (OAuth). Ownership is enforced by Postgres row-level
-security keyed on the Supabase user id; the backend forwards the caller's JWT so
-the policies apply to every query.
+Auth is Supabase Auth (OAuth). Access is enforced by Postgres row-level security
+(`is_org_member` / `is_org_admin`); the backend forwards the caller's JWT so the
+policies apply to every query. Member management (invites, roles) is a later
+issue — for now an org has just its creator.
 
 ## Running
 

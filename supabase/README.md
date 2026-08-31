@@ -33,7 +33,8 @@ a broken policy or migration fails the build before it can reach Cloud.
   `edge_runtime`, `analytics` are off; OAuth blocks are defined but disabled.
   Cloud auth providers and redirect URLs are set in the dashboard.
 - `migrations/` — ordered schema changes. `20260830120000_studio_init.sql`
-  creates `grid`, `profile`, `run` and their RLS policies.
+  creates `grid`, `profile`, `run`; `20260831090000_orgs.sql` adds `org` /
+  `org_member` and re-scopes everything from a single owner to an org.
 - `seed.sql` — data for a fresh local DB. Templates land here in
   [#61](https://github.com/Crocogiciel-Studio/laivel-up/issues/61).
 - `tests/rls_smoke.sql` — proves one user cannot read or write another's rows,
@@ -44,11 +45,22 @@ a broken policy or migration fails the build before it can reach Cloud.
 
 ## Schema
 
-| Table | Holds | Ownership |
+| Table | Holds | Scope |
 | --- | --- | --- |
-| `grid` | a grid preset (`body` = the CLI's `presets/*.json` shape) | `owner_id`, or `NULL` for a seeded template |
+| `org` | an organisation | created via `create_org()`; a new user gets a personal one |
+| `org_member` | `(org_id, user_id, role)` — `admin` or `member` | admins manage the roster; you can leave |
+| `grid` | a grid preset (`body` = the CLI's `presets/*.json` shape) | `org_id` + `created_by`; `NULL` org for a seeded template |
 | `profile` | an inbound profile (`body` = the CLI's profile JSON) | same |
-| `run` | one evaluation + a full snapshot of the grid and profile it used | `owner_id`, always set |
+| `run` | one evaluation + a full snapshot of the grid and profile it used | `org_id` + `created_by`, always set |
 
-RLS is keyed on `auth.uid()`. The backend forwards the caller's JWT to Postgres,
-so these policies are the enforcement boundary — not application code.
+RLS, keyed on `auth.uid()` via `is_org_member()` / `is_org_admin()`:
+
+- **grid / profile** — members read; an **admin or the creator** writes; a plain
+  member cannot create one.
+- **run** — any member may create and read; runs are never updated; an admin or
+  the creator may delete.
+- **template** (`is_template`, no org) — readable by any signed-in user, writable
+  by none.
+
+The backend forwards the caller's JWT to Postgres, so these policies are the
+enforcement boundary — not application code.

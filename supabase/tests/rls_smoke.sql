@@ -1,26 +1,31 @@
--- RLS smoke test for the studio schema.
---
--- Run against a database that has the studio migration applied:
+-- RLS smoke test for the studio schema (org model).
 --
 --   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql
 --
--- or `pnpm db:test`, which points it at the local stack. Every check raises an
--- exception on failure, so a non-zero exit means a policy regressed. The whole
--- script runs in one transaction and rolls back -- it leaves no rows behind.
+-- or `pnpm db:test` / `pnpm db:test:bare`. Every check raises on failure, so a
+-- non-zero exit means a policy regressed. Runs in one transaction and rolls
+-- back -- it leaves nothing behind.
+--
+-- Model under test:
+--   * a new auth user gets a personal org (trigger)
+--   * the creator of an org is its first admin (trigger)
+--   * grid/profile: members read; admin or the creator writes; a plain member
+--     cannot create one
+--   * run: any member may create and read; nobody updates; admin or creator deletes
+--   * templates: world-readable, never writable
 
 begin;
 
--- Two authenticated users, created as the table owner (bypasses RLS).
+-- Three users. The on_auth_user_created trigger gives each a personal org.
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'alice@studio.test'),
-  ('22222222-2222-2222-2222-222222222222', 'bob@studio.test');
+  ('22222222-2222-2222-2222-222222222222', 'bob@studio.test'),
+  ('33333333-3333-3333-3333-333333333333', 'carol@studio.test');
 
--- A seeded template, ownerless.
+-- A seeded template (no org).
 insert into public.grid (name, body, is_template)
   values ('AIDD reference (test)', '{"id":"aidd"}'::jsonb, true);
 
--- Helper: become an authenticated user for the rest of the current statement
--- batch. Supabase's auth.uid() reads the 'sub' claim.
 create or replace function pg_temp.become(user_id uuid) returns void
 language plpgsql as $$
 begin
@@ -37,103 +42,112 @@ do $$
 declare
   alice uuid := '11111111-1111-1111-1111-111111111111';
   bob   uuid := '22222222-2222-2222-2222-222222222222';
-  alice_grid uuid;
-  alice_run  uuid;
-  visible int;
+  carol uuid := '33333333-3333-3333-3333-333333333333';
+  team uuid;
+  team_grid uuid;
+  team_run uuid;
+  n int;
 begin
-  -- Alice writes a grid of her own.
+  -- Alice creates a shared org; create_org makes her its admin in the same call.
   perform pg_temp.become(alice);
-  insert into public.grid (owner_id, name, body)
-    values (alice, 'alice grid', '{"id":"g1"}'::jsonb)
-    returning id into alice_grid;
+  select id into team from public.create_org('Team');
 
-  -- She sees her grid plus the template: 2 rows.
-  select count(*) into visible from public.grid;
-  if visible <> 2 then
-    raise exception 'alice should see her grid + 1 template, saw %', visible;
-  end if;
+  select count(*) into n from public.org_member where org_id = team and user_id = alice and role = 'admin';
+  if n <> 1 then raise exception 'org creator should be admin, got %', n; end if;
 
-  -- Bob cannot see Alice's grid -- only the template.
-  perform pg_temp.become(bob);
-  select count(*) into visible from public.grid;
-  if visible <> 1 then
-    raise exception 'bob should see only the template, saw %', visible;
-  end if;
+  -- Alice sees her personal org + Team; Carol only her personal org.
+  select count(*) into n from public.org;
+  if n <> 2 then raise exception 'alice should see 2 orgs, saw %', n; end if;
 
-  select count(*) into visible from public.grid where id = alice_grid;
-  if visible <> 0 then
-    raise exception 'bob must not see alice grid %', alice_grid;
-  end if;
+  perform pg_temp.become(carol);
+  select count(*) into n from public.org;
+  if n <> 1 then raise exception 'carol should see 1 org, saw %', n; end if;
 
-  -- Bob cannot update Alice's grid (0 rows match the USING clause).
-  update public.grid set name = 'hijacked' where id = alice_grid;
-  get diagnostics visible = row_count;
-  if visible <> 0 then
-    raise exception 'bob updated % of alice grid rows, expected 0', visible;
-  end if;
+  -- Alice adds Bob as a plain member.
+  perform pg_temp.become(alice);
+  insert into public.org_member (org_id, user_id, role) values (team, bob, 'member');
 
-  -- Bob cannot write a template (no INSERT policy covers is_template rows).
+  -- created_by cannot be forged on insert.
   begin
-    insert into public.grid (name, body, is_template)
-      values ('bob template', '{}'::jsonb, true);
-    raise exception 'bob was allowed to insert a template';
-  exception when insufficient_privilege or check_violation then
-    null; -- expected: RLS check rejects it
+    insert into public.grid (org_id, name, body, created_by)
+      values (team, 'forged', '{}'::jsonb, bob);
+    raise exception 'alice forged created_by';
+  exception when insufficient_privilege then null;
   end;
 
-  -- Bob cannot forge ownership on insert (WITH CHECK ties owner_id to auth.uid()).
+  -- Admin creates a grid in Team.
+  insert into public.grid (org_id, name, body, created_by)
+    values (team, 'team grid', '{"id":"g1"}'::jsonb, alice)
+    returning id into team_grid;
+
+  -- Bob (member) reads it...
+  perform pg_temp.become(bob);
+  select count(*) into n from public.grid where id = team_grid;
+  if n <> 1 then raise exception 'member should read the team grid, saw %', n; end if;
+
+  -- ...but cannot create, update, or delete a grid.
   begin
-    insert into public.grid (owner_id, name, body)
-      values (alice, 'forged', '{}'::jsonb);
-    raise exception 'bob inserted a grid owned by alice';
-  exception when insufficient_privilege then
-    null; -- expected
+    insert into public.grid (org_id, name, body, created_by)
+      values (team, 'bob grid', '{}'::jsonb, bob);
+    raise exception 'member was allowed to create a grid';
+  exception when insufficient_privilege then null;
   end;
 
-  -- Bob cannot delete Alice's grid (0 rows match the USING clause).
-  delete from public.grid where id = alice_grid;
-  get diagnostics visible = row_count;
-  if visible <> 0 then
-    raise exception 'bob deleted % of alice grid rows, expected 0', visible;
-  end if;
+  update public.grid set name = 'hijacked' where id = team_grid;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member updated % team grid rows', n; end if;
 
-  -- profile: same owner isolation as grid.
-  perform pg_temp.become(alice);
-  insert into public.profile (owner_id, name, body)
-    values (alice, 'alice profile', '{"subject":{"id":"p1"}}'::jsonb);
+  delete from public.grid where id = team_grid;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member deleted % team grid rows', n; end if;
+
+  -- Bob (member) CAN run, and reads his run.
+  insert into public.run (org_id, subject_id, grid_snapshot, profile_snapshot, evaluation, created_by)
+    values (team, 'dev-x', '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, bob)
+    returning id into team_run;
+  select count(*) into n from public.run where id = team_run;
+  if n <> 1 then raise exception 'member should see their run, saw %', n; end if;
+
+  -- Runs are never updated.
+  update public.run set subject_id = 'x' where id = team_run;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'run was updatable (% rows)', n; end if;
+
+  -- Carol (not a member) sees nothing of Team, and cannot write to it.
+  perform pg_temp.become(carol);
+  select count(*) into n from public.grid where id = team_grid;
+  if n <> 0 then raise exception 'non-member saw a team grid'; end if;
+  select count(*) into n from public.run where id = team_run;
+  if n <> 0 then raise exception 'non-member saw a team run'; end if;
+
+  begin
+    insert into public.run (org_id, subject_id, grid_snapshot, profile_snapshot, evaluation, created_by)
+      values (team, 'dev-y', '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, carol);
+    raise exception 'non-member ran against the team org';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Bob cannot add Carol to Team (not an admin).
   perform pg_temp.become(bob);
-  select count(*) into visible from public.profile;
-  if visible <> 0 then
-    raise exception 'bob should see none of alice profiles, saw %', visible;
-  end if;
+  begin
+    insert into public.org_member (org_id, user_id, role) values (team, carol, 'member');
+    raise exception 'member added another member';
+  exception when insufficient_privilege then null;
+  end;
 
-  -- run: owner-only, no template concept -- bob sees nothing.
-  perform pg_temp.become(alice);
-  insert into public.run
-    (owner_id, subject_id, grid_snapshot, profile_snapshot, evaluation)
-    values (alice, 'dev-x', '{}'::jsonb, '{}'::jsonb, '{}'::jsonb)
-    returning id into alice_run;
-  select count(*) into visible from public.run;
-  if visible <> 1 then
-    raise exception 'alice should see her run, saw %', visible;
-  end if;
+  -- Everyone sees the template; nobody writes one.
+  select count(*) into n from public.grid where is_template;
+  if n <> 1 then raise exception 'bob should see the template, saw %', n; end if;
+  begin
+    insert into public.grid (name, body, is_template) values ('bob tmpl', '{}'::jsonb, true);
+    raise exception 'member inserted a template';
+  exception when insufficient_privilege or check_violation then null;
+  end;
 
-  perform pg_temp.become(bob);
-  select count(*) into visible from public.run;
-  if visible <> 0 then
-    raise exception 'bob should see none of alice runs, saw %', visible;
-  end if;
-
-  select count(*) into visible from public.run where id = alice_run;
-  if visible <> 0 then
-    raise exception 'bob must not see alice run %', alice_run;
-  end if;
-
-  update public.run set subject_id = 'hijacked' where id = alice_run;
-  get diagnostics visible = row_count;
-  if visible <> 0 then
-    raise exception 'bob updated % of alice run rows, expected 0', visible;
-  end if;
+  -- Bob leaves Team and loses access to its grid.
+  delete from public.org_member where org_id = team and user_id = bob;
+  select count(*) into n from public.grid where id = team_grid;
+  if n <> 0 then raise exception 'ex-member still sees the team grid'; end if;
 
   raise notice 'rls_smoke: all checks passed';
 end;

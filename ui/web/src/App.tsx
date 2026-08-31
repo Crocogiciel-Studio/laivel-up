@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthProvider.js';
 import { RequireAuth } from './auth/RequireAuth.js';
 import { LoginPage } from './auth/LoginPage.js';
+import { OrgProvider } from './org/OrgProvider.js';
 import { Shell } from './layout/Shell.js';
 import { Placeholder } from './pages/Placeholder.js';
 
@@ -15,7 +16,9 @@ export function App(): ReactNode {
           <Route
             element={
               <RequireAuth>
-                <Shell />
+                <OrgProvider>
+                  <Shell />
+                </OrgProvider>
               </RequireAuth>
             }
           >
