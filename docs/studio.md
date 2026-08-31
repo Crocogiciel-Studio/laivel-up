@@ -44,7 +44,8 @@ The web app under `ui/web` — React + Vite + React Router, Supabase OAuth
 client-side, all data through the backend — carries the shell (`/login`, an org
 switcher, `/org` settings), the profile form (`/profiles`), the grid builder
 (`/grids`), and the run screen (`/runs`): pick one grid and **several
-profiles** and score them in one batch (each is an independent `POST /api/runs`).
+profiles** and score them in one batch — each is an independent
+`POST /api/runs` and takes its subject identity from the profile body.
 The screen is a developer rail plus a focused fiche — the verdict placed on the
 grid's level ladder, a per-axis breakdown with the criterion readings behind a
 disclosure, the progression plan, and an over-time strip when a developer has

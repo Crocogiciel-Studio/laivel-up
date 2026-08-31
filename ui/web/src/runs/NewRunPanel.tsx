@@ -60,7 +60,7 @@ export function NewRunPanel({ grids, profiles, running, progress, onRun, onClose
       <fieldset className="profile-pick" disabled={running}>
         <legend>
           Profiles
-          <button type="button" className="link" onClick={toggleAll}>
+          <button type="button" className="link" onClick={toggleAll} disabled={running}>
             {allPicked ? 'clear' : 'select all'}
           </button>
         </legend>
