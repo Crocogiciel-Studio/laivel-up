@@ -22,6 +22,13 @@ that changes what the function receives, so the deployed check is at
 for the full route table); the `/api/health` alias is exempt from the
 bearer-token hook the same way `/health` is.
 
+The SPA-fallback `rewrites` entry in [`vercel.json`](../vercel.json) must
+exclude `/api/*` explicitly (`"/((?!api/).*)"`, not the bare `"/(.*)"` a
+plain Vite/React SPA config would use elsewhere) — with a custom
+`buildCommand`/`outputDirectory` pair, a request to `/api/health` was
+observed being served `index.html` instead of reaching the function, so
+don't rely on "functions win over rewrites" here.
+
 ## Project settings
 
 - **Root Directory**: the repo root (default) — do **not** point it at
