@@ -26,7 +26,7 @@ nothing → prompts only → project memory → + behavior artifacts → + auto-
 Each reads an *independent* signal and only pulls Harness confidence down
 when it disagrees with what `tooling-context-depth` elected.
 
-**`behavior-artifact-density`** — re-derives the top of the ladder from the
+**`behavior-artifact-density`** — `needs: toolingContext`. Re-derives the top of the ladder from the
 raw *density* of behavior artifacts (`rulesCount + agentsCount + hooksCount +
 skillsCount`), independent of the presence check above.
 
@@ -35,7 +35,7 @@ skillsCount`), independent of the presence check above.
 | `densityStrong` | `4` |
 | `rankNothing` / `rankPrompts` / `rankMemory` / `rankBehavior` | `0`/`1`/`2`/`4` |
 
-**`memory-maintenance`** — checks the memory is *kept*, not just written
+**`memory-maintenance`** — `needs: toolingContext`. Checks the memory is *kept*, not just written
 once: present with a recorded last-update date corroborates; present with no
 update history reads one tier below.
 
@@ -43,7 +43,7 @@ update history reads one tier below.
 | --- | --- |
 | `rankNone` / `rankPrompts` / `rankMemory` | `0` / `1` / `2` |
 
-**`test-enforcement`** — `prsWithTestsRatio` and `coverageDelta` together: a
+**`test-enforcement`** — `needs: vcsActivity`. `prsWithTestsRatio` and `coverageDelta` together: a
 high ratio with non-negative coverage delta corroborates a high harness; a
 low ratio or a coverage drop contradicts it.
 
@@ -53,7 +53,7 @@ low ratio or a coverage drop contradicts it.
 | `coverageDrop` | `-0.02` |
 | `rankPrompts` / `rankMemory` / `rankBehavior` | `1` / `2` / `4` |
 
-**`assistant-integration`** — four independent +1 signals (editor
+**`assistant-integration`** — `needs: toolingContext`. Four independent +1 signals (editor
 integration, ≥2 declared tools, weekly tokens, weekly sessions); score ≥ 3
 corroborates, score 0 contradicts.
 
@@ -65,7 +65,7 @@ corroborates, score 0 contradicts.
 
 ## Cap criteria (only ever pull the level down)
 
-**`loop-convergence`** — `tooling-context-depth` credits the top tier the
+**`loop-convergence`** — `needs: toolingContext, vcsActivity`. `tooling-context-depth` credits the top tier the
 moment a retry loop is *claimed*; this checks it actually converges (CI
 doesn't take forever to go green). No loop claimed → no cap, not assessed.
 
@@ -75,7 +75,7 @@ doesn't take forever to go green). No loop claimed → no cap, not assessed.
 | `failHigh` | `0.3` |
 | `rankCapNonConverging` | `4` |
 
-**`commit-discipline`** — the AI-co-authored commit ratio. A harness barely
+**`commit-discipline`** — `needs: vcsActivity`. The AI-co-authored commit ratio. A harness barely
 touching the actual commits caps the axis regardless of scaffolding.
 
 | `params` | Default |
@@ -83,7 +83,7 @@ touching the actual commits caps the axis regardless of scaffolding.
 | `aiFloorHard` / `aiFloorSoft` | `0.15` / `0.35` |
 | `rankCapHard` / `rankCapSoft` | `1` / `2` |
 
-**`code-quality-floor`** — duplication, code-smell density, or cognitive
+**`code-quality-floor`** — `needs: staticAnalysis`. Duplication, code-smell density, or cognitive
 complexity beyond threshold caps the axis. "Quality is a prerequisite" — a
 shiny harness with a dirty result is not at level.
 
@@ -94,7 +94,7 @@ shiny harness with a dirty result is not at level.
 | `complexityHigh` | `0.05` (cognitive complexity / LoC) |
 | `rankCapPoor` | `2` |
 
-**`bugs-floor`** — Sonar bug count, normalized to size. The sibling of
+**`bugs-floor`** — `needs: staticAnalysis`. Sonar bug count, normalized to size. The sibling of
 `code-quality-floor`.
 
 | `params` | Default |

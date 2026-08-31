@@ -26,7 +26,7 @@ The offline CLI and the single-file viewer are unaffected.
 ```mermaid
 flowchart LR
   web["web (SPA, #57)"] --> server["server (Node)"] --> engine["packages/core engine"]
-  server --> db[("Supabase Cloud\nPostgres + Auth")]
+  server --> db[("Supabase Cloud<br/>Postgres + Auth")]
 ```
 
 ## Pieces

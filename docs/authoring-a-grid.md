@@ -1,15 +1,13 @@
 # Authoring a grid
 
-A grid is a JSON preset. It declares the levels, the axes, which criteria
-feed each axis and how heavily, and every threshold — the engine hardcodes
-none of it. The AIDD reference grid
-([`packages/core/presets/aidd.json`](../packages/core/presets/aidd.json)) is
-one preset; a game progression system or an internal review rubric would be
-another, with zero code change.
+A grid is a JSON preset: levels, axes, which criteria feed each axis and how
+heavily, every threshold. The engine hardcodes none of it. The AIDD
+reference grid ([`packages/core/presets/aidd.json`](../packages/core/presets/aidd.json))
+is one preset among others.
 
 Build one by hand, or in the studio's drag-and-drop builder (`/grids`) — same
-shape either way; the builder validates through this exact schema before
-saving.
+shape either way; the studio backend rejects a save that doesn't satisfy this
+exact schema, whichever produced it.
 
 ## Shape
 
@@ -56,43 +54,32 @@ saving.
 | --- | --- |
 | `criterionId` | one of the [built-in criteria](criteria/README.md) |
 | `weight` | its vote weight, `role: "level"` only — see below |
-| `role` | `level` \| `confidence` \| `cap` — see [Concepts](concepts.md#how-a-verdict-is-built) |
+| `role` | `level` \| `confidence` \| `cap` — what each does to the vote is in [Concepts](concepts.md#how-a-verdict-is-built); only `level` uses `weight` |
 | `params` | calibration overrides for that criterion, merged over its in-code defaults |
-
-**`role` decides how a reading counts, not just how it is labelled:**
-
-- **`level`** — joins the confidence-weighted vote for the axis's winning
-  level. `weight` matters here: a `weight: 2` reading counts twice as much
-  mass as a `weight: 1` one.
-- **`confidence`** — never joins the vote. It only pulls the axis's
-  confidence *down* when it disagrees with whatever the `level` criteria
-  elected. `weight` is accepted but has no effect on a `confidence` entry.
-- **`cap`** — never joins the vote either. It can only pull the elected
-  level *down*, never raise or leave it — think of it as a ceiling, not a
-  vote.
 
 ## Calibration (`params`)
 
-Every threshold, band boundary, and rank mapping a criterion needs is a
-`params` key — never hardcoded in the evaluator. Each criterion ships an
-in-code default for every key it reads (`GET /api/catalogue` returns them, so
-the studio builder can pre-fill a card), and a grid's `params` only need to
-override the ones it wants to change.
+Every threshold and band boundary a criterion needs is a `params` key —
+never hardcoded. Each criterion ships an in-code default for every key
+(`GET /api/catalogue` returns them, so the builder pre-fills a card); a
+grid's `params` only overrides what it wants to change.
 
-Two conventions worth knowing before tuning one:
+Two conventions to know before tuning one:
 
-- **Rank params name the *grid cell* they resolve to**, not a raw number —
-  e.g. `rankM` is "whatever rank the grid calls its M-tier cell", so the same
+- **A rank param names the grid cell it resolves to**, not a raw number —
+  `rankM` means "whatever rank this grid calls its M-tier", so one
   criterion works unmodified across grids with different level counts.
-- **A band's rank is the *top* of the cell it lands in.** A criterion that
-  only ever reads a coarse band (e.g. Intervention's "after most / after
-  some / at key stages") maps its highest calibrated band to the top level
-  its evidence can support — see each criterion's page in the
-  [criteria reference](criteria/README.md) for which bands are in scope.
+- **A band's rank is the top of the cell it lands in.** A criterion reading
+  a coarse band (e.g. Intervention's "after most / some / key stages") maps
+  its highest calibrated band to the top level its evidence supports — see
+  each page in the [criteria reference](criteria/README.md) for which bands
+  are in scope.
 
 ## Validation
 
-`parseGrid()` (the same function the CLI, the studio backend, and the grid
-builder all call) rejects a preset whose level ranks or ids collide, whose
-axis ids collide, or whose `evidenceFloor` sits outside `0`–`1` — with the
-exact issue named, never a silent coercion.
+`parseGrid()` — the same function the CLI and the studio backend both call
+— rejects a preset whose level ranks or ids collide, whose axis ids
+collide, or whose `evidenceFloor` sits outside `0`–`1`, with the exact issue
+named, never a silent coercion. The builder runs its own checks
+client-side (same rules, faster feedback) and its output is proven, in
+tests, to still satisfy this schema.
