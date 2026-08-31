@@ -438,4 +438,153 @@ main {
   overflow: auto;
   max-height: 320px;
   font-size: 12px;
+/* --- runs (#60) ----------------------------------------------------------- */
+.run-new,
+.run-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 0.75rem 0;
+}
+.run-filter {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+.run-list td {
+  vertical-align: top;
+}
+.run-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.run-stale {
+  font-size: 12px;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.run-stale.changed {
+  color: #e0b25a;
+  border-color: #6b5326;
+}
+.run-compare-wrap {
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.run-compare {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.run-compare th,
+.run-compare td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.6rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.run-compare-overall td {
+  font-weight: 600;
+}
+
+/* --- evaluation view ---------------------------------------------------- */
+.eval {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 1rem;
+}
+.eval-verdict {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+.eval-level {
+  font-weight: 600;
+}
+.eval-level.big {
+  font-size: 1.15rem;
+  margin-right: 0.5rem;
+}
+.eval-note {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+}
+.eval-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+.eval-scale-step {
+  font-size: 12px;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.eval-scale-step.here {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.eval-meter {
+  display: inline-block;
+  width: 90px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  vertical-align: middle;
+  margin: 0 0.4rem;
+  overflow: hidden;
+}
+.eval-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.eval-axis {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+}
+.eval-axis.binding {
+  border-color: #6b5326;
+}
+.eval-axis header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.eval-axis header h4 {
+  margin: 0;
+}
+.eval-tag {
+  font-size: 12px;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #6b5326;
+  color: #e0b25a;
+}
+.eval-readings-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+.eval-readings {
+  border-collapse: collapse;
+  font-size: 12.5px;
+  width: 100%;
+}
+.eval-readings th,
+.eval-readings td {
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+.eval-progression ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
 }

@@ -12,7 +12,8 @@
     "./view-model": "./src/view-model.ts",
     "./messages": "./src/messages.ts",
     "./grid": "./src/grid.ts",
-    "./i18n": "./src/i18n.ts"
+    "./i18n": "./src/i18n.ts",
+    "./evaluation": "./src/evaluation.ts"
   },
   "scripts": {
     "dev": "vite",
