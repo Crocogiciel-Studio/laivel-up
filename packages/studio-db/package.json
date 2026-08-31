@@ -19,6 +19,7 @@
     "templates:check": "node scripts/build-template-seed.mjs --check"
   },
   "devDependencies": {
-    "supabase": "2.2.1"
+    "supabase": "2.2.1",
+    "laivel-up": "workspace:*"
   }
 }

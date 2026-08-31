@@ -4,7 +4,7 @@
  * viewer needs only an evaluation.json as input; an evaluation produced against
  * a different grid falls back to raw ids (see `resolveGrid`).
  */
-import aiddPreset from '../../core/presets/aidd.json';
+import aiddPreset from 'laivel-up/presets/aidd.json';
 
 export interface GridLevel {
   readonly id: string;

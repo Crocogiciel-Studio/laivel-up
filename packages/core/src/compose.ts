@@ -13,6 +13,7 @@ import { builtInEvaluators } from './criteria/index.js';
 
 export { parseGrid } from './adapters/inbound/json-grid.js';
 export { parseProfile } from './adapters/inbound/domain-profile.js';
+export { readProfileFromDirectory } from './adapters/inbound/json-profile.js';
 export { zodIssues } from './adapters/inbound/zod-issues.js';
 export { renderEvaluationJson } from './adapters/outbound/json-evaluation.js';
 export { builtInEvaluators } from './criteria/index.js';

@@ -6,25 +6,30 @@
 //   pnpm db:seed:templates        # regenerate after editing the sources
 //   pnpm templates:check          # fail if the committed .sql is stale
 //
-// Sources: packages/core's presets/aidd.json and test/fixtures/profiles/*. The
-// generated file is idempotent (ON CONFLICT (id) DO UPDATE), so re-applying it
-// -- a local `db reset`, or a manual re-run against Cloud -- restates the rows
-// without duplicating. A plain `supabase db push` only applies a version once,
-// so a *content* change to these templates that must reach an already-migrated
-// DB needs a new migration (or the manual re-apply above).
+// Sources: the `laivel-up` package's presets/aidd.json and
+// test/fixtures/profiles/*. The generated file is idempotent (ON CONFLICT (id)
+// DO UPDATE), so re-applying it -- a local `db reset`, or a manual re-run
+// against Cloud -- restates the rows without duplicating. A plain
+// `supabase db push` only applies a version once, so a *content* change to
+// these templates that must reach an already-migrated DB needs a new
+// migration (or the manual re-apply above).
 //
-// Needs packages/core built (`pnpm -C packages/core build`); it reads the
-// engine from core's dist to validate every body before emitting the SQL.
+// Needs `laivel-up` built (`pnpm -C packages/core build`); it imports the
+// engine through `laivel-up/compose` to validate every body before emitting
+// the SQL. `laivel-up`'s own location is found through Node's module
+// resolution (via its `package.json` export), not a relative path counted by
+// hand -- so this keeps working no matter where studio-db sits in the
+// workspace.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { readProfileFromDirectory } from '../../core/dist/adapters/inbound/json-profile.js';
-import { parseGrid, parseProfile } from '../../core/dist/compose.js';
+import { readProfileFromDirectory, parseGrid, parseProfile } from 'laivel-up/compose';
+import gridBody from 'laivel-up/presets/aidd.json' with { type: 'json' };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
-const CORE = resolve(ROOT, '../core');
+const CORE = dirname(fileURLToPath(import.meta.resolve('laivel-up/package.json')));
 const OUT = resolve(ROOT, 'supabase/migrations/20260831170000_seed_templates.sql');
 
 // Fixed ids: idempotent upsert, and a stable target for "clone from template".
@@ -40,7 +45,6 @@ const quote = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const jsonLiteral = (value) => quote(JSON.stringify(value));
 
 function buildSeedSql() {
-  const gridBody = JSON.parse(readFileSync(resolve(CORE, 'presets/aidd.json'), 'utf8'));
   const gridCheck = parseGrid(gridBody);
   if (!gridCheck.ok) throw new Error(`presets/aidd.json does not parse: ${gridCheck.error.message}`);
 
