@@ -1,5 +1,7 @@
 # Architecture
 
+Part of the [documentation corpus](docs/README.md).
+
 A pnpm monorepo. One product — the **evaluation engine** — and a **studio**
 delivery layer around it. The engine knows nothing about the studio; the studio
 depends on the engine one way.

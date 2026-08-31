@@ -1,7 +1,8 @@
 # laivel-up UI
 
 Static viewer for a laivel-up **evaluation** — the JSON that
-`node dist/cli/main.js --profile <dir>` prints. Drop the file in, read the result.
+`node packages/core/dist/cli/main.js --profile <dir>` prints. Drop the file
+in, read the result. Part of the [documentation corpus](../../docs/README.md).
 
 > **Status.** Renders the global verdict, per-axis confidence and readings, and
 > the progression plan, with the raw JSON behind a toggle. Level and axis labels
@@ -16,13 +17,14 @@ Static viewer for a laivel-up **evaluation** — the JSON that
 The core is the evaluator. This viewer is a satellite: it depends on the core's
 output shape, never the other way round. It is a `pnpm` workspace package with
 its **own** Vite / Vitest toolchain, and `dependency-cruiser` forbids any
-`src/ -> ui/` import — so the engine build cannot be destabilised from here.
+`src/ -> packages/viewer/` import — so the engine build cannot be destabilised
+from here.
 
 ## One command
 
 ```bash
 pnpm install     # from the repo root
-pnpm viz         # evaluates every profile in test/fixtures/profiles/
+pnpm viz         # evaluates every profile in packages/core/test/fixtures/profiles/
 pnpm viz arthur  # just that fixture (bare name or a path)
 pnpm viz -p <dir> -g <preset.json>
 ```
@@ -35,7 +37,7 @@ viewer shows a tab per profile (with its level) — click, or `←` / `→`.
 ## Develop
 
 ```bash
-pnpm -C ui run dev      # viewer alone, http://localhost:5173 (drop a file in)
+pnpm -C packages/viewer run dev      # viewer alone, http://localhost:5173 (drop a file in)
 ```
 
 The viewer auto-loads, in order: `?src=<url>`, a `pnpm viz` catalogue
@@ -45,7 +47,7 @@ The viewer auto-loads, in order: `?src=<url>`, a `pnpm viz` catalogue
 ## Build
 
 ```bash
-pnpm -C ui run build    # -> ui/dist/index.html, a single self-contained file
+pnpm -C packages/viewer run build    # -> packages/viewer/dist/index.html, a single self-contained file
 ```
 
 Everything is inlined (no CDN, no network at runtime): the built `index.html`
@@ -55,14 +57,14 @@ constraint the judges run under.
 ## Test
 
 ```bash
-pnpm -C ui test         # parseEvaluation + i18n resolver
+pnpm -C packages/viewer test         # parseEvaluation + i18n resolver
 ```
 
 ## Docker
 
 ```bash
-docker build -f ui/Dockerfile -t laivel-up-ui .   # context is the repo root
-docker run --rm -p 8080:80 laivel-up-ui
+docker build -f packages/viewer/Dockerfile -t laivel-up-viewer .   # context is the repo root
+docker run --rm -p 8080:80 laivel-up-viewer
 # open http://localhost:8080
 ```
 
