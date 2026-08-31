@@ -2,6 +2,9 @@
 
 Part of the [documentation corpus](README.md).
 
+**Live demo**: [laivel-up-crocogiciel.vercel.app](https://laivel-up-crocogiciel.vercel.app/)
+— sign in with GitHub or Google, no local setup needed.
+
 A web app around the evaluation engine. A Lead Tech signs in, builds grids with a
 drag-and-drop builder, fills profiles through a form, runs evaluations, and keeps
 the history per developer.
