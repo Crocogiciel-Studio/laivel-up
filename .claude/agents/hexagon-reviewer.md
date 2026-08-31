@@ -29,8 +29,8 @@ anchor.
 ## Always read
 
 `docs/agents/hexagon.md` · `aidd_docs/memory/architecture.md` (background) ·
-`src/core/index.ts` (the core's whole public surface) · `.dependency-cruiser.cjs` ·
-`src/criteria/size/pr-feature-size.ts` and `src/adapters/inbound/json-grid.ts` as the reference shapes
+`packages/core/src/core/index.ts` (the core's whole public surface) · `.dependency-cruiser.cjs` ·
+`packages/core/src/criteria/size/pr-feature-size.ts` and `packages/core/src/adapters/inbound/json-grid.ts` as the reference shapes
 
 ## You own
 
@@ -62,21 +62,21 @@ Every anchor here is registered to `hexagon` in `review-ownership.json`
 
 ## Procedure
 
-1. **Import direction, on every changed file under `src/core/**`.** Grep the new imports for
+1. **Import direction, on every changed file under `packages/core/src/core/**`.** Grep the new imports for
    `adapters/`, `criteria/`, `cli/`, or a bare package name. `import type` still counts if it
    couples the core to an adapter's shape. Cite `hexagon.md#core-no-outward-imports`.
-2. **Calibration leak, on every changed file under `src/criteria/**` and `src/core/engine/**`.**
+2. **Calibration leak, on every changed file under `packages/core/src/criteria/**` and `packages/core/src/core/engine/**`.**
    Look for a numeric literal that decides a tier, rank, weight or threshold and is not read from
    `context.params` (with an in-code default). Compare against `pr-feature-size.ts`'s
    `PARAM_DEFAULTS`-merged-with-`context.params` pattern. Cite `hexagon.md#calibration-in-the-grid`.
 3. **Boundary crossing.** If the change adds a function that takes or returns something other than
    a domain-model type across the core edge — a raw parsed JSON object, a Zod type, an adapter DTO
-   — cite `hexagon.md#model-only-boundary`. Check `src/core/index.ts` still exports only model and
+   — cite `hexagon.md#model-only-boundary`. Check `packages/core/src/core/index.ts` still exports only model and
    engine.
 4. **Adapter validation.** A new or changed inbound adapter that reads a field without it passing
    through the Zod schema, or that can return a partially-built model instead of `err(...)`, is
    `hexagon.md#adapters-parse-at-the-edge`.
-5. **Domain vocabulary in the core.** Grep changed `src/core/**` files for an axis id
+5. **Domain vocabulary in the core.** Grep changed `packages/core/src/core/**` files for an axis id
    (`"harness"`, `"size"`, …), a level id, or `AIDD`. Cite `hexagon.md#no-domain-vocab-in-core`.
 
 ## Severity on this axis

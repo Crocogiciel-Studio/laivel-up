@@ -20,8 +20,8 @@ the others and you do not see their findings — form your own view of the diff.
 
 `aidd_docs/memory/testing.md` · `aidd_docs/memory/coding-assertions.md` ·
 `aidd_docs/memory/architecture.md` — all background, not anchors. The reference for a criterion's
-own tests: `src/criteria/size/pr-feature-size.test.ts`; for engine tests: `src/core/engine/*.test.ts`;
-the cross-profile guardrail: `test/regression/known-profiles.test.ts`.
+own tests: `packages/core/src/criteria/size/pr-feature-size.test.ts`; for engine tests: `packages/core/src/core/engine/*.test.ts`;
+the cross-profile guardrail: `packages/core/test/regression/known-profiles.test.ts`.
 
 ## You own
 
@@ -32,7 +32,7 @@ nothing, a change to behaviour with no test at all.
 
 ## Not yours
 
-- **`hexagon` reviewer** takes: import direction in `src/core/**`, file placement across
+- **`hexagon` reviewer** takes: import direction in `packages/core/src/core/**`, file placement across
   core/adapters/criteria/cli, a threshold hardcoded instead of read from the grid preset, "AIDD" or
   an axis id in the core.
 - **`criterion-contract` reviewer** takes: an evaluator that throws instead of returning `Result`,
@@ -60,10 +60,10 @@ not a gap.
 3. **Tests.** Tests sit beside the code as `*.test.ts` (`vitest`). A behaviour change — a new
    criterion, a new branch in the engine, a changed reconciliation — with no test is a `blocking`
    finding here: the four sample profiles are a guardrail, not a substitute for a unit test.
-   Factories live in `test/support/factories.ts`; a new evaluator test builds its profile with
+   Factories live in `packages/core/test/support/factories.ts`; a new evaluator test builds its profile with
    `makeProfile` and asserts both a clear reading and the missing-piece path.
 4. **Regression guardrail.** A change that wires or retunes an axis must keep
-   `test/regression/known-profiles.test.ts` honest — no wired axis may read *below* a profile's
+   `packages/core/test/regression/known-profiles.test.ts` honest — no wired axis may read *below* a profile's
    known level, and axes listed in `EXACT_AXES` must read it exactly. A relaxed assertion there is
    a finding.
 5. **Maintainability**, only where it has a cost: a function that cannot be followed, a name that

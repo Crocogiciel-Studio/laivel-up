@@ -7,8 +7,18 @@ progression plan.
 The grid is not baked in. It is a **preset**: a config file that declares the
 levels, the axes, which criteria feed each axis and how heavily, and where the
 thresholds sit. The engine core hardcodes no axis and no level. The AIDD
-reference grid ships as one preset (`presets/aidd.json`); a game progression
-system or an internal review rubric would be another.
+reference grid ships as one preset (`packages/core/presets/aidd.json`); a game
+progression system or an internal review rubric would be another.
+
+This repo is a pnpm monorepo — see [`ARCHITECTURE.md`](ARCHITECTURE.md):
+
+| Package | What |
+| --- | --- |
+| `packages/core` | the evaluation engine (hexagonal), the criteria, the CLI |
+| `packages/viewer` | single-file static viewer for an `evaluation.json` |
+| `packages/studio-server` | the studio backend (Fastify), wraps the engine |
+| `packages/studio-web` | the studio SPA (React) |
+| `packages/studio-db` | the studio's Supabase schema, RLS, migrations |
 
 > Status: hexagonal engine operational — four axes wired (Size, Harness,
 > Intervention, Parallelism), each with its own bundle of criteria, JSON
@@ -21,17 +31,19 @@ Requires Node 22+ and [pnpm](https://pnpm.io).
 ```bash
 pnpm install
 pnpm build
-node dist/cli/main.js --profile examples/dev-sample
+node packages/core/dist/cli/main.js --profile packages/core/examples/dev-sample
 ```
 
 That reads the sample profile directory, evaluates it against
-`presets/aidd.json`, and prints the evaluation as JSON. The emitted JSON's
-shape is documented in [`docs/evaluation.schema.json`](docs/evaluation.schema.json).
+`packages/core/presets/aidd.json`, and prints the evaluation as JSON. The
+emitted JSON's shape is documented in
+[`packages/core/docs/evaluation.schema.json`](packages/core/docs/evaluation.schema.json).
 
-To run straight from the TypeScript source without a build (local dev):
+To run straight from the TypeScript source without a build (local dev), from the
+repo root:
 
 ```bash
-pnpm dev --profile examples/dev-sample
+pnpm dev --profile examples/dev-sample     # delegates to packages/core
 ```
 
 Flags:
@@ -39,7 +51,7 @@ Flags:
 | Flag | Meaning | Default |
 | --- | --- | --- |
 | `--profile <dir>`, `-p` | profile directory (the `profiles/<name>/` layout) | — (required) |
-| `--grid <file>`, `-g` | grid preset JSON | `presets/aidd.json` |
+| `--grid <file>`, `-g` | grid preset JSON | `packages/core/presets/aidd.json` |
 | `--min-axes <n>` | axes that must be ruled on before a global level is emitted | `1` |
 | `--format <json>` | output format; `json` is the only accepted value today | `json` |
 | `--help`, `-h` | print usage and exit | — |
@@ -50,13 +62,13 @@ rather than guessing when the evidence it needs is absent.
 ## See it rendered
 
 ```bash
-pnpm viz                         # evaluates test/fixtures/profiles/* and opens the viewer
+pnpm viz                         # evaluates packages/core/test/fixtures/profiles/* and opens the viewer
 pnpm viz -p <dir> -g <preset>    # one profile
 ```
 
 Serves the HTML locally — no application server required (Vite in dev); the
-`ui/` bundle is also a single static file openable from `file://`. See
-[`ui/README.md`](ui/README.md) for detail (Docker, `?src=`).
+`packages/viewer` bundle is also a single static file openable from `file://`.
+See [`packages/viewer/README.md`](packages/viewer/README.md) for detail (Docker, `?src=`).
 
 ## What it measures
 
@@ -107,25 +119,34 @@ each reading's `evidence` is a descriptor too; the sentence frame and the verdic
 ## Layout
 
 ```
-src/
-  core/            no stack, no format, no framework — only the model crosses out
-    model/         profile · grid · evaluation · Result<T,E>
-    ports/         criterion-evaluator · evaluator-catalogue · profile/grid/evaluation IO
-    engine/        confidence · bundle · aggregate · progression · evaluate
-  adapters/
-    inbound/       JSON directory  -> Profile   (Zod parse + reject)
-    inbound/       JSON file       -> Grid
-    outbound/      Evaluation      -> JSON
-    catalogue/     in-memory evaluator catalogue
-  criteria/        the coded criteria a grid picks from
-  cli/             the README entry point
-presets/aidd.json  the AIDD reference grid as a preset
+packages/
+  core/                        the engine — this is the product
+    src/
+      core/                    no stack, no format, no framework — only the model crosses out
+        model/                 profile · grid · evaluation · Result<T,E>
+        ports/                 criterion-evaluator · evaluator-catalogue · profile/grid/evaluation IO
+        engine/                confidence · bundle · aggregate · progression · evaluate
+      adapters/inbound/        JSON directory -> Profile, JSON file -> Grid  (Zod parse + reject)
+      adapters/outbound/       Evaluation -> JSON
+      adapters/catalogue/      in-memory evaluator catalogue
+      criteria/                the coded criteria a grid picks from
+      cli/                     the README entry point
+    presets/aidd.json          the AIDD reference grid as a preset
+    i18n/{en,fr}.json          message catalogues for the descriptors
+    test/                      unit fixtures + the 4 sample-profile regression guardrail
+  viewer/                      single-file static viewer (@laivel-up/ui)
+  studio-server/               studio backend (Fastify) — wraps the engine over HTTP
+  studio-web/                  studio SPA (React)
+  studio-db/                   studio Supabase schema, RLS, migrations, seed templates
 ```
 
-`dependency-cruiser` enforces the direction: nothing under `src/core` imports an
-adapter, a criterion, the CLI, or a third-party package.
+`dependency-cruiser` (in `packages/core`) enforces the direction: nothing under
+`src/core` imports an adapter, a criterion, the CLI, or a third-party package.
+The studio packages depend on the engine one way, through `laivel-up/compose`.
 
 ## Develop
+
+Run from the repo root — the root scripts delegate to `packages/core`:
 
 ```bash
 pnpm dev         # run the CLI from source (tsx), e.g. pnpm dev --profile examples/dev-sample
@@ -133,8 +154,11 @@ pnpm typecheck   # tsc --noEmit, strict + noUncheckedIndexedAccess + exactOption
 pnpm lint        # eslint, typescript-eslint strict-type-checked
 pnpm test        # vitest — unit + the four sample profiles as a regression guardrail
 pnpm depcruise   # boundary check
-pnpm build       # emit dist/
+pnpm build       # emit packages/core/dist/
 ```
+
+The studio packages have their own toolchains: `pnpm -C packages/studio-web test`,
+`pnpm -C packages/studio-db db:test:bare`, etc. See [`docs/studio.md`](docs/studio.md).
 
 ## License
 

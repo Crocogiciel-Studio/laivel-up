@@ -10,7 +10,7 @@ dist/
 *.tsbuildinfo
 
 # `pnpm viz` writes the evaluation the dev-server viewer auto-loads
-ui/public/
+packages/viewer/public/
 
 # Test / coverage
 coverage/

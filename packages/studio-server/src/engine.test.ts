@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import aiddGrid from '../../../presets/aidd.json' with { type: 'json' };
+import aiddGrid from '../../core/presets/aidd.json' with { type: 'json' };
 import { runEvaluation } from './engine.js';
 
 // Integration: exercises the real `laivel-up/compose` wiring. Needs the core

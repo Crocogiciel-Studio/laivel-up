@@ -6,21 +6,25 @@
 //   pnpm db:seed:templates        # regenerate after editing the sources
 //   pnpm templates:check          # fail if the committed .sql is stale
 //
-// Sources: presets/aidd.json and test/fixtures/profiles/*. The generated file
-// is idempotent (ON CONFLICT (id) DO UPDATE), so re-applying it -- a local
-// `db reset`, or a manual re-run against Cloud -- restates the rows without
-// duplicating. A plain `supabase db push` only applies a version once, so a
-// *content* change to these templates that must reach an already-migrated DB
-// needs a new migration (or the manual re-apply above).
+// Sources: packages/core's presets/aidd.json and test/fixtures/profiles/*. The
+// generated file is idempotent (ON CONFLICT (id) DO UPDATE), so re-applying it
+// -- a local `db reset`, or a manual re-run against Cloud -- restates the rows
+// without duplicating. A plain `supabase db push` only applies a version once,
+// so a *content* change to these templates that must reach an already-migrated
+// DB needs a new migration (or the manual re-apply above).
+//
+// Needs packages/core built (`pnpm -C packages/core build`); it reads the
+// engine from core's dist to validate every body before emitting the SQL.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { readProfileFromDirectory } from '../dist/adapters/inbound/json-profile.js';
-import { parseGrid, parseProfile } from '../dist/compose.js';
+import { readProfileFromDirectory } from '../../core/dist/adapters/inbound/json-profile.js';
+import { parseGrid, parseProfile } from '../../core/dist/compose.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
+const CORE = resolve(ROOT, '../core');
 const OUT = resolve(ROOT, 'supabase/migrations/20260831170000_seed_templates.sql');
 
 // Fixed ids: idempotent upsert, and a stable target for "clone from template".
@@ -36,12 +40,12 @@ const quote = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const jsonLiteral = (value) => quote(JSON.stringify(value));
 
 function buildSeedSql() {
-  const gridBody = JSON.parse(readFileSync(resolve(ROOT, 'presets/aidd.json'), 'utf8'));
+  const gridBody = JSON.parse(readFileSync(resolve(CORE, 'presets/aidd.json'), 'utf8'));
   const gridCheck = parseGrid(gridBody);
   if (!gridCheck.ok) throw new Error(`presets/aidd.json does not parse: ${gridCheck.error.message}`);
 
   const profileRows = PROFILES.map(({ dir, id, name }) => {
-    const read = readProfileFromDirectory(resolve(ROOT, 'test/fixtures/profiles', dir));
+    const read = readProfileFromDirectory(resolve(CORE, 'test/fixtures/profiles', dir));
     if (!read.ok) throw new Error(`profile ${dir}: ${read.error.message}`);
     const body = JSON.parse(JSON.stringify(read.value));
     const check = parseProfile(body);

@@ -9,14 +9,8 @@ export default [
       'node_modules/**',
       'coverage/**',
       '**/*.cjs',
-      // Vendored review-kit runtime — plain CommonJS Node scripts, not part of the TS project.
-      '.github/scripts/**',
-      'tools/review-kit/**',
-      '.claude/**',
       // Plain Node helper scripts, not part of the TS project.
       'scripts/**',
-      // Satellite viewer — pnpm workspace package with its own toolchain (ui/tsconfig.json).
-      'ui/**',
     ],
   },
   ...tseslint.configs.strictTypeChecked,

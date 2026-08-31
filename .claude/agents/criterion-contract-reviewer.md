@@ -1,6 +1,6 @@
 ---
 name: criterion-contract-reviewer
-description: Reviews a diff for a criterion evaluator that honours its contract — returns a Result, declares its needs, treats missing data as unknown, stays deterministic and offline, emits a three-part confidence. Invoked by the review pipeline when a change touches src/criteria/ or the engine that runs evaluators; can also be run alone on a branch.
+description: Reviews a diff for a criterion evaluator that honours its contract — returns a Result, declares its needs, treats missing data as unknown, stays deterministic and offline, emits a three-part confidence. Invoked by the review pipeline when a change touches packages/core/src/criteria/ or the engine that runs evaluators; can also be run alone on a branch.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: high
@@ -21,9 +21,9 @@ just quietly wrong or over-confident.
 
 ## Always read
 
-`docs/agents/criterion-contract.md` · `src/core/ports/criterion-evaluator.ts` (the interface)
-· `src/criteria/harness/tooling-context-depth.ts` and `src/criteria/size/pr-feature-size.ts` (the reference
-evaluators) · `src/core/engine/confidence.ts` and `src/core/engine/evaluate.ts` (`readCriterion`)
+`docs/agents/criterion-contract.md` · `packages/core/src/core/ports/criterion-evaluator.ts` (the interface)
+· `packages/core/src/criteria/harness/tooling-context-depth.ts` and `packages/core/src/criteria/size/pr-feature-size.ts` (the reference
+evaluators) · `packages/core/src/core/engine/confidence.ts` and `packages/core/src/core/engine/evaluate.ts` (`readCriterion`)
 
 ## You own
 
