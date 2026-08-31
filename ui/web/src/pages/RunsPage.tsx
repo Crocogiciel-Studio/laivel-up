@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useOrgScopedLoad } from '../org/useOrgScopedLoad.js';
-import { ApiError } from '../api/client.js';
 import * as profileApi from '../profile/profileApi.js';
 import type { ProfileSummary } from '../profile/profileApi.js';
 import * as gridApi from '../grid/gridApi.js';
@@ -10,20 +9,16 @@ import * as runApi from '../runs/runApi.js';
 import type { RunView } from '../runs/runApi.js';
 import { buildRunViewModel } from '../runs/viewModel.js';
 import { gridFreshness, profileFreshness } from '../runs/staleness.js';
-import type { Freshness } from '../runs/staleness.js';
-import { EvaluationView } from '../runs/EvaluationView.js';
+import { runBatch } from '../runs/batch.js';
+import type { BatchItem } from '../runs/batch.js';
+import { ProfileEvaluation } from '../runs/ProfileEvaluation.js';
+import type { HistoryPoint } from '../runs/ProfileEvaluation.js';
+import { NewRunPanel } from '../runs/NewRunPanel.js';
 
 const listForOrg = (orgId: string): Promise<RunView[]> => runApi.listRuns(orgId);
-
-const byNewest = (a: RunView, b: RunView): number => b.createdAt.localeCompare(a.createdAt);
 const shortDate = (iso: string): string =>
   new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-
-function FreshnessTag({ what, state }: { readonly what: string; readonly state: Freshness }): ReactNode {
-  if (state === 'current') return null;
-  const label = state === 'changed' ? `${what} edited since` : `${what} not saved`;
-  return <span className={`run-stale ${state}`}>{label}</span>;
-}
+const byNewest = (a: RunView, b: RunView): number => b.createdAt.localeCompare(a.createdAt);
 
 export function RunsPage(): ReactNode {
   const { orgId, data: runs, error, setError, reload } = useOrgScopedLoad(listForOrg, []);
@@ -31,12 +26,11 @@ export function RunsPage(): ReactNode {
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [grids, setGrids] = useState<GridSummary[]>([]);
   const [sourcesLoaded, setSourcesLoaded] = useState(false);
-  const [profileId, setProfileId] = useState('');
-  const [gridId, setGridId] = useState('');
-  const [subject, setSubject] = useState('');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [runBySubject, setRunBySubject] = useState<Record<string, string>>({});
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [batch, setBatch] = useState<readonly BatchItem[] | null>(null);
   const [running, setRunning] = useState(false);
-  const [subjectFilter, setSubjectFilter] = useState('');
-  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     if (orgId === undefined) return;
@@ -50,179 +44,169 @@ export function RunsPage(): ReactNode {
       .catch(() => setError('could not load profiles and grids'));
   }, [orgId, setError]);
 
+  // subjectId -> its runs, newest first; the rail is ordered by most-recent run.
+  const bySubject = useMemo(() => {
+    const map = new Map<string, RunView[]>();
+    for (const r of runs) {
+      const list = map.get(r.subjectId) ?? [];
+      list.push(r);
+      map.set(r.subjectId, list);
+    }
+    for (const list of map.values()) list.sort(byNewest);
+    return map;
+  }, [runs]);
+
   const subjects = useMemo(
-    () => [...new Set(runs.map((r) => r.subjectId))].sort(),
-    [runs],
+    () =>
+      [...bySubject.entries()]
+        .sort((a, b) => byNewest(a[1][0] as RunView, b[1][0] as RunView))
+        .map(([s]) => s),
+    [bySubject],
   );
 
-  const shown = useMemo(() => {
-    const list = subjectFilter === '' ? runs : runs.filter((r) => r.subjectId === subjectFilter);
-    return [...list].sort(byNewest);
-  }, [runs, subjectFilter]);
+  // latest run per subject -> its view model, for the rail chips.
+  const railVm = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof buildRunViewModel>>();
+    for (const [s, list] of bySubject) {
+      const latest = list[0];
+      if (latest !== undefined) map.set(s, buildRunViewModel(latest.evaluation, latest.gridSnapshot));
+    }
+    return map;
+  }, [bySubject]);
 
-  const viewModels = useMemo(
-    () => new Map(shown.map((r) => [r.id, buildRunViewModel(r.evaluation, r.gridSnapshot)])),
-    [shown],
+  useEffect(() => {
+    if (subjects.length === 0) setSelected(null);
+    else if (selected === null || !subjects.includes(selected)) setSelected(subjects[0] ?? null);
+  }, [subjects, selected]);
+
+  const currentRuns = selected === null ? [] : bySubject.get(selected) ?? [];
+  const currentRunId =
+    (selected !== null && runBySubject[selected]) ||
+    (currentRuns[0]?.id ?? '');
+  const currentRun = currentRuns.find((r) => r.id === currentRunId) ?? currentRuns[0];
+
+  const currentVm = useMemo(
+    () => (currentRun === undefined ? null : buildRunViewModel(currentRun.evaluation, currentRun.gridSnapshot)),
+    [currentRun],
   );
+
+  // the run only snapshots the grid body; show the saved grid's name when one
+  // still carries that preset id, else fall back to the id.
+  const gridName =
+    grids.find((g) => (g.body as { id?: string } | null)?.id === currentVm?.gridId)?.name ??
+    currentVm?.gridId ??
+    '';
+
+  const history: HistoryPoint[] = useMemo(() => {
+    return [...currentRuns]
+      .reverse()
+      .map((r) => {
+        const vm = buildRunViewModel(r.evaluation, r.gridSnapshot);
+        const idx = vm.verdict.ruled ? vm.scale.indexOf(vm.verdict.level) : -1;
+        return {
+          runId: r.id,
+          date: shortDate(r.createdAt),
+          levelIndex: idx < 0 ? null : idx,
+          levelLabel: vm.verdict.ruled ? vm.verdict.level : 'no level',
+        };
+      });
+  }, [currentRuns]);
 
   if (orgId === undefined) {
     return <section className="page"><p className="muted">No organisation selected.</p></section>;
   }
 
-  const runNow = (): void => {
-    if (profileId === '' || gridId === '') {
-      setError('pick a profile and a grid');
-      return;
-    }
+  const handleRun = (gridId: string, profileIds: readonly string[]): void => {
+    const picked = profiles.filter((p) => profileIds.includes(p.id));
     setRunning(true);
     setError(null);
-    runApi
-      .createRun({
-        orgId,
-        profileId,
-        gridId,
-        ...(subject.trim() === '' ? {} : { subjectId: subject.trim() }),
+    setBatch(picked.map((p) => ({ profileId: p.id, name: p.name, status: 'pending' as const })));
+    runBatch(orgId, gridId, picked, setBatch)
+      .then(async (items) => {
+        await reload();
+        const firstDone = items.find((it) => it.status === 'done' && it.subjectId !== undefined);
+        if (firstDone?.subjectId !== undefined) {
+          setSelected(firstDone.subjectId);
+          setPanelOpen(false);
+          setBatch(null);
+        }
       })
-      .then((created) => {
-        setSubject('');
-        setOpen(new Set([created.id]));
-        return reload();
-      })
-      .catch((e: unknown) => {
-        setError(e instanceof ApiError ? e.message : 'the run failed');
-      })
+      .catch(() => setError('the batch failed'))
       .finally(() => setRunning(false));
   };
 
-  const toggle = (id: string): void =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  const comparison = subjectFilter !== '' && shown.length > 1 ? [...shown].reverse() : [];
-  // axis id -> label, unioned across the compared runs (later runs win the label)
-  const axisColumns = [
-    ...new Map(
-      comparison.flatMap((r) => (viewModels.get(r.id)?.axes ?? []).map((a) => [a.id, a.name] as const)),
-    ),
-  ];
+  const railItem = (subject: string): ReactNode => {
+    const vm = railVm.get(subject);
+    return (
+      <button
+        key={subject}
+        type="button"
+        className={`rail-item${subject === selected && !panelOpen ? ' active' : ''}`}
+        aria-current={subject === selected && !panelOpen ? 'true' : undefined}
+        onClick={() => {
+          setSelected(subject);
+          setPanelOpen(false);
+        }}
+      >
+        <span className="rail-name">{subject}</span>
+        <span className={`pill ${vm?.verdict.ruled === true ? '' : 'pill-none'}`}>
+          {vm?.verdict.ruled === true ? vm.verdict.level : 'no level'}
+        </span>
+        <span className="muted small">{vm?.verdict.confidencePct ?? 0}%</span>
+      </button>
+    );
+  };
 
   return (
-    <section className="page">
-      <h1>Runs</h1>
-      {error !== null && <p className="error">{error}</p>}
-
-      <div className="run-new">
-        <label className="field">
-          <span>Profile</span>
-          <select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
-            <option value="">— pick —</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Grid</span>
-          <select value={gridId} onChange={(e) => setGridId(e.target.value)}>
-            <option value="">— pick —</option>
-            {grids.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Subject id (optional)</span>
-          <input
-            value={subject}
-            placeholder="defaults to the profile's subject"
-            onChange={(e) => setSubject(e.target.value)}
-          />
-        </label>
-        <button type="button" onClick={runNow} disabled={running}>
-          {running ? 'Running…' : 'Run'}
+    <section className="page runs">
+      <aside className="runs-rail">
+        <button type="button" className="primary block" onClick={() => setPanelOpen(true)}>
+          + New run
         </button>
-      </div>
+        {error !== null && <p className="error small">{error}</p>}
+        <nav aria-label="developers">
+          {subjects.map(railItem)}
+          {subjects.length === 0 && <p className="muted small">No runs yet.</p>}
+        </nav>
+      </aside>
 
-      <div className="run-filter">
-        <label className="field">
-          <span>Developer</span>
-          <select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)}>
-            <option value="">all ({runs.length})</option>
-            {subjects.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {comparison.length > 1 && (
-        <div className="run-compare-wrap">
-          <table className="run-compare">
-            <thead>
-              <tr>
-                <th>{subjectFilter} over time</th>
-                {comparison.map((r) => (
-                  <th key={r.id}>{shortDate(r.createdAt)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="run-compare-overall">
-                <td>Overall</td>
-                {comparison.map((r) => {
-                  const vm = viewModels.get(r.id);
-                  return <td key={r.id}>{vm?.verdict.ruled === true ? vm.verdict.level : '—'}</td>;
-                })}
-              </tr>
-              {axisColumns.map(([axisId, axisName]) => (
-                <tr key={axisId}>
-                  <td>{axisName}</td>
-                  {comparison.map((r) => {
-                    const axis = viewModels.get(r.id)?.axes.find((a) => a.id === axisId);
-                    return <td key={r.id}>{axis?.ruled === true ? axis.level : '—'}</td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <table className="grid-table run-list">
-        <tbody>
-          {shown.map((r) => {
-            const vm = viewModels.get(r.id);
-            return (
-              <tr key={r.id}>
-                <td colSpan={2}>
-                  <div className="run-row">
-                    <span className="muted small">{shortDate(r.createdAt)}</span>
-                    <strong>{r.subjectId}</strong>
-                    <span className="muted small">
-                      {vm?.verdict.ruled === true ? vm.verdict.level : 'no level'} · {vm?.verdict.confidencePct ?? 0}%
-                    </span>
-                    {sourcesLoaded && (
-                      <>
-                        <FreshnessTag what="grid" state={gridFreshness(r.gridSnapshot, grids)} />
-                        <FreshnessTag what="profile" state={profileFreshness(r.profileSnapshot, profiles)} />
-                      </>
-                    )}
-                    <button type="button" className="secondary small" onClick={() => toggle(r.id)}>
-                      {open.has(r.id) ? 'hide' : 'view'}
-                    </button>
-                  </div>
-                  {open.has(r.id) && vm !== undefined && <EvaluationView vm={vm} />}
-                </td>
-              </tr>
-            );
-          })}
-          {shown.length === 0 && <tr><td className="muted">No runs yet.</td></tr>}
-        </tbody>
-      </table>
+      <main className="runs-main">
+        {panelOpen ? (
+          <NewRunPanel
+            grids={grids}
+            profiles={profiles}
+            running={running}
+            progress={batch}
+            onRun={handleRun}
+            onClose={() => {
+              setPanelOpen(false);
+              setBatch(null);
+            }}
+          />
+        ) : currentRun !== undefined && currentVm !== null ? (
+          <ProfileEvaluation
+            vm={currentVm}
+            meta={{
+              date: shortDate(currentRun.createdAt),
+              gridName,
+              gridStale: sourcesLoaded ? gridFreshness(currentRun.gridSnapshot, grids) : 'current',
+              profileStale: sourcesLoaded ? profileFreshness(currentRun.profileSnapshot, profiles) : 'current',
+            }}
+            history={history}
+            selectedRunId={currentRun.id}
+            onSelectRun={(runId) =>
+              setRunBySubject((prev) => ({ ...prev, [selected ?? '']: runId }))
+            }
+          />
+        ) : (
+          <div className="runs-empty">
+            <p>No runs yet. Score a few profiles against a grid to get started.</p>
+            <button type="button" className="primary" onClick={() => setPanelOpen(true)}>
+              Run a batch
+            </button>
+          </div>
+        )}
+      </main>
     </section>
   );
 }

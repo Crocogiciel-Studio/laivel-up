@@ -43,9 +43,9 @@ const GRID_BODY = {
   axes: [{ id: 'size', label: 'PR size', bundle: [] }],
 };
 
-function evaluation(levelId: string): Evaluation {
+function evaluation(subjectId: string, levelId: string): Evaluation {
   return {
-    subjectId: 'dev-x',
+    subjectId,
     gridId: 'g-main',
     generatedAt: '2026-08-31T00:00:00.000Z',
     global: { levelId, confidence: 0.7, note: { key: 'x' } },
@@ -74,15 +74,14 @@ function evaluation(levelId: string): Evaluation {
   };
 }
 
-function run(over: Partial<RunView> & { id: string }): RunView {
+function run(over: Partial<RunView> & { id: string; subjectId: string }): RunView {
   return {
     orgId: 'o1',
     createdBy: 'u1',
-    subjectId: 'dev-x',
     createdAt: '2026-08-31T10:00:00.000Z',
     gridSnapshot: GRID_BODY,
-    profileSnapshot: { subject: { id: 'dev-x' }, declared: { stack: ['ts'] } },
-    evaluation: evaluation('junior'),
+    profileSnapshot: { subject: { id: over.subjectId }, declared: { stack: ['ts'] } },
+    evaluation: evaluation(over.subjectId, 'junior'),
     ...over,
   };
 }
@@ -94,80 +93,105 @@ afterEach(() => {
   listGrids.mockReset();
 });
 
-const list = (): HTMLElement => document.querySelector('.run-list') as HTMLElement;
-
 const seed = (runs: RunView[]): void => {
   listRuns.mockResolvedValue(runs);
-  listProfiles.mockResolvedValue([{ id: 'p1', name: 'Dev X', body: { subject: { id: 'dev-x' } }, orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '' }]);
-  listGrids.mockResolvedValue([{ id: 'gr1', name: 'Main grid', body: GRID_BODY, orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '' }]);
+  listProfiles.mockResolvedValue([
+    { id: 'p1', name: 'Perceval', body: { subject: { id: 'perceval' } }, orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '' },
+    { id: 'p2', name: 'Bohort', body: { subject: { id: 'bohort' } }, orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '' },
+  ]);
+  listGrids.mockResolvedValue([
+    { id: 'gr1', name: 'AIDD reference', body: GRID_BODY, orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '' },
+  ]);
 };
 
+const rail = (): HTMLElement => screen.getByRole('navigation', { name: 'developers' });
+const fiche = (): HTMLElement => document.querySelector('.fiche') as HTMLElement;
+const verdictLevel = (): string => document.querySelector('.verdict-level')?.textContent ?? '';
+
 describe('RunsPage', () => {
-  it('lists runs newest first with the level from the snapshot', async () => {
+  it('lists developers in the rail and opens the first one', async () => {
     seed([
-      run({ id: 'r-old', createdAt: '2026-08-01T00:00:00.000Z', evaluation: evaluation('junior') }),
-      run({ id: 'r-new', createdAt: '2026-08-30T00:00:00.000Z', evaluation: evaluation('senior') }),
+      run({ id: 'r1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') }),
+      run({ id: 'r2', subjectId: 'bohort', createdAt: '2026-08-01T00:00:00.000Z' }),
     ]);
     render(<RunsPage />);
-    await waitFor(() => expect(within(list()).getAllByText('dev-x').length).toBeGreaterThan(0));
-    const rows = within(list()).getAllByRole('row');
-    // first data row is the newest run
-    expect(within(rows[0] as HTMLElement).getByText(/Senior/)).toBeTruthy();
+    await waitFor(() => expect(within(fiche()).getByRole('heading', { name: 'perceval' })).toBeTruthy());
+    expect(within(rail()).getByRole('button', { name: /perceval/i })).toBeTruthy();
+    expect(within(rail()).getByRole('button', { name: /bohort/i })).toBeTruthy();
+    // perceval ran most recently -> its fiche is shown, with the level from the snapshot grid
+    expect(verdictLevel()).toBe('Senior');
   });
 
-  it('filters the list by developer', async () => {
+  it('switches the fiche when another developer is picked in the rail', async () => {
     seed([
-      run({ id: 'r1', subjectId: 'dev-x' }),
-      run({ id: 'r2', subjectId: 'dev-y' }),
+      run({ id: 'r1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') }),
+      run({ id: 'r2', subjectId: 'bohort', createdAt: '2026-08-01T00:00:00.000Z', evaluation: evaluation('bohort', 'junior') }),
     ]);
     render(<RunsPage />);
-    await waitFor(() => expect(within(list()).getByText('dev-y')).toBeTruthy());
-    expect(within(list()).getByText('dev-x')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Developer'), { target: { value: 'dev-y' } });
-    expect(within(list()).queryByText('dev-x')).toBeNull();
-    expect(within(list()).getByText('dev-y')).toBeTruthy();
+    await waitFor(() => expect(within(fiche()).getByRole('heading', { name: 'perceval' })).toBeTruthy());
+    fireEvent.click(within(rail()).getByRole('button', { name: /bohort/i }));
+    expect(within(fiche()).getByRole('heading', { name: 'bohort' })).toBeTruthy();
+    expect(verdictLevel()).toBe('Junior');
   });
 
-  it('runs a profile against a grid and shows the result', async () => {
+  it('runs a batch of profiles against one grid', async () => {
     seed([]);
-    createRun.mockResolvedValue(run({ id: 'r-created', evaluation: evaluation('senior') }));
-    // after the run, reload returns the new row
-    listRuns.mockResolvedValueOnce([]).mockResolvedValue([run({ id: 'r-created', evaluation: evaluation('senior') })]);
+    createRun
+      .mockResolvedValueOnce(run({ id: 'rc1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') }))
+      .mockResolvedValueOnce(run({ id: 'rc2', subjectId: 'bohort', evaluation: evaluation('bohort', 'junior') }));
+    listRuns
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([
+        run({ id: 'rc1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') }),
+        run({ id: 'rc2', subjectId: 'bohort', evaluation: evaluation('bohort', 'junior') }),
+      ]);
     render(<RunsPage />);
     await waitFor(() => expect(screen.getByText('No runs yet.')).toBeTruthy());
 
-    fireEvent.change(screen.getByLabelText('Profile'), { target: { value: 'p1' } });
+    fireEvent.click(screen.getByRole('button', { name: '+ New run' }));
     fireEvent.change(screen.getByLabelText('Grid'), { target: { value: 'gr1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByLabelText('Perceval'));
+    fireEvent.click(screen.getByLabelText('Bohort'));
+    fireEvent.click(screen.getByRole('button', { name: 'Run 2' }));
 
-    await waitFor(() => expect(createRun).toHaveBeenCalled());
-    const [input] = createRun.mock.calls[0] as [{ orgId: string; profileId: string; gridId: string }];
-    expect(input).toMatchObject({ orgId: 'o1', profileId: 'p1', gridId: 'gr1' });
-    // the created run auto-expands into an EvaluationView
-    await waitFor(() => expect(screen.getByText('To reach Senior')).toBeTruthy());
+    await waitFor(() => expect(createRun).toHaveBeenCalledTimes(2));
+    const calls = createRun.mock.calls.map((c) => c[0] as { profileId: string; gridId: string; orgId: string });
+    expect(calls.map((c) => c.profileId).sort()).toEqual(['p1', 'p2']);
+    expect(calls.every((c) => c.gridId === 'gr1' && c.orgId === 'o1')).toBe(true);
+    // lands on a fiche once the batch settles
+    await waitFor(() => expect(within(fiche()).getByRole('heading', { name: 'perceval' })).toBeTruthy());
+  });
+
+  it('shows the over-time history for a developer with several runs and switches on click', async () => {
+    seed([
+      run({ id: 'r-old', subjectId: 'perceval', createdAt: '2026-08-01T00:00:00.000Z', evaluation: evaluation('perceval', 'junior') }),
+      run({ id: 'r-new', subjectId: 'perceval', createdAt: '2026-08-30T00:00:00.000Z', evaluation: evaluation('perceval', 'senior') }),
+    ]);
+    render(<RunsPage />);
+    await waitFor(() => expect(within(fiche()).getByText('Over time')).toBeTruthy());
+    // newest run is shown first
+    expect(verdictLevel()).toBe('Senior');
+    const bars = within(fiche()).getAllByRole('button').filter((b) => b.className.includes('history-bar'));
+    expect(bars).toHaveLength(2);
+    fireEvent.click(bars[0] as HTMLElement); // the older run
+    expect(verdictLevel()).toBe('Junior');
   });
 
   it('flags a run whose grid was edited since', async () => {
-    seed([run({ id: 'r1' })]);
+    seed([run({ id: 'r1', subjectId: 'perceval' })]);
     listGrids.mockResolvedValue([
-      { id: 'gr1', name: 'Main grid', orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '',
-        body: { ...GRID_BODY, levels: [...GRID_BODY.levels, { id: 'staff', label: 'Staff', rank: 2 }] } },
+      {
+        id: 'gr1', name: 'AIDD reference', orgId: 'o1', createdBy: 'u1', isTemplate: false, updatedAt: '',
+        body: { ...GRID_BODY, levels: [...GRID_BODY.levels, { id: 'staff', label: 'Staff', rank: 2 }] },
+      },
     ]);
     render(<RunsPage />);
-    await waitFor(() => expect(screen.getByText('grid edited since')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('grid edited since this run')).toBeTruthy());
   });
 
-  it('shows a comparison table when a developer with several runs is selected', async () => {
-    seed([
-      run({ id: 'r1', createdAt: '2026-08-01T00:00:00.000Z', evaluation: evaluation('junior') }),
-      run({ id: 'r2', createdAt: '2026-08-20T00:00:00.000Z', evaluation: evaluation('senior') }),
-    ]);
+  it('shows an empty state with a batch prompt when there are no runs', async () => {
+    seed([]);
     render(<RunsPage />);
-    await waitFor(() => expect(screen.getAllByText('dev-x').length).toBeGreaterThan(0));
-    fireEvent.change(screen.getByLabelText('Developer'), { target: { value: 'dev-x' } });
-    expect(screen.getByText('dev-x over time')).toBeTruthy();
-    expect(screen.getByText('Overall')).toBeTruthy();
-    const compare = screen.getByText('dev-x over time').closest('table') as HTMLElement;
-    expect(within(compare).getByText('PR size')).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Run a batch' })).toBeTruthy());
   });
 });
