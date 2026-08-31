@@ -58,8 +58,9 @@ grid and profile it used, so editing an original never rewrites history.
 
 Auth is Supabase Auth (OAuth). Access is enforced by Postgres row-level security
 (`is_org_member` / `is_org_admin`); the backend forwards the caller's JWT so the
-policies apply to every query. Member management (invites, roles) is a later
-issue — for now an org has just its creator.
+policies apply to every query. An admin invites people with a link
+(`accept_invite()` redeems the token), re-roles or removes members; a member can
+leave — the org settings page (`/org`) covers all of it.
 
 ## Running
 

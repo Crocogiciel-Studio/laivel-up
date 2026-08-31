@@ -27,6 +27,10 @@ service-role key.
 | `GET` | `/health` | no auth |
 | `GET` | `/api/catalogue` | the coded criteria a grid can pick from |
 | `GET` `POST` | `/api/orgs` | your orgs; `POST { name }` creates one (you become admin) |
+| `GET` | `/api/orgs/:id/members` | roster with emails (members only) |
+| `PATCH` `DELETE` | `/api/orgs/:id/members/:userId` | admin re-roles / removes; a member can remove themselves |
+| `GET` `POST` `DELETE` | `/api/orgs/:id/invites`, `/api/orgs/:id/invites/:inviteId` | admin creates (`{ email?, role? }`) and revokes |
+| `POST` | `/api/invites/:token/accept` | signed-in user joins; 400 on a bad/used/expired token |
 | `GET` `POST` | `/api/grids`, `/api/profiles` | list (`?orgId=` filters); `POST { orgId, name, body }` |
 | `GET` `PATCH` `DELETE` | `/api/grids/:id`, `/api/profiles/:id` | member reads, admin/creator writes; templates read-only |
 | `GET` | `/api/runs` | `?orgId=` and `?subjectId=` filter |

@@ -46,6 +46,7 @@ declare
   team uuid;
   team_grid uuid;
   team_run uuid;
+  invite_token text;
   n int;
 begin
   -- Alice creates a shared org; create_org makes her its admin in the same call.
@@ -144,7 +145,35 @@ begin
   exception when insufficient_privilege or check_violation then null;
   end;
 
+  -- Invites: an admin invites, a member cannot; the invitee redeems the token.
+  perform pg_temp.become(alice);
+  insert into public.org_invite (org_id, created_by, role)
+    values (team, alice, 'member')
+    returning token into invite_token;
+
+  perform pg_temp.become(bob);
+  begin
+    insert into public.org_invite (org_id, created_by, role) values (team, bob, 'member');
+    raise exception 'member created an invite';
+  exception when insufficient_privilege then null;
+  end;
+
+  perform pg_temp.become(carol);
+  select count(*) into n from public.org_invite;
+  if n <> 0 then raise exception 'non-member read an invite row, saw %', n; end if;
+
+  perform public.accept_invite(invite_token);
+  select count(*) into n from public.grid where id = team_grid;
+  if n <> 1 then raise exception 'accepted member cannot see the team grid'; end if;
+
+  begin
+    perform public.accept_invite(invite_token);
+    raise exception 'invite was reusable';
+  exception when raise_exception then null;
+  end;
+
   -- Bob leaves Team and loses access to its grid.
+  perform pg_temp.become(bob);
   delete from public.org_member where org_id = team and user_id = bob;
   select count(*) into n from public.grid where id = team_grid;
   if n <> 0 then raise exception 'ex-member still sees the team grid'; end if;

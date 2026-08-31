@@ -1,6 +1,13 @@
 // Hand-written stand-in for `supabase gen types`. Only the columns the studio
 // server reads or writes. Keep in step with supabase/migrations/.
-import type { ArtifactRow, OrgMemberRow, OrgRow, RunRow } from './db.js';
+import type {
+  ArtifactRow,
+  OrgInviteRow,
+  OrgMemberDetail,
+  OrgMemberRow,
+  OrgRow,
+  RunRow,
+} from './db.js';
 
 type Empty = Record<string, never>;
 
@@ -12,6 +19,16 @@ type OrgMemberInsert = {
   user_id: string;
   role?: 'admin' | 'member';
   created_at?: string;
+};
+type OrgMemberUpdate = { role?: 'admin' | 'member' };
+type OrgInviteInsert = {
+  id?: string;
+  org_id: string;
+  token?: string;
+  email?: string | null;
+  role?: 'admin' | 'member';
+  created_by?: string | null;
+  expires_at?: string;
 };
 
 type ArtifactInsert = {
@@ -49,7 +66,13 @@ export interface Database {
       org_member: {
         Row: OrgMemberRow;
         Insert: OrgMemberInsert;
-        Update: Partial<OrgMemberInsert>;
+        Update: OrgMemberUpdate;
+        Relationships: [];
+      };
+      org_invite: {
+        Row: OrgInviteRow;
+        Insert: OrgInviteInsert;
+        Update: Partial<OrgInviteInsert>;
         Relationships: [];
       };
       grid: { Row: ArtifactRow; Insert: ArtifactInsert; Update: ArtifactUpdate; Relationships: [] };
@@ -63,10 +86,9 @@ export interface Database {
     };
     Views: Empty;
     Functions: {
-      create_org: {
-        Args: { p_name: string };
-        Returns: OrgRow;
-      };
+      create_org: { Args: { p_name: string }; Returns: OrgRow };
+      accept_invite: { Args: { p_token: string }; Returns: OrgMemberRow };
+      org_members: { Args: { p_org: string }; Returns: OrgMemberDetail[] };
     };
     Enums: Empty;
     CompositeTypes: Empty;

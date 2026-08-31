@@ -1,15 +1,27 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import type { LightMyRequestResponse } from 'fastify';
 import type { Evaluation } from 'laivel-up';
 import type { Authenticator } from './auth.js';
-import type { ArtifactKind, ArtifactRow, Db, OrgRow, RunRow, Store } from './db.js';
+import type {
+  ArtifactKind,
+  ArtifactRow,
+  Db,
+  OrgInviteRow,
+  OrgRow,
+  RunRow,
+  Store,
+} from './db.js';
 import type { RunEvaluation } from './engine.js';
 import type { ValidateArtifact } from './validation.js';
 import { createApp } from './app.js';
 
+const U1_ID = '00000000-0000-0000-0000-0000000000a1';
+const U2_ID = '00000000-0000-0000-0000-0000000000a2';
+
 const auth: Authenticator = {
   verify: (jwt) =>
     Promise.resolve(
-      jwt === 'u1-token' ? { id: 'u1', jwt } : jwt === 'u2-token' ? { id: 'u2', jwt } : null,
+      jwt === 'u1-token' ? { id: U1_ID, jwt } : jwt === 'u2-token' ? { id: U2_ID, jwt } : null,
     ),
 };
 
@@ -26,15 +38,20 @@ const runEvaluation: RunEvaluation = (gridBody, profileBody, input) =>
 
 const RLS = new Error('new row violates row-level security policy');
 
+const EMAILS: Record<string, string> = {
+  [U1_ID]: 'u1@studio.test',
+  [U2_ID]: 'u2@studio.test',
+};
+
 /**
  * In-memory Db that mimics the org RLS: a member reads an org's rows, an admin
- * or the row's creator writes, any member runs. Membership can only be added
- * here through `createOrg` (which makes you admin) — matching the API, which has
- * no member-management endpoint yet.
+ * or the row's creator writes, any member runs. Membership grows through
+ * `createOrg` (creator = admin) or `acceptInvite`.
  */
 function fakeDb(): Db {
   const orgs = new Map<string, OrgRow>();
   const roleOf = new Map<string, 'admin' | 'member'>(); // `${orgId}:${userId}`
+  const invites = new Map<string, OrgInviteRow>(); // by id
   const tables: Record<ArtifactKind, Map<string, ArtifactRow>> = {
     grid: new Map(),
     profile: new Map(),
@@ -62,6 +79,82 @@ function fakeDb(): Db {
           orgs.set(row.id, row);
           roleOf.set(key(row.id), 'admin');
           return Promise.resolve(row);
+        },
+
+        listMembers: (orgId) =>
+          Promise.resolve(
+            !isMember(orgId)
+              ? []
+              : [...roleOf.entries()]
+                  .filter(([k]) => k.startsWith(`${orgId}:`))
+                  .map(([k, role]) => {
+                    const uid = k.slice(orgId.length + 1);
+                    return {
+                      user_id: uid,
+                      email: EMAILS[uid] ?? null,
+                      role,
+                      created_at: now(),
+                    };
+                  }),
+          ),
+        updateMemberRole: (orgId, userId, role) => {
+          if (!isAdmin(orgId) || !roleOf.has(`${orgId}:${userId}`)) return Promise.resolve(null);
+          roleOf.set(`${orgId}:${userId}`, role);
+          return Promise.resolve({ org_id: orgId, user_id: userId, role, created_at: now() });
+        },
+        removeMember: (orgId, userId) => {
+          const mkey = `${orgId}:${userId}`;
+          if (!roleOf.has(mkey) || !(isAdmin(orgId) || userId === user.id)) {
+            return Promise.resolve(false);
+          }
+          roleOf.delete(mkey);
+          return Promise.resolve(true);
+        },
+
+        listInvites: (orgId) =>
+          Promise.resolve(
+            isMember(orgId) ? [...invites.values()].filter((i) => i.org_id === orgId) : [],
+          ),
+        createInvite: (orgId, input) => {
+          if (!isAdmin(orgId)) return Promise.reject(RLS);
+          const row: OrgInviteRow = {
+            id: nextId(),
+            org_id: orgId,
+            token: `tok-${nextId()}`,
+            email: input.email ?? null,
+            role: input.role,
+            created_by: user.id,
+            expires_at: new Date(Date.now() + 8.64e7).toISOString(),
+            accepted_by: null,
+            accepted_at: null,
+            created_at: now(),
+          };
+          invites.set(row.id, row);
+          return Promise.resolve(row);
+        },
+        deleteInvite: (orgId, inviteId) => {
+          const row = invites.get(inviteId);
+          if (row === undefined || row.org_id !== orgId || !isAdmin(orgId)) {
+            return Promise.resolve(false);
+          }
+          invites.delete(inviteId);
+          return Promise.resolve(true);
+        },
+        acceptInvite: (token) => {
+          const row = [...invites.values()].find((i) => i.token === token);
+          if (row === undefined) return Promise.reject(new Error('invite not found'));
+          if (row.accepted_at !== null) return Promise.reject(new Error('invite already used'));
+          if (row.email !== null && row.email !== EMAILS[user.id]) {
+            return Promise.reject(new Error('invite is for a different email address'));
+          }
+          roleOf.set(`${row.org_id}:${user.id}`, row.role);
+          invites.set(row.id, { ...row, accepted_by: user.id, accepted_at: now() });
+          return Promise.resolve({
+            org_id: row.org_id,
+            user_id: user.id,
+            role: row.role,
+            created_at: now(),
+          });
         },
 
         list: (kind, orgId) =>
@@ -227,7 +320,7 @@ describe('studio server', () => {
     expect(created.statusCode).toBe(201);
     const row = created.json() as { id: string; orgId: string; createdBy: string };
     expect(row.orgId).toBe(orgId);
-    expect(row.createdBy).toBe('u1');
+    expect(row.createdBy).toBe(U1_ID);
 
     const asMember = await app.inject({ method: 'GET', url: `/api/grids?orgId=${orgId}`, headers: U1 });
     expect((asMember.json() as unknown[]).length).toBe(1);
@@ -294,7 +387,7 @@ describe('studio server', () => {
       evaluation: { echoed: { gridBody: { id: string } } };
     };
     expect(run.orgId).toBe(orgId);
-    expect(run.createdBy).toBe('u1');
+    expect(run.createdBy).toBe(U1_ID);
     expect(run.subjectId).toBe('dev-x');
     expect(run.gridSnapshot).toEqual({ valid: true, id: 'g' });
     expect(run.evaluation.echoed.gridBody.id).toBe('g');
@@ -366,5 +459,53 @@ describe('studio server', () => {
       },
     });
     expect(res.statusCode).toBe(404);
+  });
+
+  it('invites a user, who joins, is promoted, then removed', async () => {
+    const orgId = await makeOrg(app, U1);
+    const inject = (
+      method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+      url: string,
+      headers: typeof U1,
+      payload?: object,
+    ): Promise<LightMyRequestResponse> =>
+      app.inject({ method, url, headers, ...(payload === undefined ? {} : { payload }) });
+
+    expect(((await inject('GET', `/api/orgs/${orgId}/members`, U1)).json() as unknown[]).length).toBe(1);
+
+    const invite = await inject('POST', `/api/orgs/${orgId}/invites`, U1, { role: 'member' });
+    expect(invite.statusCode).toBe(201);
+    const { token } = invite.json() as { token: string };
+
+    const accept = await inject('POST', `/api/invites/${token}/accept`, U2);
+    expect(accept.statusCode).toBe(201);
+    expect((accept.json() as { orgId: string }).orgId).toBe(orgId);
+
+    // U2 is a member now: sees the org and the 2-person roster.
+    expect(((await inject('GET', '/api/orgs', U2)).json() as unknown[]).length).toBe(1);
+    const roster = (await inject('GET', `/api/orgs/${orgId}/members`, U2)).json() as {
+      userId: string;
+      email: string;
+    }[];
+    expect(roster.length).toBe(2);
+    const u2Id = roster.find((m) => m.email === 'u2@studio.test')?.userId ?? '';
+
+    // A plain member cannot invite, and the token is single-use.
+    expect((await inject('POST', `/api/orgs/${orgId}/invites`, U2, {})).statusCode).toBe(403);
+    expect((await inject('POST', `/api/invites/${token}/accept`, U2)).statusCode).toBe(400);
+
+    // Promote U2 -> now it can invite.
+    const promote = await inject('PATCH', `/api/orgs/${orgId}/members/${u2Id}`, U1, { role: 'admin' });
+    expect(promote.statusCode).toBe(200);
+    expect((await inject('POST', `/api/orgs/${orgId}/invites`, U2, {})).statusCode).toBe(201);
+
+    // Remove U2.
+    expect((await inject('DELETE', `/api/orgs/${orgId}/members/${u2Id}`, U1)).statusCode).toBe(204);
+    expect(((await inject('GET', '/api/orgs', U2)).json() as unknown[]).length).toBe(0);
+  });
+
+  it('400s an unknown invite token', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/invites/nope/accept', headers: U1 });
+    expect(res.statusCode).toBe(400);
   });
 });
