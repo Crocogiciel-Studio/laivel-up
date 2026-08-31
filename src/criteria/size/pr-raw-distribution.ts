@@ -56,6 +56,7 @@ function bucketOf(pr: RawPullRequest, p: Params): Tier {
 export const prRawDistribution: CriterionEvaluator = {
   id: 'pr-raw-distribution',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const raw = context.profile.vcsActivity?.rawPullRequests;

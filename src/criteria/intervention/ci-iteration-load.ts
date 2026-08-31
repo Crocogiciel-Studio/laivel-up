@@ -65,6 +65,7 @@ interface Signal {
 export const ciIterationLoad: CriterionEvaluator = {
   id: 'ci-iteration-load',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const ci = context.profile.vcsActivity?.ci;

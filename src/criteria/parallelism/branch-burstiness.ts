@@ -47,6 +47,7 @@ type Params = Record<keyof typeof PARAM_DEFAULTS, number>;
 export const branchBurstiness: CriterionEvaluator = {
   id: 'branch-burstiness',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const parallelism = context.profile.vcsActivity?.parallelism;

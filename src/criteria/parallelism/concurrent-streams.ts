@@ -44,6 +44,7 @@ const SPIKE_ATTENUATION = 0.5;
 export const concurrentStreams: CriterionEvaluator = {
   id: 'concurrent-streams',
   needs: ['vcsActivity'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const parallelism = context.profile.vcsActivity?.parallelism;

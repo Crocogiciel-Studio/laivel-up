@@ -89,6 +89,7 @@ function describe(tc: ToolingContext, density: number, tier: number, p: Params):
 export const behaviorArtifactDensity: CriterionEvaluator = {
   id: 'behavior-artifact-density',
   needs: ['toolingContext'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const tc = context.profile.toolingContext;

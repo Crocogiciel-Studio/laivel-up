@@ -81,6 +81,7 @@ function describe(tc: ToolingContext, score: number, tier: Tier): Message {
 export const assistantIntegration: CriterionEvaluator = {
   id: 'assistant-integration',
   needs: ['toolingContext'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const tc = context.profile.toolingContext;

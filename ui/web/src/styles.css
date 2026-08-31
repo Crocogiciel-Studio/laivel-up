@@ -289,3 +289,153 @@ main {
   margin: 0 0 0.5rem;
   font-size: 1.2rem;
 }
+
+/* grid builder */
+.grid-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 960px;
+}
+.gb-head {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.gb-head .field {
+  grid-template-columns: none;
+  width: 200px;
+}
+.gb-body {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.gb-palette {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.gb-palette h4,
+.gb-levels h4 {
+  margin: 0 0 0.25rem;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.gb-chip {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  background: #222835;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.gb-axes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.gb-axis {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.gb-axis header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.gb-axis header input {
+  font: inherit;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #1b2028;
+  color: var(--text);
+}
+.gb-card {
+  border-left: 2px solid var(--accent);
+  padding-left: 0.6rem;
+}
+.gb-card-head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gb-card-head .inline {
+  font-size: 12px;
+  color: var(--muted);
+}
+.gb-card-head input,
+.gb-card-head select,
+.gb-params input {
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: #1b2028;
+  color: var(--text);
+}
+.gb-card-head input[type='number'] {
+  width: 70px;
+}
+.gb-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.3rem;
+}
+.gb-params .field {
+  grid-template-columns: none;
+  width: 130px;
+  margin: 0;
+}
+.gb-params .field span {
+  font-size: 11px;
+}
+.gb-add select {
+  font: inherit;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text);
+}
+.gb-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.gb-level-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.gb-level-row input {
+  font: inherit;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #1b2028;
+  color: var(--text);
+}
+.gb-preview pre {
+  background: #14181f;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow: auto;
+  max-height: 320px;
+  font-size: 12px;
+}

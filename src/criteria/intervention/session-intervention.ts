@@ -99,6 +99,7 @@ function bandMargin(value: number, band: number, p: Params): number {
 export const sessionIntervention: CriterionEvaluator = {
   id: 'session-intervention',
   needs: ['workSession'],
+  paramDefaults: PARAM_DEFAULTS,
 
   evaluate(context: CriterionContext): Result<CriterionOutput, MissingPiece> {
     const ws = context.profile.workSession;

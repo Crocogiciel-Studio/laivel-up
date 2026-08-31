@@ -9,6 +9,7 @@ import { Placeholder } from './pages/Placeholder.js';
 import { OrgSettingsPage } from './pages/OrgSettingsPage.js';
 import { AcceptInvitePage } from './pages/AcceptInvitePage.js';
 import { ProfilesPage } from './pages/ProfilesPage.js';
+import { GridsPage } from './pages/GridsPage.js';
 
 export function App(): ReactNode {
   return (
@@ -37,16 +38,7 @@ export function App(): ReactNode {
           >
             <Route index element={<Navigate to="/profiles" replace />} />
             <Route path="/profiles" element={<ProfilesPage />} />
-            <Route
-              path="/grids"
-              element={
-                <Placeholder
-                  title="Grids"
-                  issue="59"
-                  blurb="Compose a grid by dropping criteria into axes and tuning them."
-                />
-              }
-            />
+            <Route path="/grids" element={<GridsPage />} />
             <Route
               path="/runs"
               element={
