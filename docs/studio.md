@@ -43,11 +43,14 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 The web app under `ui/web` — React + Vite + React Router, Supabase OAuth
 client-side, all data through the backend — carries the shell (`/login`, an org
 switcher, `/org` settings), the profile form (`/profiles`), the grid builder
-(`/grids`), and the run screen (`/runs`): pick a saved profile and grid,
-`POST /api/runs`, and the stored evaluation is rendered through `@laivel-up/ui`'s
-view-model helpers (resolved against the run's own grid snapshot). History is
-grouped by developer with an over-time comparison, and a run is flagged when the
-grid or profile it used has been edited since.
+(`/grids`), and the run screen (`/runs`): pick one grid and **several
+profiles** and score them in one batch (each is an independent `POST /api/runs`).
+The screen is a developer rail plus a focused fiche — the verdict placed on the
+grid's level ladder, a per-axis breakdown with the criterion readings behind a
+disclosure, the progression plan, and an over-time strip when a developer has
+been scored more than once. The evaluation is rendered through `@laivel-up/ui`'s
+view-model helpers, resolved against the run's own grid snapshot; a run is
+flagged when the grid or profile it used has been edited since.
 
 Each criterion declares its `paramDefaults` (`src/core/ports/criterion-evaluator.ts`);
 `/api/catalogue` returns them so the builder pre-fills a criterion card. The
