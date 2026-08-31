@@ -17,6 +17,9 @@ node packages/core/dist/cli/main.js --profile packages/core/examples/dev-sample
 domain model, how to author a profile or a grid, every built-in criterion —
 or jump straight to [Getting started](docs/getting-started.md).
 
+**Try the studio live**: [laivel-up-crocogiciel.vercel.app](https://laivel-up-crocogiciel.vercel.app/)
+— grid builder, profile form, and run history, no local setup needed.
+
 ## This repo
 
 A pnpm monorepo — one engine, one studio built around it. See
