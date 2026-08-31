@@ -37,9 +37,12 @@ function freshness(
 ): Freshness {
   const key = keyOf(snapshot);
   if (key === undefined) return 'unlinked';
-  const match = current.find((row) => keyOf(row.body) === key);
-  if (match === undefined) return 'unlinked';
-  return stableStringify(match.body) === stableStringify(snapshot) ? 'current' : 'changed';
+  const matches = current.filter((row) => keyOf(row.body) === key);
+  if (matches.length === 0) return 'unlinked';
+  // Several rows can share a key (two grids cloned from one preset id, two
+  // profiles for one subject). The run is fresh if any of them still matches.
+  const wanted = stableStringify(snapshot);
+  return matches.some((row) => stableStringify(row.body) === wanted) ? 'current' : 'changed';
 }
 
 export function gridFreshness(

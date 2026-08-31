@@ -70,4 +70,17 @@ describe('buildRunViewModel', () => {
     expect(vm.verdict.level).toBe('senior');
     expect(vm.axes[0]?.name).toBe('size');
   });
+
+  it('reports no level ruled when the evaluation ruled none', () => {
+    const unruled: Evaluation = {
+      ...evaluation,
+      global: { confidence: 0, note: { key: 'aggregate.no-level' } },
+      axes: [{ axisId: 'size', confidence: 0, limitingFactor: 'sufficiency', readings: [] }],
+    };
+    const vm = buildRunViewModel(unruled, snapshot);
+    expect(vm.verdict.ruled).toBe(false);
+    expect(vm.verdict.level).toBe('—');
+    expect(vm.axes[0]?.ruled).toBe(false);
+    expect(vm.axes[0]?.level).toBe('—');
+  });
 });

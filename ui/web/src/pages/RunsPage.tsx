@@ -16,7 +16,8 @@ import { EvaluationView } from '../runs/EvaluationView.js';
 const listForOrg = (orgId: string): Promise<RunView[]> => runApi.listRuns(orgId);
 
 const byNewest = (a: RunView, b: RunView): number => b.createdAt.localeCompare(a.createdAt);
-const shortDate = (iso: string): string => iso.slice(0, 16).replace('T', ' ');
+const shortDate = (iso: string): string =>
+  new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
 function FreshnessTag({ what, state }: { readonly what: string; readonly state: Freshness }): ReactNode {
   if (state === 'current') return null;
@@ -29,6 +30,7 @@ export function RunsPage(): ReactNode {
 
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [grids, setGrids] = useState<GridSummary[]>([]);
+  const [sourcesLoaded, setSourcesLoaded] = useState(false);
   const [profileId, setProfileId] = useState('');
   const [gridId, setGridId] = useState('');
   const [subject, setSubject] = useState('');
@@ -38,8 +40,14 @@ export function RunsPage(): ReactNode {
 
   useEffect(() => {
     if (orgId === undefined) return;
-    profileApi.listProfiles(orgId).then(setProfiles).catch(() => setError('could not load profiles'));
-    gridApi.listGrids(orgId).then(setGrids).catch(() => setError('could not load grids'));
+    setSourcesLoaded(false);
+    Promise.all([profileApi.listProfiles(orgId), gridApi.listGrids(orgId)])
+      .then(([p, g]) => {
+        setProfiles(p);
+        setGrids(g);
+        setSourcesLoaded(true);
+      })
+      .catch(() => setError('could not load profiles and grids'));
   }, [orgId, setError]);
 
   const subjects = useMemo(
@@ -95,6 +103,12 @@ export function RunsPage(): ReactNode {
     });
 
   const comparison = subjectFilter !== '' && shown.length > 1 ? [...shown].reverse() : [];
+  // axis id -> label, unioned across the compared runs (later runs win the label)
+  const axisColumns = [
+    ...new Map(
+      comparison.flatMap((r) => (viewModels.get(r.id)?.axes ?? []).map((a) => [a.id, a.name] as const)),
+    ),
+  ];
 
   return (
     <section className="page">
@@ -164,9 +178,7 @@ export function RunsPage(): ReactNode {
                   return <td key={r.id}>{vm?.verdict.ruled === true ? vm.verdict.level : '—'}</td>;
                 })}
               </tr>
-              {[...new Map(
-                comparison.flatMap((r) => (viewModels.get(r.id)?.axes ?? []).map((a) => [a.id, a.name] as const)),
-              )].map(([axisId, axisName]) => (
+              {axisColumns.map(([axisId, axisName]) => (
                 <tr key={axisId}>
                   <td>{axisName}</td>
                   {comparison.map((r) => {
@@ -193,8 +205,12 @@ export function RunsPage(): ReactNode {
                     <span className="muted small">
                       {vm?.verdict.ruled === true ? vm.verdict.level : 'no level'} · {vm?.verdict.confidencePct ?? 0}%
                     </span>
-                    <FreshnessTag what="grid" state={gridFreshness(r.gridSnapshot, grids)} />
-                    <FreshnessTag what="profile" state={profileFreshness(r.profileSnapshot, profiles)} />
+                    {sourcesLoaded && (
+                      <>
+                        <FreshnessTag what="grid" state={gridFreshness(r.gridSnapshot, grids)} />
+                        <FreshnessTag what="profile" state={profileFreshness(r.profileSnapshot, profiles)} />
+                      </>
+                    )}
                     <button type="button" className="secondary small" onClick={() => toggle(r.id)}>
                       {open.has(r.id) ? 'hide' : 'view'}
                     </button>

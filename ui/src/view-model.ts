@@ -58,8 +58,17 @@ export interface ViewModel {
 const pct = (confidence: number): number => Math.round(confidence * 100);
 const has = <T>(v: T | null | undefined): v is T => v !== null && v !== undefined;
 
-export function buildViewModel(evaluation: Evaluation, lang: Lang): ViewModel {
-  const grid: Grid | undefined = resolveGrid(evaluation.gridId);
+/**
+ * The transform, given the grid to resolve labels against. The single-file
+ * viewer knows one bundled grid (`buildViewModel`); the studio scores grids it
+ * does not bundle and passes the run's own snapshot — so the grid is a
+ * parameter and the two callers stay one implementation.
+ */
+export function buildViewModelFor(
+  evaluation: Evaluation,
+  grid: Grid | undefined,
+  lang: Lang,
+): ViewModel {
   const bindingId = has(evaluation.global.bindingAxisId) ? evaluation.global.bindingAxisId : null;
   const progressionBinding = has(evaluation.progression.bindingAxisId)
     ? evaluation.progression.bindingAxisId
@@ -105,4 +114,9 @@ export function buildViewModel(evaluation: Evaluation, lang: Lang): ViewModel {
       actions: evaluation.progression.actions.map((a) => resolveMessage(a, lang)),
     },
   };
+}
+
+/** The transform against the viewer's one bundled grid, resolved from `gridId`. */
+export function buildViewModel(evaluation: Evaluation, lang: Lang): ViewModel {
+  return buildViewModelFor(evaluation, resolveGrid(evaluation.gridId), lang);
 }
