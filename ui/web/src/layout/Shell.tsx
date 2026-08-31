@@ -61,12 +61,15 @@ export function Shell(): ReactNode {
   const navigate = useNavigate();
   const [health, setHealth] = useState<Health>('checking');
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const onDeleteAccount = (): void => {
+    if (deleting) return;
     if (!window.confirm('Delete your account? Every org where you are the sole admin is checked first — this cannot be undone.')) {
       return;
     }
     setDeleteError(null);
+    setDeleting(true);
     api('/api/me', { method: 'DELETE' })
       .then(async () => {
         await signOut();
@@ -74,6 +77,7 @@ export function Shell(): ReactNode {
       })
       .catch((e: unknown) => {
         setDeleteError(e instanceof ApiError ? e.message : 'could not delete the account');
+        setDeleting(false);
       });
   };
 
@@ -114,8 +118,13 @@ export function Shell(): ReactNode {
         <button type="button" className="secondary" onClick={() => void signOut()}>
           Sign out
         </button>
-        <button type="button" className="secondary small danger" onClick={onDeleteAccount}>
-          Delete account
+        <button
+          type="button"
+          className="secondary small danger"
+          onClick={onDeleteAccount}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting…' : 'Delete account'}
         </button>
       </header>
       <main>

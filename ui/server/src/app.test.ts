@@ -595,10 +595,13 @@ describe('studio server', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('lets a solo admin delete their account', async () => {
+  it('lets a solo admin delete their account and cleans up the emptied org', async () => {
     await makeOrg(app, U1);
     const res = await app.inject({ method: 'DELETE', url: '/api/me', headers: U1 });
     expect(res.statusCode).toBe(204);
+    // the membership is gone and the now-empty org was dropped, not orphaned
+    const orgs = await app.inject({ method: 'GET', url: '/api/orgs', headers: U1 });
+    expect((orgs.json() as unknown[]).length).toBe(0);
   });
 
   it('409s deleting an account that would strand a shared org, naming it', async () => {
