@@ -9,24 +9,24 @@
 --
 -- Apply it to a throwaway database only. It is never run against the real stack.
 
-do $$ begin
-  if not exists (select from pg_roles where rolname = 'anon') then
-    create role anon nologin noinherit;
-  end if;
-  if not exists (select from pg_roles where rolname = 'authenticated') then
-    create role authenticated nologin noinherit;
-  end if;
+do $$
+declare r text;
+begin
+  foreach r in array array['anon', 'authenticated', 'service_role'] loop
+    if not exists (select from pg_roles where rolname = r) then
+      execute format('create role %I nologin noinherit', r);
+    end if;
+  end loop;
 end $$;
 
--- Supabase grants the API roles broad access to the public schema and sets
--- default privileges so every later-created table is reachable; RLS is what
--- actually narrows it. Mirror that so the migration's tables behave the same
--- here as on the real stack.
-grant usage on schema public to anon, authenticated;
+-- A fresh Supabase project also sets default privileges so every later-created
+-- public table is reachable by the API roles; mirror that here so migrations
+-- run before `20260831160000_api_role_grants.sql` behave the same as on Supabase.
+grant usage on schema public to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public
-  grant all on tables to anon, authenticated;
+  grant all on tables to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public
-  grant all on sequences to anon, authenticated;
+  grant all on sequences to anon, authenticated, service_role;
 
 create schema if not exists auth;
 
