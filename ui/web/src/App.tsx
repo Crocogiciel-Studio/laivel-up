@@ -8,6 +8,7 @@ import { Shell } from './layout/Shell.js';
 import { Placeholder } from './pages/Placeholder.js';
 import { OrgSettingsPage } from './pages/OrgSettingsPage.js';
 import { AcceptInvitePage } from './pages/AcceptInvitePage.js';
+import { ProfilesPage } from './pages/ProfilesPage.js';
 
 export function App(): ReactNode {
   return (
@@ -35,16 +36,7 @@ export function App(): ReactNode {
             }
           >
             <Route index element={<Navigate to="/profiles" replace />} />
-            <Route
-              path="/profiles"
-              element={
-                <Placeholder
-                  title="Profiles"
-                  issue="58"
-                  blurb="Enter a developer's dossier through a form over the five sections."
-                />
-              }
-            />
+            <Route path="/profiles" element={<ProfilesPage />} />
             <Route
               path="/grids"
               element={

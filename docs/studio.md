@@ -35,15 +35,16 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 | Schema + RLS, Supabase Cloud | #55 | this change (`supabase/`) |
 | Node backend: CRUD + run endpoint | #56 | this change (`ui/server/`) |
 | Web shell: routing + OAuth login | #57 | this change (`ui/web/`) |
-| Profile form editor | #58 | — |
+| Profile form editor | #58 | this change (`ui/web/src/profile/`) |
 | Drag-and-drop grid builder | #59 | — |
 | Run + persisted history + comparison | #60 | — |
 | Seeded read-only templates | #61 | — |
 
-#55 and #56 shipped together in one PR (the Cloud-DB decision made splitting
-them pointless). The web app under `ui/web` — React + Vite + React Router,
-Supabase OAuth client-side, all data through the backend — carries #57's shell:
-`/login` plus placeholder `/profiles`, `/grids`, `/runs` behind an auth gate.
+#55–#57 (plus the Cloud pivot and the org model) shipped together in one PR. The
+web app under `ui/web` — React + Vite + React Router, Supabase OAuth client-side,
+all data through the backend — carries the shell (`/login`, an org switcher,
+`/org` settings) and the profile form (`/profiles`). `/grids` and `/runs` are
+still placeholders.
 
 ## Data model
 
