@@ -68,12 +68,15 @@ grid and profile it used, so editing an original never rewrites history.
 
 The known references — the AIDD grid and the four sample profiles
 (`perceval`, `bohort`, `leodagan`, `arthur`) — ship as ownerless
-`is_template = true` rows in the `20260901000000_seed_templates.sql` migration,
+`is_template = true` rows in the `20260831170000_seed_templates.sql` migration,
 so every user sees them and clones them to edit. The migration is generated from
 `presets/aidd.json` and `test/fixtures/profiles/*` by
-`scripts/build-template-seed.mjs` (fixed ids, `ON CONFLICT DO UPDATE`), so a
-`db push` or a local `db reset` keeps the templates in step with the repo — edit
-the sources and re-run, never the `.sql`.
+`scripts/build-template-seed.mjs` (fixed ids, `ON CONFLICT DO UPDATE`). Edit the
+sources and re-run `pnpm db:seed:templates`, never the `.sql`; `pnpm
+templates:check` (a CI step) fails if the committed file has drifted. Because
+`db push` applies a version once, a later *content* change that must reach an
+already-migrated database needs a fresh migration — a local `db reset` restates
+it from the regenerated file.
 
 Auth is Supabase Auth (OAuth). Access is enforced by Postgres row-level security
 (`is_org_member` / `is_org_admin`); the backend forwards the caller's JWT so the

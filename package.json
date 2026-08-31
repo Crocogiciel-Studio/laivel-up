@@ -34,6 +34,7 @@
     "viz": "node scripts/viz.mjs",
     "db:new": "supabase migration new",
     "db:seed:templates": "pnpm build && node scripts/build-template-seed.mjs",
+    "templates:check": "node scripts/build-template-seed.mjs --check",
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "db:test": "supabase db reset && psql \"${SUPABASE_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_smoke.sql",

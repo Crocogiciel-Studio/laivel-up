@@ -147,12 +147,23 @@ begin
   if n <> 4 then raise exception 'bob should see 4 template profiles, saw %', n; end if;
   begin
     insert into public.grid (name, body, is_template) values ('bob tmpl', '{}'::jsonb, true);
-    raise exception 'member inserted a template';
+    raise exception 'member inserted a template grid';
+  exception when insufficient_privilege or check_violation then null;
+  end;
+  begin
+    insert into public.profile (name, body, is_template) values ('bob tmpl', '{}'::jsonb, true);
+    raise exception 'member inserted a template profile';
   exception when insufficient_privilege or check_violation then null;
   end;
   update public.grid set name = 'hijacked' where is_template;
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'member updated % template grid rows', n; end if;
+  update public.profile set name = 'hijacked' where is_template;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member updated % template profile rows', n; end if;
+  delete from public.grid where is_template;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member deleted % template grid rows', n; end if;
   delete from public.profile where is_template;
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'member deleted % template profile rows', n; end if;

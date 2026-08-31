@@ -26,6 +26,9 @@ jobs:
       - run: pnpm depcruise
       - run: pnpm i18n:check
       - run: pnpm build
+      # after build: the generator imports from dist/ (checks the committed
+      # supabase/migrations/*_seed_templates.sql matches presets + fixtures)
+      - run: pnpm templates:check
 
   db:
     # Studio schema (supabase/). Applies the migrations to a bare Postgres with a
