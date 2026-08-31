@@ -35,7 +35,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     return undefined as T;
   }
 
-  const payload: unknown = await response.json().catch(() => null);
+  const text = await response.text();
+  const payload: unknown = text === '' ? null : JSON.parse(text);
 
   if (!response.ok) {
     const body = (payload ?? {}) as { error?: string; issues?: string[] };

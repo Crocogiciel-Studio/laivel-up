@@ -43,7 +43,9 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
       return;
     }
     try {
-      setOrgs(await api<Org[]>('/api/orgs'));
+      // `api<T>()` trusts its type param -- guard against a backend/routing
+      // hiccup (e.g. a non-JSON response) resolving to `null` instead of [].
+      setOrgs((await api<Org[] | null>('/api/orgs')) ?? []);
       setError(null);
     } catch (e) {
       setOrgs([]);
@@ -65,7 +67,7 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
   }, []);
 
   const currentOrg = useMemo(() => {
-    if (orgs === undefined || orgs.length === 0) return undefined;
+    if (orgs === undefined || orgs === null || orgs.length === 0) return undefined;
     return orgs.find((o) => o.id === selectedId) ?? orgs[0];
   }, [orgs, selectedId]);
 

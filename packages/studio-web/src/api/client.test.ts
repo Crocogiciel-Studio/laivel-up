@@ -15,7 +15,7 @@ function stubFetch(status: number, body: unknown): ReturnType<typeof vi.fn> {
     Promise.resolve({
       status,
       ok: status >= 200 && status < 300,
-      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(body === null ? '' : JSON.stringify(body)),
     } as Response),
   );
   vi.stubGlobal('fetch', fn);
@@ -45,5 +45,15 @@ describe('api client', () => {
     });
     stubFetch(403, {});
     await expect(api('/api/grids')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('throws instead of silently resolving to null on a 2xx with a non-JSON body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({ status: 200, ok: true, text: () => Promise.resolve('<html>') } as Response),
+      ),
+    );
+    await expect(api('/api/orgs')).rejects.toThrow();
   });
 });

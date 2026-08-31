@@ -50,12 +50,23 @@ don't apply to a serverless function and can be left unset.
 
 ## Supabase: add the deployed URL
 
-**Authentication → URL Configuration**: add your Vercel URL to the redirect
-allow-list, the same step [local setup](studio.md#running) has you do for
-`http://127.0.0.1:5173`. A Vercel **preview** deployment gets its own
-per-branch URL — front and back are still served from that one preview URL
-together, so nothing else needs a per-preview entry, but sign-in on a
-preview only works once *that* URL is also in the allow-list.
+**Authentication → URL Configuration** has two separate fields — both need
+the Vercel URL, or sign-in silently lands back on `localhost:3000`:
+
+- **Redirect URLs**: add your Vercel URL, the same step
+  [local setup](studio.md#running) has you do for `http://127.0.0.1:5173`.
+  `AuthProvider.tsx` sends an exact `redirectTo`
+  (`window.location.origin` + the destination route); anything not in this
+  allow-list is rejected.
+- **Site URL**: the fallback GoTrue redirects to when `redirectTo` doesn't
+  match the allow-list above — it defaults to `http://localhost:3000` on a
+  new project and is easy to leave untouched. Set it to your Vercel URL too.
+
+A Vercel **preview** deployment gets its own per-branch URL — front and back
+are still served from that one preview URL together, so nothing else needs a
+per-preview entry, but sign-in on a preview only works once *that* URL is also
+in the Redirect URLs allow-list (a wildcard, e.g. `https://<project>-*.vercel.app/*`,
+covers every preview without adding one entry per branch).
 
 ## Verify
 
