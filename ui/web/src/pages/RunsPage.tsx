@@ -208,10 +208,7 @@ export function RunsPage(): ReactNode {
           />
         ) : (
           <div className="runs-empty">
-            <p>No runs yet. Score a few profiles against a grid to get started.</p>
-            <button type="button" className="primary" onClick={() => setPanelOpen(true)}>
-              Run a batch
-            </button>
+            <p>Nothing scored yet — use <strong>+ New run</strong> to score a few profiles against a grid.</p>
           </div>
         )}
       </main>
