@@ -27,3 +27,6 @@ coverage/
 
 # Review pipeline run artefacts
 .review/
+
+# Vercel CLI local project link + pulled env
+.vercel

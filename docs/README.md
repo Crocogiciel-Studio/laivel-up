@@ -28,6 +28,7 @@ picture, or jump straight to what you need.
 | [`packages/studio-web`](../packages/studio-web/README.md) | The SPA |
 | [`packages/studio-db`](../packages/studio-db/supabase/README.md) | Schema, RLS, migrations |
 | [`packages/viewer`](../packages/viewer/README.md) | The single-file offline viewer |
+| [Deploying to Vercel](deploy-vercel.md) | One project, one domain, both tiers |
 
 ## For contributors
 

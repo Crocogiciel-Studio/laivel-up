@@ -181,10 +181,15 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.get('/health', () => ({ ok: true }));
+  // Same check, reachable under /api/ — Vercel's serverless function only
+  // owns that path space (see api/[...path].ts), so the deployed health
+  // check hits this one instead of the bare /health above.
+  app.get('/api/health', () => ({ ok: true }));
 
-  // Everything under /api requires a valid bearer token.
+  // Everything under /api requires a valid bearer token, except the health
+  // alias just above.
   app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.url.startsWith('/api/')) {
+    if (!request.url.startsWith('/api/') || request.url === '/api/health') {
       return;
     }
     const token = bearer(request.headers.authorization);

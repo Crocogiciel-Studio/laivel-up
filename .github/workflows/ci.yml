@@ -27,8 +27,11 @@ jobs:
       - run: pnpm i18n:check
       - run: pnpm build
       # after build: the generator imports from dist/ (checks the committed
-      # the seed_templates migration matches presets + fixtures)
+      # seed_templates migration matches presets + fixtures)
       - run: pnpm templates:check
+      # the Vercel serverless entry (api/) -- imports packages/studio-server/src
+      # directly, so needs the core built first for `laivel-up`/`laivel-up/compose`
+      - run: pnpm typecheck:api
 
   db:
     # Studio schema (packages/studio-db/). Applies the migrations to a bare Postgres with a
