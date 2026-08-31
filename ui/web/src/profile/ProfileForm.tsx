@@ -23,7 +23,9 @@ function Field({
   value: string;
   onChange: (v: string) => void;
 }): ReactNode {
-  const common = { id: def.key, value, onChange: (e: { target: { value: string } }) => onChange(e.target.value) };
+  // No `id`: a raw-PR row repeats the same field defs, which would duplicate
+  // DOM ids across rows. The wrapping `<label>` already associates the control.
+  const common = { value, onChange: (e: { target: { value: string } }) => onChange(e.target.value) };
   return (
     <label className="field">
       <span>{def.label}</span>
@@ -44,6 +46,10 @@ function Field({
 
 export function ProfileForm({ initial, saving, error, issues, onSave, onCancel }: Props): ReactNode {
   const [form, setForm] = useState<ProfileFormState>(initial ?? emptyForm());
+  // A stable id per raw-PR row, independent of its position, so React keeps
+  // the right row (and its focus) mounted across a remove in the middle.
+  const [prKeys, setPrKeys] = useState<string[]>(() => form.rawPRs.map(() => crypto.randomUUID()));
+  const [localIssues, setLocalIssues] = useState<readonly string[]>([]);
 
   const setValue = (key: string, v: string): void =>
     setForm((f) => ({ ...f, values: { ...f.values, [key]: v } }));
@@ -57,13 +63,24 @@ export function ProfileForm({ initial, saving, error, issues, onSave, onCancel }
       const rawPRs = f.rawPRs.map((row, j) => (j === i ? { ...row, [key]: v } : row));
       return { ...f, rawPRs };
     });
-  const addPR = (): void => setForm((f) => ({ ...f, rawPRs: [...f.rawPRs, {}] }));
-  const removePR = (i: number): void =>
+  const addPR = (): void => {
+    setForm((f) => ({ ...f, rawPRs: [...f.rawPRs, {}] }));
+    setPrKeys((keys) => [...keys, crypto.randomUUID()]);
+  };
+  const removePR = (i: number): void => {
     setForm((f) => ({ ...f, rawPRs: f.rawPRs.filter((_, j) => j !== i) }));
+    setPrKeys((keys) => keys.filter((_, j) => j !== i));
+  };
 
   const submit = (e: FormEvent): void => {
     e.preventDefault();
-    onSave(form.name.trim(), toBody(form));
+    const { body, issues: clientIssues } = toBody(form);
+    if (clientIssues.length > 0) {
+      setLocalIssues(clientIssues);
+      return;
+    }
+    setLocalIssues([]);
+    onSave(form.name.trim(), body);
   };
 
   return (
@@ -123,7 +140,7 @@ export function ProfileForm({ initial, saving, error, issues, onSave, onCancel }
               <div className="group">
                 <h4>Raw pull requests</h4>
                 {form.rawPRs.map((row, i) => (
-                  <div key={i} className="raw-pr">
+                  <div key={prKeys[i]} className="raw-pr">
                     {RAW_PR_FIELDS.map((f) => (
                       <Field
                         key={f.key}
@@ -147,6 +164,13 @@ export function ProfileForm({ initial, saving, error, issues, onSave, onCancel }
       })}
 
       {error !== null && <p className="error">{error}</p>}
+      {localIssues.length > 0 && (
+        <ul className="error">
+          {localIssues.map((it) => (
+            <li key={it}>{it}</li>
+          ))}
+        </ul>
+      )}
       {issues !== undefined && issues.length > 0 && (
         <ul className="error">
           {issues.map((it) => (
