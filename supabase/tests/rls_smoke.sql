@@ -215,14 +215,18 @@ begin
   select count(*) into n from public.grid where id = team_grid;
   if n <> 0 then raise exception 'ex-member still sees the team grid'; end if;
 
-  -- Carol has no shared org, only her personal one: delete_account succeeds
-  -- outright, and the emptied org is cleaned up, not left orphaned.
+  -- Carol is a plain member of Team (she accepted the invite above) and admin
+  -- of nothing shared, so delete_account succeeds outright; her emptied
+  -- personal org is cleaned up, not left orphaned. Bind carol_org to that
+  -- personal org explicitly -- she has two memberships now, and picking the
+  -- Team one would make the cleanup check pass for the wrong reason.
   perform pg_temp.become(carol);
   declare
     carol_org uuid;
     remaining int;
   begin
-    select org_id into carol_org from public.org_member where user_id = carol limit 1;
+    select org_id into carol_org
+      from public.org_member where user_id = carol and org_id <> team;
     perform public.delete_account();
 
     select count(*) into remaining from public.org_member where user_id = carol;
