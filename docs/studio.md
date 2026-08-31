@@ -37,8 +37,8 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 | Web shell: routing + OAuth login | #57 | done |
 | Profile form editor | #58 | done (`ui/web/src/profile/`) |
 | Drag-and-drop grid builder | #59 | done (`ui/web/src/grid/`) |
-| Run + persisted history + comparison | #60 | this change (`ui/web/src/runs/`) |
-| Seeded read-only templates | #61 | — |
+| Run + persisted history + comparison | #60 | done (`ui/web/src/runs/`) |
+| Seeded read-only templates | #61 | this change (`supabase/migrations/…seed_templates.sql`) |
 
 The web app under `ui/web` — React + Vite + React Router, Supabase OAuth
 client-side, all data through the backend — carries the shell (`/login`, an org
@@ -65,6 +65,15 @@ A new user gets a personal org automatically, so solo use just works.
 Tables: `org`, `org_member`, `grid`, `profile`, `run` — see
 [`supabase/README.md`](../supabase/README.md). A `run` stores a full copy of the
 grid and profile it used, so editing an original never rewrites history.
+
+The known references — the AIDD grid and the four sample profiles
+(`perceval`, `bohort`, `leodagan`, `arthur`) — ship as ownerless
+`is_template = true` rows in the `20260901000000_seed_templates.sql` migration,
+so every user sees them and clones them to edit. The migration is generated from
+`presets/aidd.json` and `test/fixtures/profiles/*` by
+`scripts/build-template-seed.mjs` (fixed ids, `ON CONFLICT DO UPDATE`), so a
+`db push` or a local `db reset` keeps the templates in step with the repo — edit
+the sources and re-run, never the `.sql`.
 
 Auth is Supabase Auth (OAuth). Access is enforced by Postgres row-level security
 (`is_org_member` / `is_org_admin`); the backend forwards the caller's JWT so the

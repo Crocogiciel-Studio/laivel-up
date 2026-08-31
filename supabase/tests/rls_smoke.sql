@@ -26,9 +26,8 @@ insert into auth.users (id, email) values
   ('22222222-2222-2222-2222-222222222222', 'bob@studio.test'),
   ('33333333-3333-3333-3333-333333333333', 'carol@studio.test');
 
--- A seeded template (no org).
-insert into public.grid (name, body, is_template)
-  values ('AIDD reference (test)', '{"id":"aidd"}'::jsonb, true);
+-- The read-only templates come from the 20260901000000_seed_templates.sql
+-- migration (1 grid + 4 profiles), already applied above.
 
 create or replace function pg_temp.become(user_id uuid) returns void
 language plpgsql as $$
@@ -140,14 +139,23 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  -- Everyone sees the template; nobody writes one.
+  -- Everyone sees the seeded templates (1 grid + 4 profiles); nobody writes,
+  -- updates or deletes one.
   select count(*) into n from public.grid where is_template;
-  if n <> 1 then raise exception 'bob should see the template, saw %', n; end if;
+  if n <> 1 then raise exception 'bob should see 1 template grid, saw %', n; end if;
+  select count(*) into n from public.profile where is_template;
+  if n <> 4 then raise exception 'bob should see 4 template profiles, saw %', n; end if;
   begin
     insert into public.grid (name, body, is_template) values ('bob tmpl', '{}'::jsonb, true);
     raise exception 'member inserted a template';
   exception when insufficient_privilege or check_violation then null;
   end;
+  update public.grid set name = 'hijacked' where is_template;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member updated % template grid rows', n; end if;
+  delete from public.profile where is_template;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'member deleted % template profile rows', n; end if;
 
   -- Invites: an admin invites, a member cannot; the invitee redeems the token.
   perform pg_temp.become(alice);
