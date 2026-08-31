@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import { z } from 'zod';
+import { zodIssues as issuesOf } from 'laivel-up/compose';
 import type { Authenticator, AuthedUser } from './auth.js';
 import { bearer } from './auth.js';
 import type {
@@ -460,9 +461,3 @@ function subjectIdOf(body: unknown): string | undefined {
   return typeof id === 'string' && id.length > 0 ? id : undefined;
 }
 
-function issuesOf(error: z.ZodError): readonly string[] {
-  return error.issues.map((issue) => {
-    const path = issue.path.join('.');
-    return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
-  });
-}

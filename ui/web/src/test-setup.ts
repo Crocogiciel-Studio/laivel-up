@@ -1,3 +1,10 @@
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+// Unmount anything a test rendered, so `getBy*` in the next test does not match
+// leftover DOM.
+afterEach(cleanup);
+
 // Vite exposes VITE_* on import.meta.env; jsdom tests need them stubbed so
 // src/env.ts does not throw at import time.
 Object.assign(import.meta.env, {

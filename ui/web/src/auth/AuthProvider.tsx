@@ -8,7 +8,8 @@ type OAuthProvider = 'github' | 'google';
 interface AuthState {
   /** undefined while the initial session check is in flight. */
   readonly session: Session | null | undefined;
-  signIn(provider: OAuthProvider): Promise<void>;
+  /** `next` is an in-app path to land on after the OAuth round-trip (default `/`). */
+  signIn(provider: OAuthProvider, next?: string): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -34,10 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactNode {
   const value = useMemo<AuthState>(
     () => ({
       session,
-      signIn: async (provider) => {
+      signIn: async (provider, next = '/') => {
+        // Router state does not survive the OAuth full-page reload, so the
+        // destination rides in redirectTo.
+        const dest = next.startsWith('/') ? next : '/';
         await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: window.location.origin },
+          options: { redirectTo: `${window.location.origin}${dest}` },
         });
       },
       signOut: async () => {

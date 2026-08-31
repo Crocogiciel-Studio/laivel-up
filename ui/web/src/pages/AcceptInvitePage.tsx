@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useOrg } from '../org/OrgProvider.js';
@@ -10,24 +10,27 @@ export function AcceptInvitePage(): ReactNode {
   const { reload, select } = useOrg();
   const navigate = useNavigate();
   const [status, setStatus] = useState<'working' | 'ok' | string>('working');
+  const attempted = useRef<string | null>(null);
 
   useEffect(() => {
     if (token === undefined) return;
-    let active = true;
+    // accept_invite() is single-use. Fire it exactly once per token: the ref
+    // guard survives StrictMode's remount and any `reload`/`session` identity
+    // change, and the response is applied whenever it lands (no `active` flag —
+    // that would discard the first effect's result after StrictMode's cleanup).
+    if (attempted.current === token) return;
+    attempted.current = token;
+
     acceptInvite(token)
       .then(async ({ orgId }) => {
-        if (!active) return;
         await reload();
         select(orgId);
         setStatus('ok');
         setTimeout(() => navigate('/'), 800);
       })
       .catch((e: unknown) => {
-        if (active) setStatus(e instanceof ApiError ? e.message : 'could not accept the invite');
+        setStatus(e instanceof ApiError ? e.message : 'could not accept the invite');
       });
-    return () => {
-      active = false;
-    };
   }, [token, reload, select, navigate]);
 
   return (

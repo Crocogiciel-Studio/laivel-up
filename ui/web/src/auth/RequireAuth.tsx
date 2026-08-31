@@ -10,7 +10,10 @@ export function RequireAuth({ children }: { children: ReactNode }): ReactNode {
     return <div className="centered muted">Checking session…</div>;
   }
   if (session === null) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    // Carry the intended path in the query — router state is lost across the
+    // OAuth reload.
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?next=${next}`} replace />;
   }
   return children;
 }
