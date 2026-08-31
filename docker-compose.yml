@@ -10,7 +10,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: ui/web/Dockerfile
+      dockerfile: packages/studio-web/Dockerfile
       args:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?set it in .env}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?set it in .env}
@@ -23,7 +23,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: ui/server/Dockerfile
+      dockerfile: packages/studio-server/Dockerfile
     ports:
       - "8787:8787"
     environment:

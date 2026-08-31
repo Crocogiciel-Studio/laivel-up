@@ -26,7 +26,7 @@
       "reason": "binary"
     },
     {
-      "pattern": "^dist/|^coverage/",
+      "pattern": "(^|/)dist/|(^|/)coverage/",
       "reason": "build and coverage output"
     },
     {
@@ -34,7 +34,7 @@
       "reason": "vendored review-kit runtime — owned upstream, updated by re-running the installer"
     },
     {
-      "pattern": "^test/fixtures/profiles/",
+      "pattern": "^packages/core/test/fixtures/profiles/",
       "reason": "vendored subject profiles (MIT) — the input contract, not this repo's code"
     },
     {
@@ -57,12 +57,12 @@
     {
       "name": "hexagon",
       "prefix": "hex",
-      "route": "^src/(core|adapters|criteria|cli)/|^presets/"
+      "route": "^packages/core/src/(core|adapters|criteria|cli)/|^packages/core/presets/"
     },
     {
       "name": "criterion-contract",
       "prefix": "crit",
-      "route": "^src/criteria/|(^|/)criterion-evaluator\\.ts$|(^|/)evaluator-catalogue\\.ts$|^src/core/engine/(evaluate|bundle|confidence|aggregate|progression)\\.ts$"
+      "route": "^packages/core/src/criteria/|(^|/)criterion-evaluator\\.ts$|(^|/)evaluator-catalogue\\.ts$|^packages/core/src/core/engine/(evaluate|bundle|confidence|aggregate|progression)\\.ts$"
     }
   ],
   "corpus": {
@@ -74,7 +74,7 @@
         "kind": "anchored",
         "dir": "docs/agents",
         "exclude": ["review-contract.md", "review-pipeline.md", "review-onboarding.md"],
-        "appliesTo": ["src/**", "presets/**"],
+        "appliesTo": ["packages/core/src/**", "packages/core/presets/**"],
         "generated": false
       },
       {

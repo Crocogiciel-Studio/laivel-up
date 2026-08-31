@@ -5,9 +5,7 @@ allowBuilds:
   supabase: true
 
 packages:
-  - "ui"
-  - "ui/server"
-  - "ui/web"
+  - "packages/*"
 
 # supabase@2.2.1 pins tar@7.4.3, which carries 8 GHSA advisories (path
 # traversal, symlink/hardlink escape, PAX header confusion). Force the patched

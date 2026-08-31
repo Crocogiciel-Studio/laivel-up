@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 // The repo-root .env holds the studio config; read VITE_* vars from there so the
 // web app and the server share one file.
-const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],

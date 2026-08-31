@@ -35,7 +35,7 @@ const flag = (...names) => {
 
 const FIXTURES = 'test/fixtures/profiles';
 const grid = flag('--grid', '-g') ?? 'presets/aidd.json';
-const publicDir = resolve(root, 'ui/public');
+const publicDir = resolve(root, '../viewer/public');
 const evalDir = resolve(publicDir, 'evaluations');
 
 /** `--profile`/`-p`, or a bare positional; a path as-is, or a name under the fixtures dir. */
@@ -88,7 +88,7 @@ try {
 
 process.stderr.write('opening the viewer (Ctrl+C to stop)…\n');
 try {
-  execFileSync('pnpm', ['-C', 'ui', 'exec', 'vite', '--open'], { cwd: root, stdio: 'inherit' });
+  execFileSync('pnpm', ['-C', '../viewer', 'exec', 'vite', '--open'], { cwd: root, stdio: 'inherit' });
 } catch {
   // vite exits non-zero on Ctrl+C — nothing to report.
 }

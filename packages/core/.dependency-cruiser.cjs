@@ -23,14 +23,6 @@ module.exports = {
       to: { dependencyTypes: ['npm', 'npm-dev', 'npm-optional', 'npm-peer'] },
     },
     {
-      name: 'no-import-from-ui',
-      comment:
-        'The ui/ viewer is a satellite. Nothing under src/ may import it — the dependency runs one way.',
-      severity: 'error',
-      from: { path: '^src' },
-      to: { path: '^ui' },
-    },
-    {
       name: 'no-circular',
       comment: 'Circular dependencies signal a leak in the layering.',
       severity: 'error',

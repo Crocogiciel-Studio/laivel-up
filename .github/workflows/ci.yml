@@ -27,11 +27,11 @@ jobs:
       - run: pnpm i18n:check
       - run: pnpm build
       # after build: the generator imports from dist/ (checks the committed
-      # supabase/migrations/*_seed_templates.sql matches presets + fixtures)
+      # the seed_templates migration matches presets + fixtures)
       - run: pnpm templates:check
 
   db:
-    # Studio schema (supabase/). Applies the migrations to a bare Postgres with a
+    # Studio schema (packages/studio-db/). Applies the migrations to a bare Postgres with a
     # thin Supabase shim, then runs the RLS smoke test. Does not need the full
     # Supabase stack. Runs in parallel with `check`.
     runs-on: ubuntu-latest
@@ -57,10 +57,10 @@ jobs:
       - name: Apply shim + migrations + RLS smoke test
         env:
           PSQL: psql "$PGURL" -v ON_ERROR_STOP=1
-        run: bash scripts/db-smoke.sh
+        run: bash packages/studio-db/scripts/db-smoke.sh
 
   ui:
-    # Satellite viewer (ui/). A pnpm workspace package with its own Vite/Vitest
+    # Satellite viewer (packages/viewer/). A pnpm workspace package with its own Vite/Vitest
     # toolchain — runs in parallel with `check` and never blocks the core job.
     runs-on: ubuntu-latest
     steps:
@@ -75,12 +75,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm -C ui run typecheck
-      - run: pnpm -C ui test
-      - run: pnpm -C ui run build
+      - run: pnpm -C packages/viewer run typecheck
+      - run: pnpm -C packages/viewer test
+      - run: pnpm -C packages/viewer run build
 
   studio-server:
-    # Studio backend (ui/server). Imports the core through `laivel-up/compose`,
+    # Studio backend (packages/studio-server/). Imports the core through `laivel-up/compose`,
     # so the core is built first. Parallel with `check`.
     runs-on: ubuntu-latest
     steps:
@@ -96,12 +96,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
-      - run: pnpm -C ui/server run typecheck
-      - run: pnpm -C ui/server test
-      - run: pnpm -C ui/server run build
+      - run: pnpm -C packages/studio-server run typecheck
+      - run: pnpm -C packages/studio-server test
+      - run: pnpm -C packages/studio-server run build
 
   studio-web:
-    # Studio web app (ui/web). React SPA; VITE_* are stubbed for typecheck/test
+    # Studio web app (packages/studio-web/). React SPA; VITE_* are stubbed for typecheck/test
     # and given placeholder values for the build. Parallel with `check`.
     runs-on: ubuntu-latest
     env:
@@ -122,6 +122,6 @@ jobs:
 
       # preset.test.ts imports laivel-up/compose to check builder output parses
       - run: pnpm build
-      - run: pnpm -C ui/web run typecheck
-      - run: pnpm -C ui/web test
-      - run: pnpm -C ui/web run build
+      - run: pnpm -C packages/studio-web run typecheck
+      - run: pnpm -C packages/studio-web test
+      - run: pnpm -C packages/studio-web run build

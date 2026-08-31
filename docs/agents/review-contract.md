@@ -59,7 +59,7 @@ PR that touches the review pipeline. Do not run any of these — a green check a
 
 - **`$comment` / `$comment.*` keys** in `presets/*.json` and `docs/agents/*.json`. Deliberate
   inline documentation, not dead data.
-- **The French file names under `test/fixtures/profiles/`** (`declaratif.md`, etc.). They are the
+- **The French file names under `packages/core/test/fixtures/profiles/`** (`declaratif.md`, etc.). They are the
   subject's input contract and must not be renamed; the surrounding English naming convention does
   not apply to them.
 - **`.js` under `.github/scripts/`** written as CommonJS with `require`. Vendored review-kit
