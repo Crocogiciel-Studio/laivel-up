@@ -91,21 +91,49 @@ leave — the org settings page (`/org`) covers all of it.
 
 ## Running
 
-```
-pnpm install
-cp .env.example .env           # SUPABASE_* for the server, VITE_* for the web app
-pnpm build                     # the core — studio-server imports laivel-up/compose
-pnpm -C packages/studio-server dev          # backend on :8787, against the Cloud project
-pnpm -C packages/studio-web dev             # app on :5173
-```
+The studio needs a Supabase project behind it — Cloud (shared, what a real
+deployment uses) or a local stack (offline, solo, no account). Either way,
+sign-in is **OAuth only** (no email/password): the local stack does not fake
+a provider, so both paths end with registering a real OAuth app.
 
-Add `http://127.0.0.1:5173` to the project's redirect allow-list and enable an
-OAuth provider (dashboard: Authentication → URL Configuration / Providers).
+### Option A — Supabase Cloud
 
-`docker compose up --build` builds both tiers from the repo-root `.env`.
+1. Create a project at [supabase.com](https://supabase.com) (free tier is
+   enough).
+2. **Authentication → Providers**: enable GitHub or Google, following the
+   dashboard's own steps to register the app with that provider.
+3. **Authentication → URL Configuration**: add `http://127.0.0.1:5173` to the
+   redirect allow-list.
+4. **Project Settings → API**: copy the project URL and anon/publishable key.
+5. `cp .env.example .env`, fill `SUPABASE_URL` / `SUPABASE_ANON_KEY` and the
+   matching `VITE_*` pair with those values.
+6. `pnpm db:link` once, then `pnpm db:push` — applies the schema, RLS, and
+   seeds the AIDD grid + four sample profiles as read-only templates.
+7. `pnpm build && pnpm -C packages/studio-server dev` (backend, `:8787`),
+   `pnpm -C packages/studio-web dev` (app, `:5173`).
 
-Applying migrations to Cloud: `pnpm db:link` once, then `pnpm db:push`.
-Offline dev instead: `pnpm db:start` for a local stack, `pnpm db:test` /
-`pnpm db:test:bare` to check the schema + RLS against a throwaway Postgres.
+`docker compose up --build` builds and runs both tiers from the repo-root
+`.env` instead of steps 7.
+
+### Option B — a local stack (offline, solo)
+
+1. `pnpm db:start` — spins up Supabase in Docker and applies every migration
+   automatically (schema, RLS, the seeded templates). Prints the local API
+   URL (`http://127.0.0.1:54321`) and anon key.
+2. Register an OAuth app anyway — a GitHub OAuth App is the fastest (free,
+   no review): callback URL `http://127.0.0.1:54321/auth/v1/callback`. Flip
+   `enabled = true` under `[auth.external.github]` in
+   `packages/studio-db/supabase/config.toml`, then restart the stack
+   (`pnpm db:stop && pnpm db:start`) so it picks up the change.
+3. `cp .env.example .env`, fill `SUPABASE_URL` / `SUPABASE_ANON_KEY` (+
+   `VITE_*`) with the local values from step 1, and the
+   `SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID` / `_SECRET` from your OAuth app.
+4. `pnpm build && pnpm -C packages/studio-server dev`,
+   `pnpm -C packages/studio-web dev`.
+5. `pnpm db:stop` when done.
+
+Just verifying the schema + RLS, no UI or OAuth needed: `pnpm db:test`
+(against your local stack) or `pnpm db:test:bare` (a throwaway Postgres, no
+Supabase images at all — what CI runs).
 
 See [`packages/studio-server/README.md`](../packages/studio-server/README.md) for the routes.
