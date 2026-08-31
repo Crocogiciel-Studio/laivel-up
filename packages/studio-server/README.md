@@ -25,7 +25,7 @@ service-role key.
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/health` | no auth |
+| `GET` | `/health` (also `/api/health`) | no auth — the `/api/` alias is what a [Vercel deploy](../../docs/deploy-vercel.md) reaches |
 | `GET` | `/api/catalogue` | the coded criteria a grid can pick from |
 | `GET` `POST` | `/api/orgs` | your orgs; `POST { name }` creates one (you become admin) |
 | `GET` | `/api/orgs/:id/members` | roster with emails (members only) |

@@ -113,7 +113,8 @@ a provider, so both paths end with registering a real OAuth app.
    `pnpm -C packages/studio-web dev` (app, `:5173`).
 
 `docker compose up --build` builds and runs both tiers from the repo-root
-`.env` instead of steps 7.
+`.env` instead of steps 7. For a public URL with no server of your own to run
+— [Deploying to Vercel](deploy-vercel.md).
 
 ### Option B — a local stack (offline, solo)
 

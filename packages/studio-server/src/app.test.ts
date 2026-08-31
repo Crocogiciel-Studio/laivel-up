@@ -306,6 +306,12 @@ describe('studio server', () => {
     expect(res.json()).toEqual({ ok: true });
   });
 
+  it('serves the /api/health alias without auth too', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/health' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+  });
+
   it('rejects /api without a bearer token, and an unknown token', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/orgs' })).statusCode).toBe(401);
     const bad = await app.inject({

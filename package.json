@@ -9,8 +9,13 @@
     "node": ">=22"
   },
   "packageManager": "pnpm@11.24.0",
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  },
   "scripts": {
     "typecheck": "pnpm -C packages/core typecheck",
+    "typecheck:api": "tsc --noEmit",
     "lint": "pnpm -C packages/core lint",
     "lint:fix": "pnpm -C packages/core lint:fix",
     "test": "pnpm -C packages/core test",
