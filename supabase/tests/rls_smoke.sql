@@ -166,10 +166,29 @@ begin
   select count(*) into n from public.grid where id = team_grid;
   if n <> 1 then raise exception 'accepted member cannot see the team grid'; end if;
 
+  -- The token is single-use. accept_invite raises P0001 on a used token, which
+  -- is also the code a bare `raise exception` here would carry -- so record
+  -- whether the second call returned, and assert outside the handler.
+  declare reused boolean := false;
   begin
-    perform public.accept_invite(invite_token);
-    raise exception 'invite was reusable';
-  exception when raise_exception then null;
+    begin
+      perform public.accept_invite(invite_token);
+      reused := true;
+    exception when raise_exception then null; -- expected
+    end;
+    if reused then raise exception 'invite was reusable'; end if;
+  end;
+
+  -- The sole admin cannot leave or self-demote (org would be unmanageable).
+  perform pg_temp.become(alice);
+  declare left_ok boolean := false;
+  begin
+    begin
+      delete from public.org_member where org_id = team and user_id = alice;
+      left_ok := true;
+    exception when raise_exception then null; -- expected: keep-an-admin trigger
+    end;
+    if left_ok then raise exception 'the last admin was allowed to leave'; end if;
   end;
 
   -- Bob leaves Team and loses access to its grid.

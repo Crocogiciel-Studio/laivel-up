@@ -43,4 +43,4 @@ $$;
 
 grant usage on schema auth to anon, authenticated;
 -- No SELECT on auth.users: real Supabase does not grant it either, and the FK
--- check on owner_id runs with the table owner's privileges.
+-- check on created_by / org_member.user_id runs with the table owner's privileges.

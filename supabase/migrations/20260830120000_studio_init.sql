@@ -49,6 +49,35 @@ create table public.org_member (
 
 create index org_member_user_idx on public.org_member (user_id);
 
+-- An org must always keep at least one admin, or it becomes unmanageable
+-- (no invites, no role changes, no grid/profile creation). Block the delete or
+-- self-demotion that would empty the admin seat.
+create function public.org_keep_an_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.role = 'admin'
+     and (tg_op = 'DELETE' or new.role <> 'admin')
+     and (
+       select count(*) from public.org_member
+       where org_id = old.org_id and role = 'admin'
+     ) <= 1
+  then
+    raise exception 'an organisation must keep at least one admin';
+  end if;
+  return case tg_op when 'DELETE' then old else new end;
+end;
+$$;
+
+revoke execute on function public.org_keep_an_admin() from public;
+
+create trigger org_keep_an_admin_trg
+  before delete or update on public.org_member
+  for each row execute function public.org_keep_an_admin();
+
 -- Membership predicates. SECURITY DEFINER so they read org_member directly
 -- without tripping its own RLS (which would recurse). `revoke from public`
 -- because CREATE FUNCTION grants EXECUTE to PUBLIC, and a later `revoke from
@@ -120,8 +149,10 @@ as $$
 declare
   personal_org uuid;
 begin
+  -- `left(..., 200)` so a very long email cannot trip org.name's length check
+  -- and abort the sign-up this trigger runs inside.
   insert into public.org (name)
-    values (coalesce(nullif(new.email, ''), 'Personal') || '''s org')
+    values (left(coalesce(nullif(new.email, ''), 'Personal') || '''s org', 200))
     returning id into personal_org;
   insert into public.org_member (org_id, user_id, role)
     values (personal_org, new.id, 'admin');
@@ -328,7 +359,13 @@ create policy grid_writer_insert on public.grid
 create policy grid_writer_update on public.grid
   for update to authenticated
   using (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())))
-  with check (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())));
+  -- the check also demands membership of the *target* org, so a creator cannot
+  -- move a row into a workspace they are not in
+  with check (
+    not is_template
+    and public.is_org_member(org_id)
+    and (public.is_org_admin(org_id) or created_by = (select auth.uid()))
+  );
 create policy grid_writer_delete on public.grid
   for delete to authenticated
   using (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())));
@@ -341,7 +378,11 @@ create policy profile_writer_insert on public.profile
 create policy profile_writer_update on public.profile
   for update to authenticated
   using (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())))
-  with check (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())));
+  with check (
+    not is_template
+    and public.is_org_member(org_id)
+    and (public.is_org_admin(org_id) or created_by = (select auth.uid()))
+  );
 create policy profile_writer_delete on public.profile
   for delete to authenticated
   using (not is_template and (public.is_org_admin(org_id) or created_by = (select auth.uid())));
