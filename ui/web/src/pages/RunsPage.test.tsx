@@ -162,6 +162,29 @@ describe('RunsPage', () => {
     await waitFor(() => expect(within(fiche()).getByRole('heading', { name: 'perceval' })).toBeTruthy());
   });
 
+  it('keeps the panel open and names the failures when part of a batch fails', async () => {
+    seed([]);
+    createRun
+      .mockResolvedValueOnce(run({ id: 'rc1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') }))
+      .mockRejectedValueOnce(new MockApiError(422, 'bad grid'));
+    listRuns
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([run({ id: 'rc1', subjectId: 'perceval', evaluation: evaluation('perceval', 'senior') })]);
+    render(<RunsPage />);
+    await waitFor(() => expect(screen.getByText('No runs yet.')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: '+ New run' }));
+    fireEvent.change(screen.getByLabelText('Grid'), { target: { value: 'gr1' } });
+    fireEvent.click(screen.getByLabelText('Perceval'));
+    fireEvent.click(screen.getByLabelText('Bohort'));
+    fireEvent.click(screen.getByRole('button', { name: 'Run 2' }));
+
+    await waitFor(() => expect(screen.getByText(/1 run\(s\) failed: Bohort/)).toBeTruthy());
+    // panel is still open, the per-profile list still visible
+    expect(screen.getByLabelText('Grid')).toBeTruthy();
+    expect(screen.getByText('bad grid')).toBeTruthy();
+  });
+
   it('shows the over-time history for a developer with several runs and switches on click', async () => {
     seed([
       run({ id: 'r-old', subjectId: 'perceval', createdAt: '2026-08-01T00:00:00.000Z', evaluation: evaluation('perceval', 'junior') }),

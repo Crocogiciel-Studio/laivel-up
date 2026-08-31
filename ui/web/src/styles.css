@@ -696,9 +696,6 @@ button.link {
 .ladder-step.here .ladder-dot {
   background: var(--accent);
 }
-.ladder.compact .ladder-label {
-  display: none;
-}
 
 /* history -------------------------------------------------------------- */
 .history h4,

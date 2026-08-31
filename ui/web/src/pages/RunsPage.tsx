@@ -97,11 +97,15 @@ export function RunsPage(): ReactNode {
     currentVm?.gridId ??
     '';
 
+  // Only the runs scored against the shown run's grid — a level index compares
+  // nothing across two different scales.
   const history: HistoryPoint[] = useMemo(() => {
+    if (currentVm === null) return [];
     return [...currentRuns]
       .reverse()
-      .map((r) => {
-        const vm = buildRunViewModel(r.evaluation, r.gridSnapshot);
+      .map((r) => ({ r, vm: buildRunViewModel(r.evaluation, r.gridSnapshot) }))
+      .filter(({ vm }) => vm.gridId === currentVm.gridId)
+      .map(({ r, vm }) => {
         const idx = vm.verdict.ruled ? vm.scale.indexOf(vm.verdict.level) : -1;
         return {
           runId: r.id,
@@ -110,7 +114,7 @@ export function RunsPage(): ReactNode {
           levelLabel: vm.verdict.ruled ? vm.verdict.level : 'no level',
         };
       });
-  }, [currentRuns]);
+  }, [currentRuns, currentVm]);
 
   if (orgId === undefined) {
     return <section className="page"><p className="muted">No organisation selected.</p></section>;
@@ -124,11 +128,15 @@ export function RunsPage(): ReactNode {
     runBatch(orgId, gridId, picked, setBatch)
       .then(async (items) => {
         await reload();
+        const failed = items.filter((it) => it.status === 'error');
         const firstDone = items.find((it) => it.status === 'done' && it.subjectId !== undefined);
-        if (firstDone?.subjectId !== undefined) {
-          setSelected(firstDone.subjectId);
+        if (firstDone?.subjectId !== undefined) setSelected(firstDone.subjectId);
+        if (failed.length === 0) {
           setPanelOpen(false);
           setBatch(null);
+        } else {
+          // keep the panel (and its per-profile list) open so the failures stay visible
+          setError(`${failed.length} run(s) failed: ${failed.map((it) => it.name).join(', ')}`);
         }
       })
       .catch(() => setError('the batch failed'))

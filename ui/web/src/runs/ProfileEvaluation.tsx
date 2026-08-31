@@ -11,6 +11,9 @@ export interface HistoryPoint {
   readonly levelLabel: string;
 }
 
+/** The over-time strip only compares runs scored against the same grid — a
+ *  level index means nothing across two different scales. */
+
 interface Props {
   readonly vm: ViewModel;
   readonly meta: {
@@ -68,6 +71,7 @@ function Axis({ card }: { readonly card: AxisCard }): ReactNode {
                   <th>role</th>
                   <th>status</th>
                   <th>level</th>
+                  <th>measured</th>
                   <th>conf.</th>
                   <th>evidence</th>
                 </tr>
@@ -79,6 +83,7 @@ function Axis({ card }: { readonly card: AxisCard }): ReactNode {
                     <td>{r.role}</td>
                     <td>{r.status}</td>
                     <td>{r.level}</td>
+                    <td>{r.raw}</td>
                     <td>{r.confidencePct}%</td>
                     <td>{r.evidence}</td>
                   </tr>
