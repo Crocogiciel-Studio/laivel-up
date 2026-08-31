@@ -36,16 +36,20 @@ web (SPA, #57)  ->  server (Node)  ->  src/core engine
 | Node backend: CRUD + run endpoint | #56 | done |
 | Web shell: routing + OAuth login | #57 | done |
 | Profile form editor | #58 | done (`ui/web/src/profile/`) |
-| Drag-and-drop grid builder | #59 | this change (`ui/web/src/grid/`) |
-| Run + persisted history + comparison | #60 | — |
+| Drag-and-drop grid builder | #59 | done (`ui/web/src/grid/`) |
+| Run + persisted history + comparison | #60 | this change (`ui/web/src/runs/`) |
 | Seeded read-only templates | #61 | — |
 
 The web app under `ui/web` — React + Vite + React Router, Supabase OAuth
 client-side, all data through the backend — carries the shell (`/login`, an org
-switcher, `/org` settings), the profile form (`/profiles`), and the grid builder
-(`/grids`). `/runs` is still a placeholder.
+switcher, `/org` settings), the profile form (`/profiles`), the grid builder
+(`/grids`), and the run screen (`/runs`): pick a saved profile and grid,
+`POST /api/runs`, and the stored evaluation is rendered through `@laivel-up/ui`'s
+view-model helpers (resolved against the run's own grid snapshot). History is
+grouped by developer with an over-time comparison, and a run is flagged when the
+grid or profile it used has been edited since.
 
-Each criterion now declares its `paramDefaults` (`src/core/ports/criterion-evaluator.ts`);
+Each criterion declares its `paramDefaults` (`src/core/ports/criterion-evaluator.ts`);
 `/api/catalogue` returns them so the builder pre-fills a criterion card. The
 builder's output is the `presets/*.json` shape — `ui/web/src/grid/preset.test.ts`
 round-trips the AIDD preset through it and checks the result still parses via
