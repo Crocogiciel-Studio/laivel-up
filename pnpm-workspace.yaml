@@ -8,3 +8,10 @@ packages:
   - "ui"
   - "ui/server"
   - "ui/web"
+
+# supabase@2.2.1 pins tar@7.4.3, which carries 8 GHSA advisories (path
+# traversal, symlink/hardlink escape, PAX header confusion). Force the patched
+# line: supabase only calls tar's extract() on a checksummed GitHub-release
+# download in its postinstall, and none of these are API-breaking patches.
+overrides:
+  tar: ^7.5.18
