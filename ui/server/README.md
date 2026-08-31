@@ -26,11 +26,14 @@ service-role key.
 | --- | --- | --- |
 | `GET` | `/health` | no auth |
 | `GET` | `/api/catalogue` | the coded criteria a grid can pick from |
-| `GET` `POST` | `/api/grids`, `/api/profiles` | list / create |
-| `GET` `PATCH` `DELETE` | `/api/grids/:id`, `/api/profiles/:id` | owner-scoped; templates are read-only |
-| `GET` | `/api/runs` | `?subjectId=` filters one developer's history |
+| `GET` `POST` | `/api/orgs` | your orgs; `POST { name }` creates one (you become admin) |
+| `GET` `POST` | `/api/grids`, `/api/profiles` | list (`?orgId=` filters); `POST { orgId, name, body }` |
+| `GET` `PATCH` `DELETE` | `/api/grids/:id`, `/api/profiles/:id` | member reads, admin/creator writes; templates read-only |
+| `GET` | `/api/runs` | `?orgId=` and `?subjectId=` filter |
 | `GET` | `/api/runs/:id` | |
-| `POST` | `/api/runs` | `{ gridId \| grid, profileId \| profile, subjectId?, minRuledAxes? }` |
+| `POST` | `/api/runs` | `{ orgId, gridId \| grid, profileId \| profile, subjectId?, minRuledAxes? }` |
+
+A write to an org you are not in returns **403**.
 
 `POST /api/runs` resolves the grid and profile (a saved id, or an inline body),
 validates both against the CLI's schemas, runs the engine, and stores the run

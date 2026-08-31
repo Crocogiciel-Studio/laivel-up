@@ -20,6 +20,8 @@ directly.
 
 - `auth/AuthProvider` holds the Supabase session and exposes `signIn` / `signOut`.
 - `auth/RequireAuth` gates the shell; an unauthenticated visitor is sent to `/login`.
+- `org/OrgProvider` loads the user's orgs, tracks the current one (localStorage),
+  and creates new ones. The shell shows a switcher when there is more than one.
 - `layout/Shell` is the nav + header, and pings the backend `/health`.
 - `api/client` attaches the session's access token to every `/api/*` call.
 

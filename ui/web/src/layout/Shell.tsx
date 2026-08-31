@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.js';
+import { useOrg } from '../org/OrgProvider.js';
 import { api } from '../api/client.js';
 
 const NAV = [
@@ -11,6 +12,43 @@ const NAV = [
 ] as const;
 
 type Health = 'ok' | 'unreachable' | 'checking';
+
+function OrgSwitcher(): ReactNode {
+  const { orgs, currentOrg, select, create } = useOrg();
+
+  if (orgs === undefined) {
+    return <span className="muted small">loading orgs…</span>;
+  }
+
+  const onNew = (): void => {
+    const name = window.prompt('New organisation name');
+    if (name !== null && name.trim() !== '') {
+      void create(name.trim());
+    }
+  };
+  const onChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+    select(e.target.value);
+  };
+
+  return (
+    <span className="org">
+      {orgs.length > 1 ? (
+        <select value={currentOrg?.id ?? ''} onChange={onChange}>
+          {orgs.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span className="org-name">{currentOrg?.name ?? 'no org'}</span>
+      )}
+      <button type="button" className="secondary small" onClick={onNew}>
+        + org
+      </button>
+    </span>
+  );
+}
 
 export function Shell(): ReactNode {
   const { session, signOut } = useAuth();
@@ -36,6 +74,7 @@ export function Shell(): ReactNode {
     <div className="shell">
       <header>
         <span className="brand">LAIVEL UP</span>
+        <OrgSwitcher />
         <nav>
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to}>

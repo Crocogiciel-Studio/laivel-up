@@ -4,7 +4,7 @@ import cors from '@fastify/cors';
 import { z } from 'zod';
 import type { Authenticator, AuthedUser } from './auth.js';
 import { bearer } from './auth.js';
-import type { ArtifactKind, ArtifactRow, Db, RunRow, Store } from './db.js';
+import type { ArtifactKind, ArtifactRow, Db, OrgRow, RunRow, Store } from './db.js';
 import type { RunEvaluation } from './engine.js';
 import type { CatalogueEntry } from './catalogue.js';
 import type { ValidateArtifact } from './validation.js';
@@ -22,7 +22,12 @@ export interface AppDeps {
 
 const idParam = z.object({ id: z.string().uuid() });
 
+const orgCreate = z.object({ name: z.string().min(1).max(200) });
+
+const artifactList = z.object({ orgId: z.string().uuid().optional() });
+
 const artifactCreate = z.object({
+  orgId: z.string().uuid(),
   name: z.string().min(1).max(200),
   body: z.unknown(),
 });
@@ -33,10 +38,14 @@ const artifactPatch = z
     message: 'provide at least one of name, body',
   });
 
-const runQuery = z.object({ subjectId: z.string().min(1).max(200).optional() });
+const runQuery = z.object({
+  orgId: z.string().uuid().optional(),
+  subjectId: z.string().min(1).max(200).optional(),
+});
 
 const runCreate = z
   .object({
+    orgId: z.string().uuid(),
     gridId: z.string().uuid().optional(),
     grid: z.unknown().optional(),
     profileId: z.string().uuid().optional(),
@@ -51,9 +60,15 @@ const runCreate = z
     message: 'provide exactly one of profileId, profile',
   });
 
+function orgView(row: OrgRow): unknown {
+  return { id: row.id, name: row.name, createdAt: row.created_at };
+}
+
 function artifactView(row: ArtifactRow): unknown {
   return {
     id: row.id,
+    orgId: row.org_id,
+    createdBy: row.created_by,
     name: row.name,
     body: row.body,
     isTemplate: row.is_template,
@@ -65,6 +80,8 @@ function artifactView(row: ArtifactRow): unknown {
 function runView(row: RunRow): unknown {
   return {
     id: row.id,
+    orgId: row.org_id,
+    createdBy: row.created_by,
     subjectId: row.subject_id,
     gridSnapshot: row.grid_snapshot,
     profileSnapshot: row.profile_snapshot,
@@ -77,10 +94,25 @@ function unprocessable(reply: FastifyReply, message: string, issues: readonly st
   return reply.code(422).send({ error: message, issues });
 }
 
+/** A write blocked by row-level security surfaces as a Postgres error. */
+function isForbidden(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /row-level security|violates|permission denied|not allowed|\b42501\b/i.test(message);
+}
+
 export function createApp(deps: AppDeps): FastifyInstance {
   const app = Fastify({ logger: deps.logger ?? false });
 
   void app.register(cors, { origin: [...deps.siteUrls] });
+
+  app.setErrorHandler((error, _request, reply) => {
+    if (isForbidden(error)) {
+      void reply.code(403).send({ error: 'not allowed for this org' });
+      return;
+    }
+    app.log.error(error);
+    void reply.code(500).send({ error: 'internal error' });
+  });
 
   app.get('/health', () => ({ ok: true }));
 
@@ -109,6 +141,20 @@ export function createApp(deps: AppDeps): FastifyInstance {
 
   app.get('/api/catalogue', () => deps.catalogue);
 
+  app.get('/api/orgs', async (request) => {
+    const rows = await store(request).listOrgs();
+    return rows.map(orgView);
+  });
+
+  app.post('/api/orgs', async (request, reply) => {
+    const parsed = orgCreate.safeParse(request.body);
+    if (!parsed.success) {
+      return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
+    }
+    const row = await store(request).createOrg(parsed.data.name);
+    return reply.code(201).send(orgView(row));
+  });
+
   registerArtifactRoutes(app, 'grid', 'grids', deps, store);
   registerArtifactRoutes(app, 'profile', 'profiles', deps, store);
   registerRunRoutes(app, deps, store);
@@ -123,8 +169,12 @@ function registerArtifactRoutes(
   deps: AppDeps,
   store: (request: FastifyRequest) => Store,
 ): void {
-  app.get(`/api/${segment}`, async (request) => {
-    const rows = await store(request).list(kind);
+  app.get(`/api/${segment}`, async (request, reply) => {
+    const parsed = artifactList.safeParse(request.query);
+    if (!parsed.success) {
+      return unprocessable(reply, 'invalid query', issuesOf(parsed.error));
+    }
+    const rows = await store(request).list(kind, parsed.data.orgId);
     return rows.map(artifactView);
   });
 
@@ -147,6 +197,7 @@ function registerArtifactRoutes(
       return unprocessable(reply, valid.error.message, valid.error.issues);
     }
     const row = await store(request).create(kind, {
+      orgId: parsed.data.orgId,
       name: parsed.data.name,
       body: parsed.data.body,
     });
@@ -196,7 +247,10 @@ function registerRunRoutes(
     if (!parsed.success) {
       return unprocessable(reply, 'invalid query', issuesOf(parsed.error));
     }
-    const rows = await store(request).listRuns(parsed.data.subjectId);
+    const rows = await store(request).listRuns({
+      ...(parsed.data.orgId === undefined ? {} : { orgId: parsed.data.orgId }),
+      ...(parsed.data.subjectId === undefined ? {} : { subjectId: parsed.data.subjectId }),
+    });
     return rows.map(runView);
   });
 
@@ -235,6 +289,7 @@ function registerRunRoutes(
 
     const subjectId = input.subjectId ?? subjectIdOf(profileBody.body) ?? 'unknown';
     const row = await s.createRun({
+      orgId: input.orgId,
       subjectId,
       gridSnapshot: gridBody.body,
       profileSnapshot: profileBody.body,
