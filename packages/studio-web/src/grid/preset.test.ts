@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseGrid } from 'laivel-up/compose';
-import aiddBody from '../../../core/presets/aidd.json' with { type: 'json' };
+import aiddBody from 'laivel-up/presets/aidd.json' with { type: 'json' };
 import { cardFor, emptyGrid, fromPreset, toPreset } from './preset.js';
 
 describe('grid preset transform', () => {

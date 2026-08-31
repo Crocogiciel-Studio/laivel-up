@@ -7,8 +7,8 @@
 import { type Message, isMessage } from './evaluation';
 import type { Lang } from './i18n';
 import { fillTemplate } from './interpolate';
-import en from '../../core/i18n/en.json';
-import fr from '../../core/i18n/fr.json';
+import en from 'laivel-up/i18n/en.json';
+import fr from 'laivel-up/i18n/fr.json';
 
 type Catalogue = Readonly<Record<string, string>>;
 

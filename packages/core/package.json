@@ -10,11 +10,15 @@
   },
   "exports": {
     ".": "./dist/core/index.js",
-    "./compose": "./dist/compose.js"
+    "./compose": "./dist/compose.js",
+    "./package.json": "./package.json",
+    "./presets/*": "./presets/*",
+    "./i18n/*": "./i18n/*"
   },
   "files": [
     "dist",
-    "presets"
+    "presets",
+    "i18n"
   ],
   "engines": {
     "node": ">=22"
