@@ -24,7 +24,7 @@ const app = createApp({
   runEvaluation,
   validateArtifact,
   catalogue,
-  siteUrl: config.STUDIO_SITE_URL,
+  siteUrls: config.siteUrls,
   logger: true,
 });
 

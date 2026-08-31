@@ -15,7 +15,8 @@ export interface AppDeps {
   readonly runEvaluation: RunEvaluation;
   readonly validateArtifact: ValidateArtifact;
   readonly catalogue: readonly CatalogueEntry[];
-  readonly siteUrl: string;
+  /** Allowed CORS origins for the web app. */
+  readonly siteUrls: readonly string[];
   readonly logger?: boolean;
 }
 
@@ -79,7 +80,7 @@ function unprocessable(reply: FastifyReply, message: string, issues: readonly st
 export function createApp(deps: AppDeps): FastifyInstance {
   const app = Fastify({ logger: deps.logger ?? false });
 
-  void app.register(cors, { origin: deps.siteUrl });
+  void app.register(cors, { origin: [...deps.siteUrls] });
 
   app.get('/health', () => ({ ok: true }));
 

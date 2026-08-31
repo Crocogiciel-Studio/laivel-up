@@ -31,4 +31,4 @@ services:
       PORT: 8787
       SUPABASE_URL: ${SUPABASE_URL:?set it in .env}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set it in .env}
-      STUDIO_SITE_URL: ${STUDIO_SITE_URL:-http://127.0.0.1:5173}
+      STUDIO_SITE_URL: ${STUDIO_SITE_URL:-http://localhost:5173,http://127.0.0.1:5173}
