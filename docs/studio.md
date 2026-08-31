@@ -1,5 +1,7 @@
 # Grid & profile studio
 
+Part of the [documentation corpus](README.md).
+
 A web app around the evaluation engine. A Lead Tech signs in, builds grids with a
 drag-and-drop builder, fills profiles through a form, runs evaluations, and keeps
 the history per developer.
@@ -21,11 +23,10 @@ and the core gains no dependency. Persistence and HTTP are new adapters.
 
 The offline CLI and the single-file viewer are unaffected.
 
-```
-web (SPA, #57)  ->  server (Node)  ->  packages/core/src/core engine
-                         |
-                         v
-              Supabase Cloud: Postgres + Auth
+```mermaid
+flowchart LR
+  web["web (SPA, #57)"] --> server["server (Node)"] --> engine["packages/core engine"]
+  server --> db[("Supabase Cloud\nPostgres + Auth")]
 ```
 
 ## Pieces

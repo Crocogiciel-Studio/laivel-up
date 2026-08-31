@@ -2,15 +2,16 @@
 
 The studio's only server. It does all CRUD for grids, profiles, and runs, and is
 the one process that calls the evaluation engine. Part of the grid & profile
-studio — see [`docs/studio.md`](../../docs/studio.md), epic
+studio — see [`docs/studio.md`](../../docs/studio.md) (part of the
+[documentation corpus](../../docs/README.md)), epic
 [#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54), issue
 [#56](https://github.com/Crocogiciel-Studio/laivel-up/issues/56).
 
 ## Boundary
 
-Imports the core through `laivel-up/compose` (a new subpath export), one way. It
-never reaches into `src/`. Persistence and HTTP are adapters; the hexagon core is
-untouched.
+Imports the core through `laivel-up/compose`, one way. It never reaches into
+`packages/core/src/` directly. Persistence and HTTP are adapters; the hexagon
+core is untouched.
 
 ## Auth and ownership
 
@@ -53,18 +54,18 @@ CLI adapters use, so anything saved here also runs in the CLI.
 ```
 pnpm install
 cp .env.example .env          # SUPABASE_URL + SUPABASE_ANON_KEY from the dashboard
-pnpm build                    # build the core; ui/server imports laivel-up/compose
-pnpm -C ui/server dev         # tsx watch on :8787
+pnpm build                    # build the core; studio-server imports laivel-up/compose
+pnpm -C packages/studio-server dev   # tsx watch on :8787
 ```
 
 Points at whatever `SUPABASE_URL` names — the Cloud project, or a local
-`pnpm db:start` stack. `pnpm -C ui/server test` needs the core built first (the
-integration test in `engine.test.ts` loads the real wiring); the route tests use
-fakes and do not.
+`pnpm db:start` stack. `pnpm -C packages/studio-server test` needs the core
+built first (the integration test in `engine.test.ts` loads the real wiring);
+the route tests use fakes and do not.
 
 ## Container
 
 ```
-docker build -f ui/server/Dockerfile -t laivel-up-studio-server .
+docker build -f packages/studio-server/Dockerfile -t laivel-up-studio-server .
 docker compose up --build     # server on :8787, against the .env Supabase project
 ```

@@ -1,22 +1,23 @@
 # Studio web app
 
 The SPA a Lead Tech signs into. Part of the grid & profile studio — see
-[`docs/studio.md`](../../docs/studio.md), epic
-[#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54), issue
-[#57](https://github.com/Crocogiciel-Studio/laivel-up/issues/57).
+[`docs/studio.md`](../../docs/studio.md) (part of the
+[documentation corpus](../../docs/README.md)), epic
+[#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54).
 
 React + Vite + React Router. Auth is Supabase OAuth, client-side; **all data
-goes through the backend** (`ui/server`) — the browser never queries Postgres
-directly.
+goes through the backend** (`packages/studio-server`) — the browser never
+queries Postgres directly.
 
 ## Shape
 
-| Path | State |
+| Path | Does |
 | --- | --- |
 | `/login` | GitHub / Google OAuth, then back to the app |
-| `/profiles` | placeholder — form editor lands in #58 |
-| `/grids` | placeholder — drag-and-drop builder lands in #59 |
-| `/runs` | placeholder — run + history lands in #60 |
+| `/profiles` | list, create, edit a developer profile; clone a seeded template |
+| `/grids` | the drag-and-drop grid builder; clone a seeded template |
+| `/runs` | pick a grid + one or more profiles, run them in a batch, browse history per developer, compare over time |
+| `/org` | roster, invites, roles |
 
 - `auth/AuthProvider` holds the Supabase session and exposes `signIn` / `signOut`.
 - `auth/RequireAuth` gates the shell; an unauthenticated visitor is sent to `/login`.
@@ -38,8 +39,8 @@ directly.
 ```
 pnpm install
 cp .env.example .env          # fill the VITE_* values (and the server's)
-pnpm -C ui/server dev         # backend on :8787
-pnpm -C ui/web dev            # app on :5173
+pnpm -C packages/studio-server dev   # backend on :8787
+pnpm -C packages/studio-web dev      # app on :5173
 ```
 
 Add `http://127.0.0.1:5173` to the project's redirect allow-list (dashboard:
@@ -49,7 +50,7 @@ Providers).
 ## Container
 
 ```
-docker build -f ui/web/Dockerfile \
+docker build -f packages/studio-web/Dockerfile \
   --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=... \
   --build-arg VITE_API_URL=... -t laivel-up-studio-web .
 ```

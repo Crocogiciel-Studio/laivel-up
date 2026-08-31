@@ -1,8 +1,9 @@
 # Studio database
 
 Schema, RLS, and migrations for the grid & profile studio — see
-[`docs/studio.md`](../docs/studio.md) for how it fits the whole app, and epic
-[#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54).
+[`docs/studio.md`](../../../docs/studio.md) (part of the
+[documentation corpus](../../../docs/README.md)) for how it fits the whole
+app, and epic [#54](https://github.com/Crocogiciel-Studio/laivel-up/issues/54).
 
 The deployed database is a **Supabase Cloud** project. A local stack
 (`supabase start`) is optional, for offline development.
@@ -15,6 +16,8 @@ The deployed database is a **Supabase Cloud** project. A local stack
 
 ## Commands
 
+Run from the repo root — see [`packages/studio-db/package.json`](../package.json):
+
 | Command | Does |
 | --- | --- |
 | `pnpm db:new <name>` | Scaffold a new timestamped migration under `migrations/`. |
@@ -23,6 +26,8 @@ The deployed database is a **Supabase Cloud** project. A local stack
 | `pnpm db:test` | Reset a local DB, then run the RLS smoke test. Non-zero exit = a policy regressed. |
 | `pnpm db:test:bare` | Same, against a throwaway Docker Postgres — no Supabase images. |
 | `pnpm db:start` / `db:stop` / `db:status` / `db:reset` | Local stack, for offline dev. |
+| `pnpm db:seed:templates` | Regenerate the seed migration from `packages/core/presets/aidd.json` and its sample profiles. |
+| `pnpm templates:check` | Fail if that migration has drifted from those sources. |
 
 CI runs the smoke test on every push (`.github/workflows/ci.yml`, job `db`), so
 a broken policy or migration fails the build before it can reach Cloud.
@@ -42,14 +47,16 @@ a broken policy or migration fails the build before it can reach Cloud.
   an org once it has no members, and adds `delete_account()` — the actual
   "delete my account" entry point. `20260831160000_api_role_grants.sql` pins the
   table privileges the Supabase API roles need, so the schema no longer depends
-  on ambient project bootstrap state.
-- `seed.sql` — data for a fresh local DB. Templates land here in
-  [#61](https://github.com/Crocogiciel-Studio/laivel-up/issues/61).
+  on ambient project bootstrap state. `20260831170000_seed_templates.sql`
+  (generated — see `pnpm db:seed:templates` above) seeds the AIDD grid and the
+  four sample profiles as read-only templates.
+- `seed.sql` — comment only; the templates ship in the migration above so a
+  fresh `db push` gets them too.
 - `tests/rls_smoke.sql` — proves one user cannot read or write another's rows,
   and that templates are read-only. `tests/auth_shim.sql` fakes the minimal
   Supabase surface so it runs on a bare Postgres.
-- `scripts/db-smoke.sh` (repo root) — apply shim + migrations + smoke test; the
-  CI `db` job and `db:test:bare` both call it.
+- `scripts/db-smoke.sh` (in `packages/studio-db/`) — apply shim + migrations +
+  smoke test; the CI `db` job and `db:test:bare` both call it.
 
 ## Schema
 
