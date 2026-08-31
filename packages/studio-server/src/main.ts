@@ -3,7 +3,6 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
-import { supabaseAuthenticator } from './auth.js';
 
 /**
  * Walk up from `from` until a directory carrying `pnpm-workspace.yaml` turns
@@ -31,23 +30,10 @@ if (workspaceRoot !== undefined) {
     // no .env file — rely on the ambient environment
   }
 }
-import { supabaseDb } from './db.js';
-import { runEvaluation } from './engine.js';
-import { validateArtifact } from './validation.js';
-import { catalogue } from './catalogue.js';
-import { createApp } from './app.js';
+import { buildApp } from './build-app.js';
 
 const config = loadConfig();
-
-const app = createApp({
-  authenticator: supabaseAuthenticator(config),
-  db: supabaseDb(config),
-  runEvaluation,
-  validateArtifact,
-  catalogue,
-  siteUrls: config.siteUrls,
-  logger: true,
-});
+const app = buildApp(config);
 
 try {
   const address = await app.listen({ port: config.PORT, host: config.HOST });

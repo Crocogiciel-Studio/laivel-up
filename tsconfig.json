@@ -1,11 +1,4 @@
 {
-  "extends": "./packages/core/tsconfig.json",
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "resolveJsonModule": true,
-    "types": ["node"],
-    "noEmit": true
-  },
-  "include": ["api", "packages/studio-server/src/fastify.d.ts"]
+  "extends": "./packages/studio-server/tsconfig.json",
+  "include": ["api", "packages/studio-server/src"]
 }

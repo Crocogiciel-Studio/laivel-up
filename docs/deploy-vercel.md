@@ -40,6 +40,11 @@ bearer-token hook the same way `/health` is.
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | the same project, again (baked into the browser bundle) |
 | `VITE_API_URL` | `""` (empty) — front and back are the same origin now, so a relative `/api/...` fetch is correct; the local default (`http://localhost:8787`) would be wrong here |
 
+Set `VITE_API_URL` explicitly to an empty string — if it's left unset instead,
+the deployed app silently falls back to `http://localhost:8787` and every
+API call the browser makes fails against the visitor's own machine (check
+the Network tab for that host if sign-in or any page stays blank).
+
 `HOST` / `PORT` (used by `pnpm -C packages/studio-server dev`'s `.listen()`)
 don't apply to a serverless function and can be left unset.
 

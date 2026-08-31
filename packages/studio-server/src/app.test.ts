@@ -312,6 +312,15 @@ describe('studio server', () => {
     expect(res.json()).toEqual({ ok: true });
   });
 
+  it('serves /api/health without auth even with a query string', async () => {
+    // Vercel's catch-all api/[...path].ts route appends the matched segments
+    // as a query string, so this is the shape the deployed health check
+    // actually receives -- not a bare /api/health.
+    const res = await app.inject({ method: 'GET', url: '/api/health?path=health' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+  });
+
   it('rejects /api without a bearer token, and an unknown token', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/orgs' })).statusCode).toBe(401);
     const bad = await app.inject({
