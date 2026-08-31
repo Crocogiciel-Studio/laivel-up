@@ -23,17 +23,16 @@ default `params`; every one of those is overridable per grid.
 
 ### `declaratif-contradiction`
 
-Wired on **every** axis, always with `role: confidence`, never `level` — a
-grid never lets a self-report decide a level. It carries the subject's own
-self-assessment (a grid level id, or a grid-neutral band —
-`beginner`/`intermediate`/`advanced` — read off free text) into the bundle so
-the engine can *show* when self-image and measured level part ways.
+Wired on **every** axis, always `role: confidence` (see
+[Concepts](../concepts.md#two-rules-that-shape-every-criterion) for why).
+Carries the subject's own self-assessment — a grid level id, or a
+grid-neutral band (`beginner`/`intermediate`/`advanced`) read off free text
+— into the bundle, so the engine can *show* when self-image and measured
+level part ways.
 
 `needs`: `declared`.
 
-When it disagrees with the level the axis elected, it pulls that axis's
-confidence down — never up, and never enough to move the level itself. The
-bite fades with the rank gap:
+The bite fades with the rank gap:
 
 ```
 strength = max(0, 1 − contradictionSlope × |rankDeclared − rankElected|)

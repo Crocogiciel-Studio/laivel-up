@@ -1,10 +1,10 @@
 # Getting started
 
 Every way to run this, from "just show me a verdict" to the full multi-user
-studio. Pick the row that matches what you want.
+studio.
 
 Requires Node 22+ and [pnpm](https://pnpm.io). `pnpm install` once at the repo
-root before any of the below.
+root first.
 
 ## 1. One evaluation, from the terminal
 
@@ -33,7 +33,7 @@ usage: laivel-up --profile|-p <dir> [--grid|-g <preset.json>] [--min-axes <n>] [
 From source without a build (`tsx`, for iterating):
 
 ```bash
-pnpm dev --profile packages/core/examples/dev-sample
+pnpm dev --profile examples/dev-sample
 ```
 
 ## 2. See it rendered, offline
@@ -58,35 +58,9 @@ runs the engine itself, it only renders the JSON.
 ## 3. The studio — the multi-user web app
 
 Everything the CLI does, plus persistence, an org model, and a
-drag-and-drop grid builder. See [Studio overview](studio.md) for what it is;
-below is how to get it running.
-
-```bash
-cp .env.example .env    # SUPABASE_* for the backend, VITE_* for the web app
-pnpm build              # the engine — studio-server imports it via laivel-up/compose
-pnpm -C packages/studio-server dev   # backend, :8787
-pnpm -C packages/studio-web dev      # web app, :5173
-```
-
-Needs a Supabase project (Cloud, or a local stack — see below) reachable at the
-`SUPABASE_URL` / `VITE_SUPABASE_URL` in `.env`. Add
-`http://127.0.0.1:5173` to that project's OAuth redirect allow-list.
-
-### Studio, containerized
-
-```bash
-docker compose up --build   # web on :5173, backend on :8787 — reads the repo-root .env
-```
-
-### The studio's database
-
-```bash
-pnpm db:start        # a local Supabase stack, for offline dev
-pnpm db:push         # apply migrations to the linked Cloud project
-pnpm db:test:bare     # migrations + row-level-security smoke test, throwaway Postgres, no Supabase images
-```
-
-Full command reference: [`packages/studio-db/supabase/README.md`](../packages/studio-db/supabase/README.md).
+drag-and-drop grid builder — see [Studio overview](studio.md) for what it is.
+Running it (dev, Docker, the database) is one set of steps, kept in one
+place: [Studio overview → Running](studio.md#running).
 
 ## 4. Everything, verified
 

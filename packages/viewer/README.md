@@ -14,11 +14,12 @@ in, read the result. Part of the [documentation corpus](../../docs/README.md).
 
 ## Why it is a separate package
 
-The core is the evaluator. This viewer is a satellite: it depends on the core's
-output shape, never the other way round. It is a `pnpm` workspace package with
-its **own** Vite / Vitest toolchain, and `dependency-cruiser` forbids any
-`src/ -> packages/viewer/` import — so the engine build cannot be destabilised
-from here.
+The core is the evaluator. This viewer is a satellite: it depends on the
+core's output shape (and its bundled presets/i18n data, via a real
+`laivel-up` dependency), never the other way round — nothing in
+`packages/core` depends on this package, so the engine build cannot be
+destabilised from here. It is a `pnpm` workspace package with its **own**
+Vite / Vitest toolchain.
 
 ## One command
 

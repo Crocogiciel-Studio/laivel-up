@@ -5,8 +5,11 @@ a **directory of files** (the CLI, `pnpm viz`) or a **single JSON body**
 (the studio's profile form, or a saved profile record). Both parse into the
 same domain model, so anything valid in one runs the same in the other.
 
-Every field everywhere is optional. A missing piece means the criteria that
-need it read `unknown` — never a negative reading, never a guess.
+Almost every field is optional — a missing one means the criteria that need
+it read `unknown`, never a negative reading, never a guess. The exceptions
+are identity (`profile_id` / `subject.id`) and a section's own required
+shape once you include it — e.g. a `toolingContext` needs
+`projectMemoryPresent` and its four artifact counts, not just some of them.
 
 ## As a directory (CLI)
 
@@ -70,9 +73,11 @@ Feeds the Harness axis's quality/bug floors (see [criteria/harness.md](criteria/
 ### `declaratif.md`
 
 Free text. A phrasing like *"je me sens plutôt avancé"* is mapped to a
-grid-neutral band (`beginner` / `intermediate` / `advanced`); an explicit
-`self_assessed_level` in `profile.json` is taken verbatim instead. Either way
-this only ever *lowers* confidence when it disagrees with the evidence — see
+grid-neutral band (`beginner` / `intermediate` / `advanced`). An explicit
+`self_assessed_level` in `profile.json` goes through the same phrase map
+first; only what it doesn't recognise is passed through as-is (a literal
+grid level id, say). Either way this only ever *lowers* confidence when it
+disagrees with the evidence — see
 [declaratif-contradiction](criteria/README.md#cross-cutting).
 
 ### `session.md`
