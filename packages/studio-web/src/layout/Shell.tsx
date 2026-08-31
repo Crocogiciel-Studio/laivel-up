@@ -83,7 +83,9 @@ export function Shell(): ReactNode {
 
   useEffect(() => {
     let active = true;
-    api<{ ok: boolean }>('/health')
+    // /api/health, not /health -- on Vercel only /api/* reaches the
+    // serverless function, the bare path is swallowed by the SPA rewrite.
+    api<{ ok: boolean }>('/api/health')
       .then((r) => {
         if (active) setHealth(r.ok ? 'ok' : 'unreachable');
       })
