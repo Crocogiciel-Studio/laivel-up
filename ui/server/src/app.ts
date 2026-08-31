@@ -127,6 +127,34 @@ function unprocessable(reply: FastifyReply, message: string, issues: readonly st
   return reply.code(422).send({ error: message, issues });
 }
 
+/** A malformed path parameter — the error handler turns this into a 400. */
+class BadRequest extends Error {}
+
+/** Parse `request.params` (or a query), 400ing on a bad shape rather than 500ing. */
+function parsePath<T>(schema: z.ZodType<T>, raw: unknown): T {
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    throw new BadRequest(issuesOf(parsed.error).join('; '));
+  }
+  return parsed.data;
+}
+
+/**
+ * A write that changed no rows is either "not there" or "you can see it but not
+ * change it" (a template, another member's grid). Distinguish with one read.
+ */
+async function notFoundOrForbidden(
+  reply: FastifyReply,
+  store: Store,
+  kind: ArtifactKind,
+  id: string,
+): Promise<FastifyReply> {
+  const visible = await store.get(kind, id);
+  return visible === null
+    ? reply.code(404).send({ error: `${kind} not found` })
+    : reply.code(403).send({ error: `not allowed to change this ${kind}` });
+}
+
 /** A write blocked by row-level security surfaces as a Postgres error. */
 function isForbidden(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -139,6 +167,10 @@ export function createApp(deps: AppDeps): FastifyInstance {
   void app.register(cors, { origin: [...deps.siteUrls] });
 
   app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof BadRequest) {
+      void reply.code(400).send({ error: 'invalid path parameter', issues: [error.message] });
+      return;
+    }
     if (isForbidden(error)) {
       void reply.code(403).send({ error: 'not allowed for this org' });
       return;
@@ -189,13 +221,13 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.get('/api/orgs/:id/members', async (request) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const rows = await store(request).listMembers(id);
     return rows.map(memberView);
   });
 
   app.patch('/api/orgs/:id/members/:userId', async (request, reply) => {
-    const { id, userId } = memberParams.parse(request.params);
+    const { id, userId } = parsePath(memberParams, request.params);
     const parsed = roleBody.safeParse(request.body);
     if (!parsed.success) {
       return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
@@ -208,7 +240,7 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.delete('/api/orgs/:id/members/:userId', async (request, reply) => {
-    const { id, userId } = memberParams.parse(request.params);
+    const { id, userId } = parsePath(memberParams, request.params);
     const removed = await store(request).removeMember(id, userId);
     if (!removed) {
       return reply.code(404).send({ error: 'member not found' });
@@ -217,13 +249,13 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.get('/api/orgs/:id/invites', async (request) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const rows = await store(request).listInvites(id);
     return rows.map(inviteView);
   });
 
   app.post('/api/orgs/:id/invites', async (request, reply) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const parsed = inviteCreate.safeParse(request.body ?? {});
     if (!parsed.success) {
       return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
@@ -236,7 +268,7 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.delete('/api/orgs/:id/invites/:inviteId', async (request, reply) => {
-    const { id, inviteId } = inviteParams.parse(request.params);
+    const { id, inviteId } = parsePath(inviteParams, request.params);
     const removed = await store(request).deleteInvite(id, inviteId);
     if (!removed) {
       return reply.code(404).send({ error: 'invite not found' });
@@ -245,7 +277,7 @@ export function createApp(deps: AppDeps): FastifyInstance {
   });
 
   app.post('/api/invites/:token/accept', async (request, reply) => {
-    const { token } = tokenParam.parse(request.params);
+    const { token } = parsePath(tokenParam, request.params);
     try {
       const member = await store(request).acceptInvite(token);
       return reply.code(201).send({ orgId: member.org_id, role: member.role });
@@ -282,7 +314,7 @@ function registerArtifactRoutes(
   });
 
   app.get(`/api/${segment}/:id`, async (request, reply) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const row = await store(request).get(kind, id);
     if (row === null) {
       return reply.code(404).send({ error: `${kind} not found` });
@@ -308,7 +340,7 @@ function registerArtifactRoutes(
   });
 
   app.patch(`/api/${segment}/:id`, async (request, reply) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const parsed = artifactPatch.safeParse(request.body);
     if (!parsed.success) {
       return unprocessable(reply, 'invalid request body', issuesOf(parsed.error));
@@ -325,16 +357,16 @@ function registerArtifactRoutes(
 
     const row = await store(request).update(kind, id, patch);
     if (row === null) {
-      return reply.code(404).send({ error: `${kind} not found` });
+      return notFoundOrForbidden(reply, store(request), kind, id);
     }
     return artifactView(row);
   });
 
   app.delete(`/api/${segment}/:id`, async (request, reply) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const removed = await store(request).remove(kind, id);
     if (!removed) {
-      return reply.code(404).send({ error: `${kind} not found` });
+      return notFoundOrForbidden(reply, store(request), kind, id);
     }
     return reply.code(204).send();
   });
@@ -358,7 +390,7 @@ function registerRunRoutes(
   });
 
   app.get('/api/runs/:id', async (request, reply) => {
-    const { id } = idParam.parse(request.params);
+    const { id } = parsePath(idParam, request.params);
     const row = await store(request).getRun(id);
     if (row === null) {
       return reply.code(404).send({ error: 'run not found' });
@@ -391,6 +423,9 @@ function registerRunRoutes(
     }
 
     const subjectId = input.subjectId ?? subjectIdOf(profileBody.body) ?? 'unknown';
+    if (subjectId.length > 200) {
+      return unprocessable(reply, 'subject id exceeds 200 characters', []);
+    }
     const row = await s.createRun({
       orgId: input.orgId,
       subjectId,

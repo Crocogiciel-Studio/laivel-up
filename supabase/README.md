@@ -33,10 +33,9 @@ a broken policy or migration fails the build before it can reach Cloud.
   `edge_runtime`, `analytics` are off; OAuth blocks are defined but disabled.
   Cloud auth providers and redirect URLs are set in the dashboard.
 - `migrations/` — ordered schema changes. `20260830120000_studio_init.sql`
-  creates `grid`, `profile`, `run`; `20260831090000_orgs.sql` adds `org` /
-  `org_member` and re-scopes everything from a single owner to an org;
-  `20260831120000_org_invites.sql` adds `org_invite` + `accept_invite()` and the
-  `org_members()` roster function.
+  creates the whole schema: `org` / `org_member` / `org_invite`, the
+  `is_org_*` / `create_org` / `accept_invite` / `org_members` functions, and
+  `grid` / `profile` / `run` with their RLS.
 - `seed.sql` — data for a fresh local DB. Templates land here in
   [#61](https://github.com/Crocogiciel-Studio/laivel-up/issues/61).
 - `tests/rls_smoke.sql` — proves one user cannot read or write another's rows,

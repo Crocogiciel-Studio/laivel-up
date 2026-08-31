@@ -14,8 +14,11 @@ const NAV = [
 type Health = 'ok' | 'unreachable' | 'checking';
 
 function OrgSwitcher(): ReactNode {
-  const { orgs, currentOrg, select, create } = useOrg();
+  const { orgs, currentOrg, error, select, create } = useOrg();
 
+  if (error !== null) {
+    return <span className="error small">{error}</span>;
+  }
   if (orgs === undefined) {
     return <span className="muted small">loading orgs…</span>;
   }

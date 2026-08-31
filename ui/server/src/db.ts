@@ -123,38 +123,47 @@ export interface Db {
   forUser(user: AuthedUser): Store;
 }
 
-class SupabaseStore implements Store {
-  constructor(
-    private readonly config: Config,
-    private readonly user: AuthedUser,
-  ) {}
+/** Throw a PostgREST error, or return the data (the caller knows the shape). */
+function unwrap<T>(result: { data: T; error: { message: string } | null }): T {
+  if (result.error !== null) {
+    throw new Error(result.error.message);
+  }
+  return result.data;
+}
 
-  private client(): SupabaseClient<Database> {
-    return createClient<Database>(this.config.SUPABASE_URL, this.config.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${this.user.jwt}` } },
+/** Like `unwrap`, for a query that must return exactly one row (`.single()`, an rpc). */
+function unwrapOne<T>(result: { data: T | null; error: { message: string } | null }): T {
+  const data = unwrap(result);
+  if (data === null) {
+    throw new Error('expected a row, got none');
+  }
+  return data;
+}
+
+class SupabaseStore implements Store {
+  private readonly supabase: SupabaseClient<Database>;
+
+  constructor(config: Config, private readonly user: AuthedUser) {
+    this.supabase = createClient<Database>(config.SUPABASE_URL, config.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${user.jwt}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
   }
 
   async listOrgs(): Promise<OrgRow[]> {
-    const { data, error } = await this.client()
-      .from('org')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []) as OrgRow[];
+    return (
+      unwrap(
+        await this.supabase.from('org').select('*').order('created_at', { ascending: true }),
+      ) ?? []
+    );
   }
 
   async createOrg(name: string): Promise<OrgRow> {
-    const { data, error } = await this.client().rpc('create_org', { p_name: name });
-    if (error !== null) throw new Error(error.message);
-    return data as OrgRow;
+    return unwrapOne(await this.supabase.rpc("create_org", { p_name: name }));
   }
 
   async listMembers(orgId: string): Promise<OrgMemberDetail[]> {
-    const { data, error } = await this.client().rpc('org_members', { p_org: orgId });
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []) as OrgMemberDetail[];
+    return (unwrap(await this.supabase.rpc('org_members', { p_org: orgId })) ?? []) as OrgMemberDetail[];
   }
 
   async updateMemberRole(
@@ -162,97 +171,98 @@ class SupabaseStore implements Store {
     userId: string,
     role: 'admin' | 'member',
   ): Promise<OrgMemberRow | null> {
-    const { data, error } = await this.client()
-      .from('org_member')
-      .update({ role })
-      .eq('org_id', orgId)
-      .eq('user_id', userId)
-      .select('*')
-      .maybeSingle();
-    if (error !== null) throw new Error(error.message);
-    return (data as OrgMemberRow | null) ?? null;
+    return unwrap(
+      await this.supabase
+        .from('org_member')
+        .update({ role })
+        .eq('org_id', orgId)
+        .eq('user_id', userId)
+        .select('*')
+        .maybeSingle(),
+    );
   }
 
   async removeMember(orgId: string, userId: string): Promise<boolean> {
-    const { data, error } = await this.client()
-      .from('org_member')
-      .delete()
-      .eq('org_id', orgId)
-      .eq('user_id', userId)
-      .select('org_id');
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []).length > 0;
+    const rows = unwrap(
+      await this.supabase
+        .from('org_member')
+        .delete()
+        .eq('org_id', orgId)
+        .eq('user_id', userId)
+        .select('org_id'),
+    );
+    return (rows ?? []).length > 0;
   }
 
   async listInvites(orgId: string): Promise<OrgInviteRow[]> {
-    const { data, error } = await this.client()
-      .from('org_invite')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: false });
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []) as OrgInviteRow[];
+    return (
+      unwrap(
+        await this.supabase
+          .from('org_invite')
+          .select('*')
+          .eq('org_id', orgId)
+          .order('created_at', { ascending: false }),
+      ) ?? []
+    );
   }
 
   async createInvite(orgId: string, input: NewInvite): Promise<OrgInviteRow> {
-    const { data, error } = await this.client()
-      .from('org_invite')
-      .insert({
-        org_id: orgId,
-        created_by: this.user.id,
-        role: input.role,
-        ...(input.email === undefined ? {} : { email: input.email }),
-      })
-      .select('*')
-      .single();
-    if (error !== null) throw new Error(error.message);
-    return data as OrgInviteRow;
+    return unwrapOne(
+      await this.supabase
+        .from('org_invite')
+        .insert({
+          org_id: orgId,
+          created_by: this.user.id,
+          role: input.role,
+          ...(input.email === undefined ? {} : { email: input.email }),
+        })
+        .select('*')
+        .single(),
+    );
   }
 
   async deleteInvite(orgId: string, inviteId: string): Promise<boolean> {
-    const { data, error } = await this.client()
-      .from('org_invite')
-      .delete()
-      .eq('id', inviteId)
-      .eq('org_id', orgId)
-      .select('id');
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []).length > 0;
+    const rows = unwrap(
+      await this.supabase
+        .from('org_invite')
+        .delete()
+        .eq('id', inviteId)
+        .eq('org_id', orgId)
+        .select('id'),
+    );
+    return (rows ?? []).length > 0;
   }
 
   async acceptInvite(token: string): Promise<OrgMemberRow> {
-    const { data, error } = await this.client().rpc('accept_invite', { p_token: token });
-    if (error !== null) throw new Error(error.message);
-    return data as OrgMemberRow;
+    return unwrapOne(await this.supabase.rpc("accept_invite", { p_token: token }));
   }
 
   async list(kind: ArtifactKind, orgId?: string): Promise<ArtifactRow[]> {
-    let query = this.client().from(kind).select('*').order('updated_at', { ascending: false });
-    if (orgId !== undefined) query = query.eq('org_id', orgId);
-    const { data, error } = await query;
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []) as ArtifactRow[];
+    let query = this.supabase.from(kind).select('*').order('updated_at', { ascending: false });
+    if (orgId !== undefined) {
+      // Templates carry a NULL org, so include them alongside the org's own rows.
+      query = query.or(`org_id.eq.${orgId},is_template.is.true`);
+    }
+    return unwrap(await query) ?? [];
   }
 
   async get(kind: ArtifactKind, id: string): Promise<ArtifactRow | null> {
-    const { data, error } = await this.client().from(kind).select('*').eq('id', id).maybeSingle();
-    if (error !== null) throw new Error(error.message);
-    return (data as ArtifactRow | null) ?? null;
+    return unwrap(await this.supabase.from(kind).select('*').eq('id', id).maybeSingle());
   }
 
   async create(kind: ArtifactKind, input: NewArtifact): Promise<ArtifactRow> {
-    const { data, error } = await this.client()
-      .from(kind)
-      .insert({
-        org_id: input.orgId,
-        created_by: this.user.id,
-        name: input.name,
-        body: input.body,
-      })
-      .select('*')
-      .single();
-    if (error !== null) throw new Error(error.message);
-    return data as ArtifactRow;
+    return unwrapOne(
+      await this.supabase
+        .from(kind)
+        .insert({
+          org_id: input.orgId,
+          created_by: this.user.id,
+          name: input.name,
+          body: input.body,
+        })
+        .select('*')
+        .single(),
+    );
   }
 
   async update(
@@ -260,52 +270,42 @@ class SupabaseStore implements Store {
     id: string,
     patch: { name?: string; body?: unknown },
   ): Promise<ArtifactRow | null> {
-    const { data, error } = await this.client()
-      .from(kind)
-      .update(patch)
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
-    if (error !== null) throw new Error(error.message);
-    return (data as ArtifactRow | null) ?? null;
+    return unwrap(
+      await this.supabase.from(kind).update(patch).eq('id', id).select('*').maybeSingle(),
+    );
   }
 
   async remove(kind: ArtifactKind, id: string): Promise<boolean> {
-    const { data, error } = await this.client().from(kind).delete().eq('id', id).select('id');
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []).length > 0;
+    const rows = unwrap(await this.supabase.from(kind).delete().eq('id', id).select('id'));
+    return (rows ?? []).length > 0;
   }
 
   async listRuns(filter: { orgId?: string; subjectId?: string }): Promise<RunRow[]> {
-    let query = this.client().from('run').select('*').order('created_at', { ascending: false });
+    let query = this.supabase.from('run').select('*').order('created_at', { ascending: false });
     if (filter.orgId !== undefined) query = query.eq('org_id', filter.orgId);
     if (filter.subjectId !== undefined) query = query.eq('subject_id', filter.subjectId);
-    const { data, error } = await query;
-    if (error !== null) throw new Error(error.message);
-    return (data ?? []) as RunRow[];
+    return unwrap(await query) ?? [];
   }
 
   async getRun(id: string): Promise<RunRow | null> {
-    const { data, error } = await this.client().from('run').select('*').eq('id', id).maybeSingle();
-    if (error !== null) throw new Error(error.message);
-    return (data as RunRow | null) ?? null;
+    return unwrap(await this.supabase.from('run').select('*').eq('id', id).maybeSingle());
   }
 
   async createRun(input: NewRun): Promise<RunRow> {
-    const { data, error } = await this.client()
-      .from('run')
-      .insert({
-        org_id: input.orgId,
-        created_by: this.user.id,
-        subject_id: input.subjectId,
-        grid_snapshot: input.gridSnapshot,
-        profile_snapshot: input.profileSnapshot,
-        evaluation: input.evaluation,
-      })
-      .select('*')
-      .single();
-    if (error !== null) throw new Error(error.message);
-    return data as RunRow;
+    return unwrapOne(
+      await this.supabase
+        .from('run')
+        .insert({
+          org_id: input.orgId,
+          created_by: this.user.id,
+          subject_id: input.subjectId,
+          grid_snapshot: input.gridSnapshot,
+          profile_snapshot: input.profileSnapshot,
+          evaluation: input.evaluation,
+        })
+        .select('*')
+        .single(),
+    );
   }
 }
 
