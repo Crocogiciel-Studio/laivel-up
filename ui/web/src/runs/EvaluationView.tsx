@@ -34,8 +34,8 @@ function Axis({ card }: { readonly card: AxisCard }): ReactNode {
               </tr>
             </thead>
             <tbody>
-              {card.readings.map((r) => (
-                <tr key={r.criterion} className={r.ruled ? '' : 'muted'}>
+              {card.readings.map((r, i) => (
+                <tr key={`${r.criterion}-${String(i)}`} className={r.ruled ? '' : 'muted'}>
                   <td><code>{r.criterion}</code></td>
                   <td>{r.role}</td>
                   <td>{r.status}</td>
